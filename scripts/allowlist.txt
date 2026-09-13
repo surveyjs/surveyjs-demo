@@ -7,10 +7,23 @@ scripts/allowlist.txt
 scripts/mit-only.txt
 scripts/mit-sync.mjs
 package.json
-package-lock.json
 LICENSE
 README.md
 CLAUDE.md
+
+# Internal infrastructure, not part of the template: the two pipelines may
+# differ freely and the identity check should not care.
+azure-pipelines.yml
+
+# Leaves this list when both repositories untrack it (see prompts/01 and 02).
+# Every SurveyJS package is pinned to `latest` on purpose, so a lock file that
+# freezes the transitive tree while the direct dependencies float is worse than
+# none, and two of them drifting apart is worse still.
+package-lock.json
+
+# Leaves this list once the MIT edition carries the same file (see prompts/01):
+# `slk` comes from survey-core, so the identical code compiles in both editions
+# and stays dormant wherever .env has no NEXTJS_PUBLIC_SLK.
 .env.example
 src/features/index.ts
 src/features/full/**
@@ -23,4 +36,6 @@ src/components/analytics/**
 src/components/configure/CreatorPane.tsx
 src/components/configure/SurveyDesigner.tsx
 src/lib/pdf-export.ts
+
+# Leaves this list with .env.example, for the same reason.
 src/lib/surveyjs-license.ts
