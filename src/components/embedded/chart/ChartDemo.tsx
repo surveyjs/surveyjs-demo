@@ -26,9 +26,9 @@ export const CHART_BRAND = "violet";
  *
  * So there is deliberately almost nothing here. A header bar with the product
  * mark, the chart that is open and a colour-scheme switch — and below it the
- * survey, full width. The pages, the progress, the problem list, the medication
- * totals, the risk score, the signature and the "note filed" screen are all in
- * `encounter-note.ts`; not one of them is React in this file. That is the claim,
+ * survey, full width. The pages, the table of contents, the problem list, the
+ * medication totals, the risk score, the signature and the "note filed" screen
+ * are all in `encounter-note.ts`; not one of them is React in this file. That is the claim,
  * and the emptiness of this component is the evidence for it.
  *
  * The note is still rendered *for* somebody: the same three patients as the

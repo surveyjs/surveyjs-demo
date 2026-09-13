@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+# No lock file on purpose: the SurveyJS packages float on `latest`. See .npmrc.
+/package-lock.json
 /.pnp
 .pnp.js
 .yarn/install-state.gz

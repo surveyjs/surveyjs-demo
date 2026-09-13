@@ -13,12 +13,15 @@ import {
   RIDGELINE_USER,
   type DemoUser,
 } from "@/components/embedded/shared/demo-accounts";
+import { features } from "@/features";
 
 /**
  * Every form in the template, in one list, because one page edits all of them.
  *
- * There is one editor for all of them — Survey Creator, opened on one form — and
- * it is a URL worth sharing: `/configure?form=<id>`.
+ * The template used to carry a `/configure` page per form and a JSON panel inside
+ * each embedded demo — four editors for the same job. There is one now, whichever
+ * editor the edition ships, and it is a URL worth sharing for any form in the
+ * template: `/configure?form=<id>`.
  *
  * `user` is what separates the two halves of the list. The three template forms
  * are plain: one definition, one form. The three embedded ones are rendered *for
@@ -46,8 +49,8 @@ export interface FormEntry {
   readonly sourceHref: string;
 }
 
-const SOURCE_ROOT =
-  "https://github.com/surveyjs/surveyjs-nextjs/blob/main/src/schemas";
+/** This edition's repository, so a link to a definition opens the file it ships. */
+const SOURCE_ROOT = `${features.brand.sourceUrl}/blob/main/src/schemas`;
 
 function form(
   id: string,

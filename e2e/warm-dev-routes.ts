@@ -1,3 +1,5 @@
+import { features } from "../src/features";
+
 /**
  * Compile every route before the suite starts.
  *
@@ -5,12 +7,15 @@
  * hitting cold routes at once, some of those first requests come back as 500s
  * that have nothing to do with the app. One sequential pass up front makes the
  * run deterministic.
+ *
+ * The list comes from the app: the routes every edition has, plus the analytics
+ * dashboard only in an edition that ships one.
  */
 const ROUTES = [
   "/",
   "/claims",
   "/configure?form=insurance-claim",
-  "/analytics?form=insurance-claim",
+  ...(features.analyticsHref ? [features.analyticsHref("insurance-claim")] : []),
   "/embedded/feedback",
   "/embedded/clinic",
   "/embedded/chart",

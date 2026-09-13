@@ -62,7 +62,8 @@ export function RidgelineDemo({ survey }: { survey: DemoSurvey }) {
   const [submitted, setSubmitted] = useState(false);
 
   // Stable, so it never re-subscribes the survey's event handlers. The page
-  // prices itself from the answers, and the toolbar's PDF button needs them too.
+  // prices itself from the answers, and the toolbar's PDF button, in editions
+  // that ship one, needs them too.
   const handleDataChange = useCallback(
     (next: SurveyData) => {
       setData(next);

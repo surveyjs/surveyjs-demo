@@ -1,7 +1,7 @@
 import { getNavItem, getSchemaDefinition, medicalFormSample } from "@/schemas";
 import { PageHeader } from "@/components/PageHeader";
 import { SurveyForm } from "@/components/SurveyForm";
-import { analyticsHref } from "@/lib/routes";
+import { features } from "@/features";
 
 const nav = getNavItem("claims");
 
@@ -12,7 +12,7 @@ export default function ClaimsPage() {
         title={nav.label}
         description={nav.description}
         configureHref={`/configure?form=${nav.schemaId}`}
-        analyticsHref={analyticsHref(nav.schemaId)}
+        analyticsHref={features.analyticsHref?.(nav.schemaId)}
       />
       <SurveyForm
         schema={getSchemaDefinition(nav.schemaId).json}

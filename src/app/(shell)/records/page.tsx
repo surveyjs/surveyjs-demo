@@ -1,8 +1,8 @@
 import { getNavItem, getSchemaDefinition } from "@/schemas";
 import { PageHeader } from "@/components/PageHeader";
-import { analyticsHref } from "@/lib/routes";
 import { RecordsView } from "@/components/RecordsView";
 import { listResults } from "@/storage/survey-results";
+import { features } from "@/features";
 
 const nav = getNavItem("records");
 
@@ -14,7 +14,7 @@ export default async function RecordsPage() {
       <PageHeader
         title={nav.label}
         description={nav.description}
-        analyticsHref={analyticsHref(nav.schemaId)}
+        analyticsHref={features.analyticsHref?.(nav.schemaId)}
       />
       <RecordsView
         schema={getSchemaDefinition(nav.schemaId).json}

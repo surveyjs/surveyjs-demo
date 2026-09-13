@@ -11,7 +11,7 @@ import {
   type SurveyJSON,
   type SurveyMode,
 } from "@/schemas";
-import { exportSurveyToPdf } from "@/lib/pdf-export";
+import { features } from "@/features";
 import { loadSurveyJson } from "@/storage/survey-json";
 import { submitResult } from "@/storage/survey-results";
 import { FormCompleted } from "./FormCompleted";
@@ -43,8 +43,8 @@ import "@/styles/survey-overrides-base-nova.css";
  *    form;
  *  - {@link usePrefillAction} — the "Prefill demo data" button in the survey's
  *    own navigation bar, for filling a long form in front of an audience;
- *  - {@link usePdfAction} — "Save as PDF" beside it, which hands the same
- *    definition and the answers on screen to SurveyJS PDF Generator;
+ *  - {@link usePdfAction} — "Save as PDF" beside it, when the edition provides a
+ *    PDF export, which gets the same definition and the answers on screen;
  *  - {@link useSubmission} — what happens on completion: hand the answers to the
  *    caller, or POST them through the storage seam.
  *
@@ -82,8 +82,9 @@ export function SurveyForm({
   prefillData?: SurveyData;
   prefillLabel?: string;
   /**
-   * "Save as PDF" in the survey own navigation bar. The records page turns it
-   * off and puts the same export beside the record actions instead.
+   * "Save as PDF" in the survey's own navigation bar, when the edition provides
+   * a PDF export. The records page turns it off and keeps the form's navigation
+   * to its own actions.
    */
   pdfInNavigation?: boolean;
   /**
@@ -237,12 +238,14 @@ function usePrefillAction(
 }
 
 /**
- * "Save as PDF", next to Prefill in the survey's own navigation bar.
+ * "Save as PDF", next to Prefill in the survey's own navigation bar — only when
+ * the edition provides a PDF export (`features.exportPdf`). Without one, nothing
+ * is added.
  *
  * There is no separate print layout and no export mapping: `model.toJSON()` is
  * the definition currently on screen — the shipped one, or the copy a visitor
- * edited in the Creator — and `model.data` is what they have answered so far, so
- * the document is the form, filled in as far as it has been filled in.
+ * edited on `/configure` — and `model.data` is what they have answered so far,
+ * so the document is the form, filled in as far as it has been filled in.
  */
 function usePdfAction(
   model: SurveyModel,
@@ -250,14 +253,15 @@ function usePdfAction(
   enabled: boolean,
 ): void {
   useEffect(() => {
-    if (!enabled) return;
+    const exportPdf = features.exportPdf;
+    if (!enabled || !exportPdf) return;
     const id = "sv-export-pdf";
 
     model.addNavigationItem({
       id,
       title: "Save as PDF",
       action: () => {
-        void exportSurveyToPdf(model.toJSON() as SurveyJSON, {
+        void exportPdf(model.toJSON() as SurveyJSON, {
           label: model.title || schemaId || "form",
           data: model.data,
         });

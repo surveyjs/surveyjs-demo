@@ -16,12 +16,12 @@ import type { SchemaDefinition, SurveyJSON } from "./types";
  * forms are nothing like that.* So this one is deliberately heavy, and every
  * heavy part of it is survey-core doing the work rather than a host page:
  *
- *  - **structure**: eight pages with a table of contents, a progress bar, a
- *    review step before anything is filed, and a page that only exists for a
- *    patient who has never been seen here;
+ *  - **structure**: eight pages with a table of contents, a review step before
+ *    anything is filed, and a page that only exists for a patient who has never
+ *    been seen here;
  *  - **repeating data**: dynamic matrices with expandable detail rows (the
- *    problem list), total rows (medications), and a dynamic panel rendered as
- *    tabs with its own file upload per surgery;
+ *    problem list, the medication list), total rows (medications), and a dynamic
+ *    panel rendered as tabs with its own file upload per surgery;
  *  - **calculation**: BMI, mean arterial pressure, an average of every blood
  *    pressure taken today, total daily dose and morphine-milligram equivalents,
  *    a depression screener scored from matrix cells, and a cardiovascular risk
@@ -141,14 +141,10 @@ export const encounterNoteJson: SurveyJSON = {
   autoGrowComment: true,
 
   // The chart is long, so the note is navigable rather than linear: a table of
-  // contents down the side, a progress bar with page titles, and a review of
-  // everything entered before it is signed.
+  // contents down the side, and a review of everything entered before it is
+  // signed.
   showTOC: true,
   tocLocation: "left",
-  showProgressBar: true,
-  progressBarType: "pages",
-  progressBarLocation: "belowheader",
-  progressBarShowPageNumbers: true,
   showPreviewBeforeComplete: true,
   previewMode: "answeredQuestions",
   previewText: "Review the note",
@@ -695,12 +691,15 @@ export const encounterNoteJson: SurveyJSON = {
           removeRowText: "Remove",
           rowCount: 1,
           confirmDelete: true,
+          detailPanelMode: "underRowSingle",
           columns: [
             {
               name: "drugName",
               title: "Drug",
               cellType: "dropdown",
               isRequired: true,
+              allowClear: false,
+              minWidth: "170px",
               choices: drugChoices,
             },
             {
@@ -709,12 +708,14 @@ export const encounterNoteJson: SurveyJSON = {
               cellType: "text",
               inputType: "number",
               isRequired: true,
-              minWidth: "88px",
+              minWidth: "78px",
             },
             {
               name: "doseUnit",
               title: "Unit",
               cellType: "dropdown",
+              allowClear: false,
+              minWidth: "84px",
               choices: [
                 { value: "mg", text: "mg" },
                 { value: "mcg", text: "mcg" },
@@ -730,44 +731,15 @@ export const encounterNoteJson: SurveyJSON = {
               defaultValue: 1,
               min: "1",
               max: "6",
+              minWidth: "84px",
               enableIf: "{row.drugName} notempty",
-            },
-            {
-              name: "medRoute",
-              title: "Route",
-              cellType: "dropdown",
-              choices: [
-                { value: "po", text: "Oral" },
-                { value: "inhaled", text: "Inhaled" },
-                { value: "sc", text: "Subcutaneous" },
-                { value: "topical", text: "Topical" },
-              ],
-              defaultValue: "po",
-            },
-            {
-              name: "isOpioid",
-              title: "Opioid",
-              cellType: "boolean",
-              // Answered by the row itself for the three that are.
-              setValueIf: "{row.drugName} anyof ['hydrocodone', 'oxycodone', 'tramadol']",
-              setValueExpression: "true",
-            },
-            {
-              name: "mmeFactor",
-              title: "MME factor",
-              cellType: "dropdown",
-              visibleIf: "{row.isOpioid} = true",
-              choices: [
-                { value: 1, text: "1 — hydrocodone / morphine" },
-                { value: 1.5, text: "1.5 — oxycodone" },
-                { value: 0.2, text: "0.2 — tramadol" },
-              ],
             },
             {
               name: "dailyDose",
               title: "Daily dose",
               cellType: "expression",
               expression: "{row.doseAmount} * {row.dosesPerDay}",
+              minWidth: "92px",
               totalType: "sum",
               totalFormat: "Total {0}",
             },
@@ -777,13 +749,49 @@ export const encounterNoteJson: SurveyJSON = {
               cellType: "expression",
               expression:
                 "iif({row.isOpioid} = true, {row.doseAmount} * {row.dosesPerDay} * {row.mmeFactor}, 0)",
+              minWidth: "92px",
               totalType: "sum",
               totalFormat: "Total {0}",
             },
+          ],
+          detailElements: [
             {
+              type: "dropdown",
+              name: "medRoute",
+              title: "Route",
+              choices: [
+                { value: "po", text: "Oral" },
+                { value: "inhaled", text: "Inhaled" },
+                { value: "sc", text: "Subcutaneous" },
+                { value: "topical", text: "Topical" },
+              ],
+              defaultValue: "po",
+            },
+            {
+              type: "boolean",
+              name: "isOpioid",
+              title: "Opioid",
+              startWithNewLine: false,
+              // Answered by the row itself for the three that are.
+              setValueIf: "{row.drugName} anyof ['hydrocodone', 'oxycodone', 'tramadol']",
+              setValueExpression: "true",
+            },
+            {
+              type: "dropdown",
+              name: "mmeFactor",
+              title: "MME factor",
+              visibleIf: "{row.isOpioid} = true",
+              choices: [
+                { value: 1, text: "1 — hydrocodone / morphine" },
+                { value: 1.5, text: "1.5 — oxycodone" },
+                { value: 0.2, text: "0.2 — tramadol" },
+              ],
+            },
+            {
+              type: "boolean",
               name: "continueMed",
               title: "Continue",
-              cellType: "boolean",
+              startWithNewLine: false,
               defaultValue: true,
             },
           ],

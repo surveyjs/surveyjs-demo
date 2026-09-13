@@ -2,7 +2,7 @@
 
 This example shows how to use Next.js along with the [SurveyJS Form Library](https://surveyjs.io/form-library/documentation/overview) and [Survey Creator](https://surveyjs.io/survey-creator/documentation/overview): complex forms are defined as JSON, edited in the visual designer, rendered on the server by the App Router, and styled with [shadcn/ui](https://ui.shadcn.com) through the SurveyJS theme adapter.
 
-Survey Creator is a commercial product. Put your license key in `NEXTJS_PUBLIC_SLK` (copy `.env.example` to `.env`) — it is applied in [src/lib/surveyjs-license.ts](src/lib/surveyjs-license.ts); without it the designer shows a watermark.
+Survey Creator is a commercial product. Put your license key in `SURVEYJS_KEY` (copy `.env.example` to `.env`) — it is applied in [src/lib/surveyjs-license.ts](src/lib/surveyjs-license.ts); without it the designer shows a watermark.
 
 ## Deploy your own
 
@@ -167,7 +167,7 @@ Copy [.env.example](.env.example) to `.env` and fill in what you need — `.env`
 
 | Variable | What it does |
 | --- | --- |
-| `NEXTJS_PUBLIC_SLK` | SurveyJS license key for Creator, Dashboard and PDF Generator. Without it they work but show an alert banner or a watermark. Applied in [surveyjs-license.ts](src/lib/surveyjs-license.ts). |
+| `SURVEYJS_KEY` | SurveyJS license key for Creator, Dashboard and PDF Generator. Without it they work but show an alert banner or a watermark. Applied in [surveyjs-license.ts](src/lib/surveyjs-license.ts). |
 | `OPENAI_API_KEY` | Enables `/api/extract` through OpenAI. |
 | `ANTHROPIC_API_KEY` | Enables `/api/extract` through Anthropic. Used when no OpenAI key is set. |
 | `EXTRACTOR_MODEL` | Overrides the model (defaults: `gpt-4o`, `claude-sonnet-5`). |

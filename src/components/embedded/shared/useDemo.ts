@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SurveyData, SurveyJSON } from "@/schemas";
 import { loadSurveyJson } from "@/storage/survey-json";
-import { exportSurveyToPdf } from "@/lib/pdf-export";
-import { analyticsHref, configureHref } from "@/lib/routes";
+import { configureHref } from "@/lib/routes";
+import { features } from "@/features";
 import { DEFAULT_BRAND_ID, applyBrand, getBrand, type DemoSurvey } from "./demo-controls";
 import { accountName, type DemoRosterEntry, type DemoUser } from "./demo-accounts";
 
@@ -55,19 +55,23 @@ export interface Demo {
    *
    * Every demo passes this to `EmbeddedSurvey`'s `onDataChange`. It is a ref
    * rather than state on purpose: a PDF needs the latest answers, and nothing on
-   * the page needs to re-render because somebody typed.
+   * the page needs to re-render because somebody typed. In an edition without a
+   * PDF export nothing reads it, and it costs one assignment per change.
    */
   readonly trackAnswers: (data: SurveyData) => void;
   readonly dockProps: {
     onPrefill: () => void;
     onReset: () => void;
     onEditUser: () => void;
-    /** Downloads the form, with whatever has been answered, as a PDF. */
-    onExportPdf: () => void;
+    /**
+     * Downloads the form, with whatever has been answered, as a PDF. Undefined
+     * when the edition provides no PDF export.
+     */
+    onExportPdf?: () => void;
     /** The one page this form's JSON is edited on. */
     configureHref: string;
-    /** The dashboard for this form's responses. */
-    analyticsHref: string;
+    /** The dashboard for this form's responses, in editions that ship one. */
+    analyticsHref?: string;
     /** The users the admin keeps for this demo, by display name. */
     users: readonly { id: string; name: string }[];
     activeUserId: string;
@@ -244,8 +248,12 @@ export function useDemo({
     answers.current = data;
   }, []);
 
-  const exportPdf = useCallback(() => {
-    void exportSurveyToPdf(json, { label: survey.label, data: answers.current });
+  const exportPdf = useMemo(() => {
+    const exportSurvey = features.exportPdf;
+    if (!exportSurvey) return undefined;
+    return () => {
+      void exportSurvey(json, { label: survey.label, data: answers.current });
+    };
   }, [json, survey.label]);
 
   const restart = useCallback(() => {
@@ -322,7 +330,7 @@ export function useDemo({
       onEditUser: () => setUserOpen((open) => !open),
       onExportPdf: exportPdf,
       configureHref: href,
-      analyticsHref: analyticsHref(survey.id),
+      analyticsHref: features.analyticsHref?.(survey.id),
       users: userOptions,
       activeUserId: activeRecord.id,
       onSelectUser: selectUser,

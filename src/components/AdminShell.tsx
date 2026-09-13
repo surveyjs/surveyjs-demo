@@ -10,6 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { features } from "@/features";
 import { Sidebar } from "./Sidebar";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 
@@ -23,12 +24,12 @@ function Brand() {
           <LayersIcon className="size-4" />
         </span>
         <span className="truncate text-sm font-semibold">
-          SurveyJS + Next.js Template
+          {features.brand.title}
         </span>
       </div>
       <span className="hidden shrink-0 items-center gap-1.5 sm:flex">
         <span className="bg-secondary text-secondary-foreground rounded-full px-2 py-0.5 text-xs font-medium">
-          Creator
+          {features.brand.badge}
         </span>
         <span className="bg-secondary text-secondary-foreground rounded-full px-2 py-0.5 text-xs font-medium">
           shadcn/ui
@@ -50,12 +51,23 @@ function Brand() {
   );
 }
 
+/**
+ * The admin chrome: the top bar, the sidebar and the page between them.
+ *
+ * The full edition changes only the edition config (`@/features`), not this
+ * file. The title, badge, source link and cross-link come from there, and
+ * `data-edition` on the header lets an edition shift the layout with Tailwind
+ * `data-[edition=full]:` variants instead of editing the markup.
+ */
 export function AdminShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="bg-background text-foreground flex h-svh min-h-svh flex-col">
-      <header className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b px-4 backdrop-blur">
+      <header
+        data-edition={features.edition}
+        className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b px-4 backdrop-blur"
+      >
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
             <Button
@@ -82,9 +94,19 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </div>
 
         <div className="ml-auto flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="gap-1" asChild>
+            <a
+              href={features.brand.otherEdition.href}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {features.brand.otherEdition.label}
+              <ArrowUpRightIcon className="size-3.5" />
+            </a>
+          </Button>
           <Button variant="ghost" size="sm" asChild>
             <a
-              href="https://github.com/surveyjs/surveyjs-nextjs"
+              href={features.brand.sourceUrl}
               target="_blank"
               rel="noreferrer"
             >

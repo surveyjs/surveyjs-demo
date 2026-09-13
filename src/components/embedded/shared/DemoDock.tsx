@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import {
   ChartColumnIcon,
   ChevronDownIcon,
+  Code2Icon,
   FileDownIcon,
   LayersIcon,
   MoonIcon,
@@ -14,6 +15,7 @@ import {
   UserRoundIcon,
   UsersRoundIcon,
   WandSparklesIcon,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,22 +28,29 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { mergeTailwindClasses } from "@/lib/utils";
+import { features, type Features } from "@/features";
 
 /** Where the demos came from — the template's own admin shell. */
 const HOME = "/claims";
+
+/** The edition config names an icon; React lives here, not in the config. */
+const DESIGNER_ICONS: Record<Features["designer"]["icon"], LucideIcon> = {
+  json: Code2Icon,
+  designer: PencilRulerIcon,
+};
 
 /**
  * The reviewer's toolbar, floating over the mock site.
  *
  * Every control exists to make a single claim checkable:
  *
- *  - **Open in Creator** — the form is a JSON document, and Survey Creator is
- *    where it is edited: one designer for every form in the template. What is
- *    saved there is what this page renders, which is the round trip a buyer is
- *    asking about;
+ *  - **The editor link** (`features.designer`) — the form is a JSON document,
+ *    edited in one place that covers every form in the template. What is saved
+ *    there is what this page renders, which is the round trip a buyer is asking
+ *    about;
  *  - **Prefill / Reset** — so the rest can be shown on a filled form at once;
- *  - **PDF / Analytics** — the same definition as a document, and the same
- *    definition as a dashboard: one form, three products;
+ *  - **PDF / Analytics**, in editions that ship them — the same definition as a
+ *    document, and the same definition as a dashboard: one form, three products;
  *  - **Login as** — the demo's preset users. The same definition, a different
  *    person, and the form changes shape;
  *  - **Edit the user** — that person's record in a popup, whose editor is itself
@@ -73,12 +82,15 @@ export function DemoDock({
   onPrefill: () => void;
   onReset: () => void;
   onEditUser: () => void;
-  /** Downloads the form, with whatever has been answered, as a PDF. */
-  onExportPdf: () => void;
+  /**
+   * Downloads the form, with whatever has been answered, as a PDF. No button
+   * renders without it.
+   */
+  onExportPdf?: () => void;
   /** The one page this form's JSON is edited on. */
   configureHref: string;
-  /** The dashboard for this form's responses. */
-  analyticsHref: string;
+  /** The dashboard for this form's responses. No link renders without it. */
+  analyticsHref?: string;
   /** The users the admin keeps for this demo. One is the shipped default. */
   users: readonly { id: string; name: string }[];
   activeUserId: string;
@@ -106,6 +118,7 @@ export function DemoDock({
   );
   const activeUser =
     users.find((option) => option.id === activeUserId) ?? users[0];
+  const DesignerIcon = DESIGNER_ICONS[features.designer.icon];
 
   return (
     // One row, as wide as its contents: every label here can truncate, so a
@@ -137,12 +150,9 @@ export function DemoDock({
         size="sm"
         className="demo-brand-bg text-primary-foreground min-w-0 gap-1.5 rounded-full font-semibold shadow-sm hover:opacity-90"
       >
-        <a
-          href={configureHref}
-          title="Open this form in Survey Creator — the one designer every form in the template is edited in"
-        >
-          <PencilRulerIcon />
-          <span className="truncate">Open in Creator</span>
+        <a href={configureHref} title={features.designer.hint}>
+          <DesignerIcon />
+          <span className="truncate">{features.designer.label}</span>
         </a>
       </Button>
 
@@ -168,31 +178,35 @@ export function DemoDock({
         <span className="hidden xl:inline">Reset</span>
       </Button>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        className="shrink-0 gap-1.5 rounded-full"
-        title="Download this form, with the answers so far, as a PDF"
-        onClick={onExportPdf}
-      >
-        <FileDownIcon />
-        <span className="hidden xl:inline">Save to PDF</span>
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="sm"
-        className="shrink-0 gap-1.5 rounded-full"
-        asChild
-      >
-        <a
-          href={analyticsHref}
-          title="Charts built from this form's responses — SurveyJS Dashboard reads the same definition"
+      {onExportPdf && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="shrink-0 gap-1.5 rounded-full"
+          title="Download this form, with the answers so far, as a PDF"
+          onClick={onExportPdf}
         >
-          <ChartColumnIcon />
-          <span className="hidden xl:inline">Analytics</span>
-        </a>
-      </Button>
+          <FileDownIcon />
+          <span className="hidden xl:inline">Save to PDF</span>
+        </Button>
+      )}
+
+      {analyticsHref && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="shrink-0 gap-1.5 rounded-full"
+          asChild
+        >
+          <a
+            href={analyticsHref}
+            title="Charts built from this form's responses — SurveyJS Dashboard reads the same definition"
+          >
+            <ChartColumnIcon />
+            <span className="hidden xl:inline">Analytics</span>
+          </a>
+        </Button>
+      )}
 
       {divider}
 
