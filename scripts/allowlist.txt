@@ -1,0 +1,26 @@
+# Paths that may exist in, or differ from, the MIT edition.
+# Everything not listed here is a byte-for-byte copy of mit/main.
+# Glob syntax: * matches within one path segment, ** matches any depth.
+
+.mit-base
+scripts/allowlist.txt
+scripts/mit-only.txt
+scripts/mit-sync.mjs
+package.json
+package-lock.json
+LICENSE
+README.md
+CLAUDE.md
+.env.example
+src/features/index.ts
+src/features/full/**
+e2e/analytics.spec.ts
+e2e/creator.spec.ts
+e2e/warm-dev-routes.ts
+src/app/analytics/**
+src/analytics/**
+src/components/analytics/**
+src/components/configure/CreatorPane.tsx
+src/components/configure/SurveyDesigner.tsx
+src/lib/pdf-export.ts
+src/lib/surveyjs-license.ts

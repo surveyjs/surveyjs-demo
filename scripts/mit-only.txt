@@ -1,0 +1,13 @@
+# Paths that exist in the MIT edition and are intentionally absent here.
+# The sync never copies them, and the identity check ignores them.
+#
+# Everything below `scripts/` reflects the state of this repository as found,
+# not a settled decision. See CLAUDE.md.
+
+scripts/check-mit-pure.mjs
+e2e/configure.spec.ts
+e2e/lint.spec.ts
+src/components/configure/JsonWorkbench.tsx
+src/components/JsonEditor.tsx
+src/components/lint/**
+src/lib/lint/**
