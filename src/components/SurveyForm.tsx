@@ -12,6 +12,7 @@ import {
   type SurveyMode,
 } from "@/schemas";
 import { features } from "@/features";
+import "@/lib/surveyjs-license";
 import { loadSurveyJson } from "@/storage/survey-json";
 import { submitResult } from "@/storage/survey-results";
 import { FormCompleted } from "./FormCompleted";

@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { Survey } from "survey-react-ui";
 import type { Model } from "survey-core";
 import { createSurveyModel, type SurveyData, type SurveyJSON } from "@/schemas";
+import "@/lib/surveyjs-license";
 import { mergeTailwindClasses } from "@/lib/utils";
 
 import "survey-core/survey-core.css";
