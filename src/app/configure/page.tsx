@@ -1,12 +1,24 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { SurveyDesigner } from "@/components/configure/SurveyDesigner";
+import { getFormEntry } from "@/components/configure/forms";
+import { configureHref } from "@/lib/routes";
+import { formToolMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Form designer — SurveyJS Creator + Next.js",
-  description:
-    "Edit any form in the template in Survey Creator — designer, JSON, logic, preview and theme — then open the page it actually lives in.",
-};
+/**
+ * Titled after the page the chosen form lives on, "<page title> — Customize".
+ * Reading `searchParams` renders this route per request; `htmlLimitedBots` in
+ * `next.config.mjs` keeps its metadata in the `<head>` all the same.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ form?: string | string[] }>;
+}): Promise<Metadata> {
+  const { form } = await searchParams;
+  const entry = getFormEntry(typeof form === "string" ? form : undefined);
+  return formToolMetadata(entry.href, "Customize", configureHref(entry.id));
+}
 
 /**
  * The one designer in the template, for every form in it.

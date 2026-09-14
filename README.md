@@ -172,6 +172,9 @@ Copy [.env.example](.env.example) to `.env` and fill in what you need — `.env`
 | `OPENAI_API_KEY` | Enables `/api/extract` through OpenAI. |
 | `ANTHROPIC_API_KEY` | Enables `/api/extract` through Anthropic. Used when no OpenAI key is set. |
 | `EXTRACTOR_MODEL` | Overrides the model (defaults: `gpt-4o`, `claude-sonnet-5`). |
+| `NEXT_PUBLIC_SITE_URL` | This deployment's URL. Canonical links and Open Graph URLs are built from it. |
+| `NEXT_PUBLIC_CANONICAL_URL` | Optional. The host canonical links point at, when it is not this one. |
+| `NEXT_PUBLIC_INDEXABLE` | `false` adds `noindex` to every page and disallows crawling in `robots.txt`. |
 
 Extraction needs one of the two provider keys, not both: `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. If both are set, OpenAI is the one used.
 

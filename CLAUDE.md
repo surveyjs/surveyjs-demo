@@ -31,6 +31,19 @@ The files the full edition implements still live at their historical paths, not 
 - `/api/lint` (`src/app/api/lint/route.ts`, `src/lib/lint/lint-survey.ts`) is the shared server route. It is not edited here, and `e2e/lint-api.spec.ts` runs in both editions.
 - The Monaco front end (`JsonWorkbench`, `StaticAnalysisBar`, `monaco-adapter.ts`) is copied here and used on one route: `/definition`, the shared shell page that shows any form as JSON with the linter. `/configure` is still Survey Creator.
 
+## Page metadata
+
+Titles, descriptions, canonicals and social tags come from `src/lib/metadata.ts`, which is shared code (see the MIT edition's `CLAUDE.md`, **Page metadata**). The copy is written once there. This edition's text is chosen by `edition: "full"` in `src/features/index.ts`: no `(MIT)` in the title suffix, and the root description that names the designer, PDF export and dashboards. Do not add strings here. The two allowlisted routes, `src/app/configure/page.tsx` and `src/app/analytics/page.tsx`, call the shared `formToolMetadata`, which titles them "<form's page title> — Customize" and "— Results".
+
+### Canonicals and indexing: an open decision
+
+Both hosts serve the same routes. Every page is canonical to itself on `NEXT_PUBLIC_CANONICAL_URL`, which defaults to `NEXT_PUBLIC_SITE_URL`. `NEXT_PUBLIC_INDEXABLE=false` adds `noindex, follow` and a `robots.txt` that disallows crawling. Nothing sets it to `false` today.
+
+**The site owner has not decided between two options.** The code supports both, and choosing one is a deployment setting, not a code change:
+
+1. **Both editions indexed** (current). Each host is canonical to itself. The descriptions differ meaningfully, and "SurveyJS MIT" is a real query.
+2. **This host wins every query.** On the MIT host, set `NEXT_PUBLIC_CANONICAL_URL=https://app.demos.surveyjs.io`, so its canonicals point here. Nothing changes on this host. `/analytics` has no MIT counterpart, so it is unaffected.
+
 ## Syncing
 
 The two repositories have **unrelated git histories** on purpose. Never merge or rebase one onto the other; the sync is a copy.
@@ -65,7 +78,7 @@ It fails, listing every managed path in the working tree that differs from `mit/
 
 ## Environment
 
-`.env.example` arrives from the MIT edition and documents every key; copy it to `.env.local`. The one that matters here is `SURVEYJS_KEY`, the SurveyJS license key: when it is set, `src/lib/surveyjs-license.ts` applies it, and it unlocks Survey Creator, the PDF generator and the dashboard. Without it those three still run, and mark their output. See `.env.example` for the rest.
+`.env.example` arrives from the MIT edition and documents every key; copy it to `.env.local`. The one that matters here is `SURVEYJS_KEY`, the SurveyJS license key: when it is set, `src/lib/surveyjs-license.ts` applies it, and it unlocks Survey Creator, the PDF generator and the dashboard. Without it those three still run, and mark their output. On a deployment, also set `NEXT_PUBLIC_SITE_URL` to this host, or canonicals say `http://localhost:3000`. See `.env.example` for the rest.
 
 ## Adding a commercial feature
 
