@@ -1,15 +1,10 @@
-import type { SurveyData } from "../types";
-
-/** One stored submission: an id plus the survey response data. */
-export interface SurveyResult {
-  readonly id: string;
-  readonly data: SurveyData;
-}
+import type { SurveyResult } from "../types";
 
 /**
  * Seed/demo records for the insurance-claim CRUD entity, shaped to match
- * `insuranceClaimJson` question names - which are the CMS-1500 boxes. The
- * Records list/detail pages read these.
+ * `insuranceClaimJson` question names - which are the CMS-1500 boxes. Storage
+ * seeds the `claims` collection from these, through
+ * `src/schemas/collections/insurance-claim.ts`.
  */
 export const insuranceClaimSeed: SurveyResult[] = [
   {

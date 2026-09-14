@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   ChartColumnIcon,
@@ -17,18 +18,22 @@ const DESIGNER_ICONS: Record<Features["designer"]["icon"], LucideIcon> = {
 /**
  * The heading over a form, and the places it leads: the editor this form is
  * edited in, and — in editions that ship one — the dashboard its answers land in.
+ * A records page puts its own actions for the open record first, in `actions`.
  */
 export function PageHeader({
   title,
   description,
   configureHref,
   analyticsHref,
+  actions,
 }: {
   title: string;
   description: string;
   configureHref?: string;
   /** The dashboard for this form. Pages pass `features.analyticsHref?.(id)`. */
   analyticsHref?: string;
+  /** Rendered before the analytics and editor buttons: a records page's switchers and PDF. */
+  actions?: ReactNode;
 }) {
   const DesignerIcon = DESIGNER_ICONS[features.designer.icon];
 
@@ -39,6 +44,7 @@ export function PageHeader({
         <p className="text-muted-foreground mt-1 text-sm">{description}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
+        {actions}
         {analyticsHref && (
           <Button asChild variant="outline" size="sm" className="gap-2">
             <Link href={analyticsHref}>

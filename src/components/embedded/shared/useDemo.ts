@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SurveyData, SurveyJSON } from "@/schemas";
 import { loadSurveyJson } from "@/storage/survey-json";
 import { configureHref } from "@/lib/routes";
+import { stableJson } from "@/lib/utils";
 import { features } from "@/features";
 import { DEFAULT_BRAND_ID, applyBrand, getBrand, type DemoSurvey } from "./demo-controls";
 import { accountName, type DemoRosterEntry, type DemoUser } from "./demo-accounts";
@@ -95,24 +96,6 @@ export interface Demo {
 }
 
 const DEBOUNCE_MS = 400;
-
-/**
- * Key-order-insensitive serialisation, for "has this been edited?".
- *
- * A survey model rebuilds its data in question order, which is not the order the
- * defaults were written in — comparing raw JSON would report every account as
- * edited the moment the editor mounted.
- */
-function stableJson(value: SurveyData): string {
-  return JSON.stringify(
-    Object.keys(value)
-      .sort()
-      .reduce<Record<string, unknown>>((acc, key) => {
-        acc[key] = value[key];
-        return acc;
-      }, {}),
-  );
-}
 
 export function useDemo({
   survey,

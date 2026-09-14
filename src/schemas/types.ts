@@ -25,3 +25,16 @@ export interface SchemaDefinition {
   /** The SurveyJS V3 JSON. Replace freely with real CMS-1500 / intake JSON. */
   readonly json: SurveyJSON;
 }
+
+/** One stored submission, as a seed writes it: an id plus the survey response data. */
+export interface SurveyResult {
+  readonly id: string;
+  readonly data: SurveyData;
+}
+
+/** Whoever the page is rendered for. `name` is what the switcher shows; the rest is the page's business. */
+export interface SessionUser {
+  readonly id: string;
+  readonly name: string;
+  readonly [key: string]: unknown;
+}

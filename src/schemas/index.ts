@@ -1,4 +1,11 @@
-export type { SurveyJSON, SurveyData, SurveyMode, SchemaDefinition } from "./types";
+export type {
+  SurveyJSON,
+  SurveyData,
+  SurveyMode,
+  SchemaDefinition,
+  SurveyResult,
+  SessionUser,
+} from "./types";
 
 export { checkoutJson, checkoutSchema } from "./checkout";
 export { clinicVisitJson, clinicVisitSchema } from "./clinic-visit";
@@ -21,7 +28,20 @@ export { clinicVisitSample } from "./data/clinic-visit-seed";
 export { customerSatisfactionSample } from "./data/customer-satisfaction-seed";
 export { planFinderSample } from "./data/plan-finder-seed";
 export { encounterNoteSample } from "./data/encounter-note-seed";
-export { insuranceClaimSeed, type SurveyResult } from "./data/insurance-claim-seed";
+export { insuranceClaimSeed } from "./data/insurance-claim-seed";
+
+export {
+  recordCollections,
+  getRecordCollection,
+  sortRows,
+  recordTitle,
+  type ColumnValue,
+  type RecordColumns,
+  type RecordColumn,
+  type RecordRow,
+  type StoredRecord,
+  type RecordCollection,
+} from "./records";
 
 export {
   createSurveyModel,

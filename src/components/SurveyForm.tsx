@@ -57,6 +57,7 @@ export function SurveyForm({
   schema,
   schemaId,
   data,
+  variables,
   mode,
   onComplete,
   completedMessage = "Thank you. Your response has been submitted.",
@@ -73,10 +74,16 @@ export function SurveyForm({
    */
   schemaId?: string;
   data?: SurveyData;
+  /**
+   * Published to the model as survey variables, e.g. `{ user }` for a page
+   * rendered for the signed-in user. A new object rebuilds the model, so pass a
+   * memoized one.
+   */
+  variables?: Readonly<Record<string, unknown>>;
   mode?: SurveyMode;
   /**
    * Called instead of {@link submitResult} when the caller owns persistence
-   * itself, as the claims page does.
+   * itself, as the records pages do.
    */
   onComplete?: (data: SurveyData) => void;
   completedMessage?: string;
@@ -84,7 +91,7 @@ export function SurveyForm({
   prefillLabel?: string;
   /**
    * "Save as PDF" in the survey's own navigation bar, when the edition provides
-   * a PDF export. The claims page turns it off and keeps the form's navigation
+   * a PDF export. The records pages turn it off and keep the form's navigation
    * to its own actions.
    */
   pdfInNavigation?: boolean;
@@ -100,8 +107,8 @@ export function SurveyForm({
 
   // The two lines that are the actual integration.
   const model = useMemo(
-    () => createSurveyModel(definition, { data, mode }),
-    [definition, data, mode],
+    () => createSurveyModel(definition, { data, variables, mode }),
+    [definition, data, variables, mode],
   );
 
   useEffect(() => {
@@ -278,7 +285,7 @@ function usePdfAction(
 /**
  * What a completed form does with its answers.
  *
- * `onComplete` wins where the caller owns persistence — the claims page writes
+ * `onComplete` wins where the caller owns persistence — a records page writes
  * the record itself — and otherwise the answers go through the storage seam,
  * which is where a real app POSTs them. `resume` is the "Edit response" way back
  * from the thank-you screen.
