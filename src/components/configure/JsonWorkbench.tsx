@@ -19,7 +19,7 @@ import type { JsonEditorApi } from "@/components/JsonEditor";
 import { accountName, usedVariableKeys } from "@/components/embedded/shared/demo-accounts";
 import { loadSurveyJson, resetSurveyJson, saveSurveyJson } from "@/storage/survey-json";
 import type { SurveyJSON } from "@/schemas";
-import { type FormEntry, getFormEntry } from "./forms";
+import { FORMS, type FormEntry, getFormEntry } from "./forms";
 
 const JsonEditor = dynamic(() => import("@/components/JsonEditor"), {
   ssr: false,
@@ -76,12 +76,23 @@ function parse(source: string): { json?: SurveyJSON; error?: string } {
  * account in a popup — and this page only borrows the first of them, because a
  * form that reads `{user.firstName}` has to be rendered for somebody.
  */
-export function JsonWorkbench() {
+export function JsonWorkbench({
+  inShell = false,
+}: {
+  /**
+   * Rendered inside the admin shell, on `/definition`: the workbench fills the
+   * main area rather than the viewport, the shell's top bar supplies the theme
+   * switch and the way out, and a picker opens any form in the template.
+   * `/configure` leaves it off and stays the chromeless editor every form's
+   * editor button opens.
+   */
+  inShell?: boolean;
+}) {
   const params = useSearchParams();
   const form = getFormEntry(params.get("form"));
 
   // Keyed, so arriving at a different form starts from clean state.
-  return <FormWorkbench key={form.id} form={form} />;
+  return <FormWorkbench key={form.id} form={form} inShell={inShell} />;
 }
 
 /**
@@ -92,7 +103,7 @@ export function JsonWorkbench() {
  */
 const drafts = new Map<string, string>();
 
-function FormWorkbench({ form }: { form: FormEntry }) {
+function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean }) {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   // Read once: after this the draft is written, not read, so a later save or
@@ -211,27 +222,56 @@ function FormWorkbench({ form }: { form: FormEntry }) {
 
   const shown = wiredKeys.slice(0, 8);
   const rest = wiredKeys.length - shown.length;
+  // Inside the shell the page header holds the h1.
+  const Title = inShell ? "h2" : "h1";
 
   return (
-    <div className="bg-background text-foreground flex h-svh min-h-svh flex-col">
+    <div
+      className={
+        inShell
+          ? "bg-background text-foreground flex h-full min-h-[40rem] flex-col rounded-lg border"
+          : "bg-background text-foreground flex h-svh min-h-svh flex-col"
+      }
+    >
       <header className="flex shrink-0 flex-wrap items-center gap-3 border-b px-4 py-2.5 sm:px-6">
         <div className="min-w-0">
-          <h1 className="truncate text-sm font-semibold tracking-tight">
+          <Title className="truncate text-sm font-semibold tracking-tight">
             {form.label} — form JSON
-          </h1>
+          </Title>
           <p className="text-muted-foreground truncate text-xs">
             The whole form is this document. Edits are kept in this browser only.
           </p>
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" className="gap-2" asChild>
-            <a href={form.href}>
-              <ArrowLeftIcon />
-              <span className="hidden sm:inline">Back</span>
-            </a>
-          </Button>
-          <ThemeSwitcher />
+          {inShell ? (
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Form</span>
+              <select
+                className="border-input bg-background focus-visible:ring-ring/50 h-8 rounded-md border px-2 text-sm outline-none focus-visible:ring-[3px]"
+                value={form.id}
+                onChange={(event) =>
+                  router.replace(`/definition?form=${encodeURIComponent(event.target.value)}`)
+                }
+              >
+                {FORMS.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" className="gap-2" asChild>
+                <a href={form.href}>
+                  <ArrowLeftIcon />
+                  <span className="hidden sm:inline">Back</span>
+                </a>
+              </Button>
+              <ThemeSwitcher />
+            </>
+          )}
           <Button
             variant="outline"
             size="sm"

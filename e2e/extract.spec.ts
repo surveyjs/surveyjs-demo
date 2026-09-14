@@ -8,10 +8,10 @@ import { test, expect } from "@playwright/test";
  * input it rejects, so the suite costs nothing and needs no key.
  */
 
-test("the records page offers both sample documents and an upload", async ({
+test("the claims page offers both sample documents and an upload", async ({
   page,
 }) => {
-  await page.goto("/records");
+  await page.goto("/claims");
 
   await expect(
     page.getByRole("button", { name: "Add from PDF" }),
@@ -42,8 +42,8 @@ test("the records page offers both sample documents and an upload", async ({
   }
 });
 
-test("the claims form is a plain form, with no extraction on it", async ({ page }) => {
-  await page.goto("/claims");
+test("the starter form is a plain form, with no extraction on it", async ({ page }) => {
+  await page.goto("/starter");
 
   await expect(page.locator(".sd-root-modern").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /^Add from/ })).toHaveCount(0);
@@ -81,7 +81,7 @@ test("a document adds a filled draft to the list and opens it", async ({ page })
     }),
   );
 
-  await page.goto("/records");
+  await page.goto("/claims");
   await page.getByRole("button", { name: "Add from PDF" }).click();
 
   // In the list as a draft, selected, and open for correction - no Save first.

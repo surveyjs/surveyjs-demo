@@ -3,7 +3,7 @@ import { features } from "../src/features";
 
 test.skip(features.edition !== "mit", "the JSON workbench is the MIT edition's editor");
 
-const CONFIGURE = "/configure?form=medical-form";
+const CONFIGURE = "/configure?form=checkout";
 
 test("the status bar reports a clean schema and expands to the checks", async ({
   page,

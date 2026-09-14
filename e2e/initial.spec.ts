@@ -2,8 +2,7 @@ import { test, expect } from "@playwright/test";
 import { features } from "../src/features";
 
 const surveyRoutes = [
-  "/claims",
-  "/checkout",
+  "/starter",
   "/embedded/feedback",
   "/embedded/chart",
   "/embedded/clinic",
@@ -11,15 +10,17 @@ const surveyRoutes = [
 const allRoutes = [
   "/",
   ...surveyRoutes,
-  "/records",
+  "/claims",
+  "/leads",
+  "/definition",
   // The one editor, on a plain form and on a personalized one.
   "/configure",
   "/configure?form=clinic-visit",
 ];
 
-test("root redirects to the first survey", async ({ page }) => {
+test("root redirects to the first page", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/\/claims$/);
+  await expect(page).toHaveURL(/\/leads$/);
   await expect(page).toHaveTitle(/SurveyJS/i);
 });
 
@@ -79,8 +80,8 @@ test("opening another chart changes the note's shape", async ({ page }) => {
   });
 });
 
-test("/records renders the table and the SurveyJS editor", async ({ page }) => {
-  await page.goto("/records");
+test("/claims renders the table and the SurveyJS editor", async ({ page }) => {
+  await page.goto("/claims");
   await expect(page.getByRole("table").first()).toBeVisible();
   await page.getByRole("button", { name: "Edit" }).first().click();
   await expect(page.locator(".sd-root-modern").first()).toBeVisible();
@@ -108,10 +109,10 @@ test("a saved definition is what the pages render, and the server stays canonica
   //
   // Written once, not with `addInitScript`: an init script runs on every
   // navigation and would put the edit back after Reset below has removed it.
-  await page.goto("/claims");
+  await page.goto("/starter");
   await page.evaluate(() => {
     localStorage.setItem(
-      "sjs-demo-schema:medical-form",
+      "sjs-demo-schema:checkout",
       JSON.stringify({
         title: "Edited by the e2e test",
         elements: [{ type: "text", name: "q1", title: "A brand new question" }],
@@ -119,7 +120,7 @@ test("a saved definition is what the pages render, and the server stays canonica
     );
   });
 
-  await page.goto("/claims");
+  await page.goto("/starter");
   await expect(page.getByText("A brand new question")).toBeVisible();
 
   // The definition lives in localStorage, so a full reload keeps it — while the
@@ -127,25 +128,25 @@ test("a saved definition is what the pages render, and the server stays canonica
   const response = await page.reload();
   const serverHtml = await response!.text();
   expect(serverHtml).not.toContain("A brand new question");
-  expect(serverHtml).toContain("Patient Intake");
+  expect(serverHtml).toContain("Email address");
   await expect(page.getByText("A brand new question")).toBeVisible();
 
   // And the editor's Reset puts the shipped definition back. Reset is disabled
   // in the server markup and only enables once the saved definition has been
   // read, which happens after hydration — hence waiting for the editor first.
-  await page.goto("/configure?form=medical-form");
+  await page.goto("/configure?form=checkout");
   await expect(page.locator(features.designer.readySelector).first()).toBeVisible({
     timeout: 45_000,
   });
   await page.getByRole("button", { name: "Reset" }).click();
-  await page.goto("/claims");
+  await page.goto("/starter");
   // Asserted on the seam itself: the text check below would also pass in the
   // moment before a saved definition swaps in, so on its own it proves nothing.
   expect(
-    await page.evaluate(() => localStorage.getItem("sjs-demo-schema:medical-form")),
+    await page.evaluate(() => localStorage.getItem("sjs-demo-schema:checkout")),
   ).toBeNull();
   await expect(page.getByText("A brand new question")).toHaveCount(0);
-  await expect(page.getByText("Patient Intake").first()).toBeVisible();
+  await expect(page.getByText("Email address").first()).toBeVisible();
 
   expect(errors).toHaveLength(0);
 });
@@ -153,13 +154,13 @@ test("a saved definition is what the pages render, and the server stays canonica
 test("the spinner shows only for a visitor with a saved definition", async ({
   page,
 }) => {
-  await page.goto("/claims");
+  await page.goto("/starter");
   // Nothing saved: the server markup stays put, no loading state at all.
   await expect(page.locator('[role="status"]')).toHaveCount(0);
 
   await page.evaluate(() => {
     localStorage.setItem(
-      "sjs-demo-schema:medical-form",
+      "sjs-demo-schema:checkout",
       JSON.stringify({
         title: "Saved by the e2e test",
         elements: [{ type: "text", name: "q1", title: "A saved question" }],
@@ -316,7 +317,7 @@ test("the demo links home and outlines where SurveyJS draws", async ({ page }) =
 
   await expect(dock.getByRole("link", { name: "SurveyJS demos" })).toHaveAttribute(
     "href",
-    "/claims",
+    "/",
   );
 
   // The attribute goes on <html> for as long as the demo is on screen; what

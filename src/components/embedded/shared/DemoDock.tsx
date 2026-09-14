@@ -31,7 +31,7 @@ import { mergeTailwindClasses } from "@/lib/utils";
 import { features, type Features } from "@/features";
 
 /** Where the demos came from — the template's own admin shell. */
-const HOME = "/claims";
+const HOME = "/";
 
 /** The edition config names an icon; React lives here, not in the config. */
 const DESIGNER_ICONS: Record<Features["designer"]["icon"], LucideIcon> = {

@@ -13,7 +13,10 @@ import { features } from "../src/features";
  */
 const ROUTES = [
   "/",
+  "/leads",
   "/claims",
+  "/starter",
+  "/definition",
   "/configure?form=insurance-claim",
   ...(features.analyticsHref ? [features.analyticsHref("insurance-claim")] : []),
   "/embedded/feedback",

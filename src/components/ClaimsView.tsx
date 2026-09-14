@@ -9,7 +9,7 @@ import { exportClaimToCms1500 } from "@/lib/cms1500-pdf";
 import { configureHref } from "@/lib/routes";
 import { mergeTailwindClasses } from "@/lib/utils";
 import { SurveyForm } from "@/components/SurveyForm";
-import { ExtractFromDocument } from "@/components/records/ExtractFromDocument";
+import { ExtractFromDocument } from "@/components/claims/ExtractFromDocument";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -74,7 +74,7 @@ function nextClaimId(records: readonly SurveyResult[]): string {
   return `${prefix}${String(highest + 1).padStart(4, "0")}`;
 }
 
-export function RecordsView({
+export function ClaimsView({
   schema,
   schemaId,
   initialRecords,

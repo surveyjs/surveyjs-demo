@@ -10,14 +10,12 @@ export {
 export { encounterNoteJson, encounterNoteSchema } from "./encounter-note";
 export { insuranceClaimJson, insuranceClaimSchema } from "./insurance-claim";
 export { planFinderJson, planFinderSchema } from "./plan-finder";
-export { medicalFormJson, medicalFormSchema } from "./medical-form";
 export {
   patientRecordJson,
   CLINIC_PATIENTS,
   PATIENT_LANGUAGES,
 } from "./patient-record";
 
-export { medicalFormSample } from "./data/medical-form-seed";
 export { checkoutSample } from "./data/checkout-seed";
 export { clinicVisitSample } from "./data/clinic-visit-seed";
 export { customerSatisfactionSample } from "./data/customer-satisfaction-seed";
@@ -32,10 +30,19 @@ export {
 } from "./createSurveyModel";
 
 export {
+  navGroups,
   navItems,
+  navPages,
+  isNavPage,
+  opensInNewTab,
+  navHref,
+  getFormNavItem,
   getNavItem,
   isActiveRoute,
   type NavItem,
+  type NavPage,
+  type NavLink,
+  type NavGroup,
   type NavId,
 } from "./navigation";
 
@@ -45,7 +52,6 @@ import { encounterNoteSchema } from "./encounter-note";
 import { customerSatisfactionSchema } from "./customer-satisfaction";
 import { insuranceClaimSchema } from "./insurance-claim";
 import { planFinderSchema } from "./plan-finder";
-import { medicalFormSchema } from "./medical-form";
 import type { SchemaDefinition } from "./types";
 
 export const schemaRegistry: Record<string, SchemaDefinition> = {
@@ -55,7 +61,6 @@ export const schemaRegistry: Record<string, SchemaDefinition> = {
   [customerSatisfactionSchema.id]: customerSatisfactionSchema,
   [insuranceClaimSchema.id]: insuranceClaimSchema,
   [planFinderSchema.id]: planFinderSchema,
-  [medicalFormSchema.id]: medicalFormSchema,
 };
 
 export function getSchemaDefinition(id: string): SchemaDefinition {

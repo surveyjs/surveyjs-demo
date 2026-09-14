@@ -15,6 +15,25 @@ const nextConfig = {
   env: {
     SURVEYJS_KEY: process.env.SURVEYJS_KEY ?? "",
   },
+  // Legacy paths; links to them are out in the world. Temporary (307) on
+  // purpose: browsers cache a 308, and `/claims` has just changed meaning.
+  async redirects() {
+    return [
+      { source: "/checkout", destination: "/starter", permanent: false },
+      { source: "/records", destination: "/claims", permanent: false },
+      { source: "/checkout/configure", destination: "/configure?form=checkout", permanent: false },
+      {
+        source: "/records/configure",
+        destination: "/configure?form=insurance-claim",
+        permanent: false,
+      },
+      {
+        source: "/claims/configure",
+        destination: "/configure?form=insurance-claim",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

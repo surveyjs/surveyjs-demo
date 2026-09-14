@@ -18,7 +18,7 @@ import { getSchemaDefinition } from "@/schemas";
  *   OPENAI_API_KEY=…       # then EXTRACTOR_MODEL defaults to gpt-4o
  *   ANTHROPIC_API_KEY=…    # then EXTRACTOR_MODEL defaults to claude-sonnet-5
  *
- * With neither set the route answers 501 and the button on `/records` says so —
+ * With neither set the route answers 501 and the button on `/claims` says so —
  * the feature is wired, and it starts working the moment a key appears.
  */
 export const runtime = "nodejs";

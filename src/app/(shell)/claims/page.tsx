@@ -1,24 +1,25 @@
-import { getNavItem, getSchemaDefinition, medicalFormSample } from "@/schemas";
+import { getFormNavItem, getSchemaDefinition } from "@/schemas";
 import { PageHeader } from "@/components/PageHeader";
-import { SurveyForm } from "@/components/SurveyForm";
+import { ClaimsView } from "@/components/ClaimsView";
+import { listResults } from "@/storage/survey-results";
 import { features } from "@/features";
 
-const nav = getNavItem("claims");
+const nav = getFormNavItem("claims");
 
-export default function ClaimsPage() {
+export default async function ClaimsPage() {
+  const records = await listResults();
+
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div>
       <PageHeader
         title={nav.label}
         description={nav.description}
-        configureHref={`/configure?form=${nav.schemaId}`}
         analyticsHref={features.analyticsHref?.(nav.schemaId)}
       />
-      <SurveyForm
+      <ClaimsView
         schema={getSchemaDefinition(nav.schemaId).json}
         schemaId={nav.schemaId}
-        completedMessage="Thank you. Your intake form has been submitted."
-        prefillData={medicalFormSample}
+        initialRecords={records}
       />
     </div>
   );

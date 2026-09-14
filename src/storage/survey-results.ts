@@ -16,7 +16,7 @@ import { insuranceClaimSeed, type SurveyData, type SurveyResult } from "@/schema
  * The signatures are async already, so swapping the implementation does not
  * change a single call site.
  *
- * Where each one runs: `listResults` is called by the `/records` server
+ * Where each one runs: `listResults` is called by the `/claims` server
  * component, so the table and the form are in the HTML the server sends; the
  * three mutations are called from the client, the way they would hit your API.
  * Point them all at the same database and that split is what a real app does.
@@ -32,7 +32,7 @@ let records: SurveyResult[] = insuranceClaimSeed.map((record) => ({
   data: { ...record.data },
 }));
 
-/** All stored records, newest last. Backs the `/records` table. */
+/** All stored records, newest last. Backs the `/claims` table. */
 export async function listResults(): Promise<SurveyResult[]> {
   return records.map((record) => ({ ...record, data: { ...record.data } }));
 }
@@ -56,8 +56,8 @@ export async function deleteResult(id: string): Promise<void> {
 }
 
 /**
- * A visitor completed a form that is not part of the records CRUD — `/claims`
- * and `/checkout`. This is where a real app POSTs the submission.
+ * A visitor completed a form that is not part of the records CRUD — `/starter`.
+ * This is where a real app POSTs the submission.
  *
  * `schemaId` says which form it came from; `data` is keyed by question name and
  * already excludes answers hidden by `visibleIf` (see `clearInvisibleValues` in

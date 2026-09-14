@@ -19,6 +19,12 @@ export const SITE_LINKS = [
   { id: "docs", label: "Documentation", href: "https://surveyjs.io/backend-integration" },
 ] as const;
 
+/** The demos that live on their own hosts, linked from the sidebar and opened in a new tab. */
+export const EXTERNAL_URLS = {
+  fillTogether: "https://collaborative-form-filling.demos.surveyjs.io",
+  editTogether: "https://collaborative-form-editing.demos.surveyjs.io",
+} as const;
+
 /** Shared with the embedded demo dock later, so the two never word these differently. */
 export const PAGE_ACTIONS = {
   source: "Source of this page",

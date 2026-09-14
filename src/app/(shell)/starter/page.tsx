@@ -1,11 +1,11 @@
-import { checkoutSample, getNavItem, getSchemaDefinition } from "@/schemas";
+import { checkoutSample, getFormNavItem, getSchemaDefinition } from "@/schemas";
 import { PageHeader } from "@/components/PageHeader";
 import { SurveyForm } from "@/components/SurveyForm";
 import { features } from "@/features";
 
-const nav = getNavItem("checkout");
+const nav = getFormNavItem("starter");
 
-export default function CheckoutPage() {
+export default function StarterPage() {
   return (
     <div className="mx-auto w-full max-w-3xl">
       <PageHeader

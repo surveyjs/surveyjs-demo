@@ -27,13 +27,13 @@ async function setDefinition(page: import("@playwright/test").Page, json: unknow
 
 test("the editor opens on one form, with no chrome around it", async ({ page }) => {
   test.slow();
-  await page.goto("/configure?form=medical-form");
+  await page.goto("/configure?form=checkout");
   await waitForEditor(page);
 
   // No sidebar, and no way to wander into another form from here.
   await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Back" })).toHaveAttribute("href", "/claims");
-  await expect(page.getByText("Claims intake — form JSON")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back" })).toHaveAttribute("href", "/starter");
+  await expect(page.getByText("Checkout — form JSON")).toBeVisible();
 
   await setDefinition(page, {
     title: "Edited here",
@@ -100,7 +100,6 @@ test("a definition saved here is what the embedded site renders", async ({ page 
  * report dozens of unknown references and look broken to a reviewer.
  */
 for (const id of [
-  "medical-form",
   "checkout",
   "insurance-claim",
   "customer-satisfaction",

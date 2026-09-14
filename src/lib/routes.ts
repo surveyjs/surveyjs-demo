@@ -1,4 +1,4 @@
-import { navItems, type NavItem } from "@/schemas/navigation";
+import { navPages, type NavPage } from "@/schemas/navigation";
 
 /** The form editor, opened on one form — the link every demo points at. */
 export function configureHref(formId: string): string {
@@ -18,7 +18,7 @@ export function otherEditionHref(baseUrl: string, pathname: string): string {
 }
 
 /** Where each layout's routes live, relative to the repository root. */
-const LAYOUT_FOLDERS: Record<NavItem["layout"], string> = {
+const LAYOUT_FOLDERS: Record<NavPage["layout"], string> = {
   shell: "src/app/(shell)",
   embedded: "src/app",
 };
@@ -28,6 +28,6 @@ const LAYOUT_FOLDERS: Record<NavItem["layout"], string> = {
  * `undefined` for a path that is not a demo, and the link does not render.
  */
 export function pageSourcePath(pathname: string): string | undefined {
-  const item = navItems.find((entry) => entry.path === pathname);
+  const item = navPages.find((entry) => entry.path === pathname);
   return item && `${LAYOUT_FOLDERS[item.layout]}${item.path}/page.tsx`;
 }

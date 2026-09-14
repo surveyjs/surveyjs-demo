@@ -1,26 +1,26 @@
 import { test, expect, type Page } from "@playwright/test";
 import { features } from "../src/features";
-import { navItems } from "../src/schemas/navigation";
+import { navHref, navItems, navPages, opensInNewTab } from "../src/schemas/navigation";
 import { otherEditionHref, pageSourcePath } from "../src/lib/routes";
 import { DEMO_NAME, PAGE_ACTIONS, SITE_LINKS } from "../src/lib/site";
 
 /**
- * The admin top bar, in both editions. Routes come from `navItems`, so a new
+ * The admin top bar, in both editions. Routes come from `navPages`, so a new
  * page is covered by setting its `layout`.
  */
 
-const shellRoutes = navItems.filter((item) => item.layout === "shell").map((item) => item.path);
+const shellRoutes = navPages.filter((item) => item.layout === "shell").map((item) => item.path);
 const switchName = `${features.brand.otherEdition.label} →`;
 
 test.describe("helpers", () => {
   test("otherEditionHref keeps the host, the base path and the pathname", () => {
     expect(otherEditionHref("http://localhost:3001", "/claims")).toBe("http://localhost:3001/claims");
-    expect(otherEditionHref("https://full.example/", "/checkout")).toBe("https://full.example/checkout");
-    expect(otherEditionHref("https://example.com/demos/full", "/records")).toBe(
-      "https://example.com/demos/full/records",
+    expect(otherEditionHref("https://full.example/", "/starter")).toBe("https://full.example/starter");
+    expect(otherEditionHref("https://example.com/demos/full", "/claims")).toBe(
+      "https://example.com/demos/full/claims",
     );
-    expect(otherEditionHref("https://example.com/demos/full//", "/records")).toBe(
-      "https://example.com/demos/full/records",
+    expect(otherEditionHref("https://example.com/demos/full//", "/claims")).toBe(
+      "https://example.com/demos/full/claims",
     );
   });
 
@@ -34,7 +34,7 @@ test.describe("helpers", () => {
 test.describe("layout guard", () => {
   // `layout` only describes the page; the route's folder is what Next.js obeys.
   // This is what keeps the two in step.
-  for (const item of navItems) {
+  for (const item of navPages) {
     test(`${item.path} wears the ${item.layout} chrome`, async ({ page }) => {
       await page.goto(item.path);
       const sidebar = page.getByRole("navigation", { name: "Primary" });
@@ -48,12 +48,12 @@ test.describe("layout guard", () => {
     });
   }
 
-  test("the sidebar opens embedded demos in a new tab and shell pages in this one", async ({ page }) => {
+  test("the sidebar opens a row in a new tab exactly when opensInNewTab says so", async ({ page }) => {
     await page.goto("/claims");
     const sidebar = page.getByRole("navigation", { name: "Primary" });
     for (const item of navItems) {
-      const link = sidebar.locator(`a[href="${item.path}"]`);
-      if (item.layout === "embedded") {
+      const link = sidebar.locator(`a[href="${navHref(item)}"]`);
+      if (opensInNewTab(item)) {
         await expect(link).toHaveAttribute("target", "_blank");
       } else {
         await expect(link).not.toHaveAttribute("target", /.*/);

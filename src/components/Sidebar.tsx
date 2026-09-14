@@ -1,27 +1,42 @@
 "use client";
 
+import { useId } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ClipboardListIcon,
+  BracesIcon,
+  ContactIcon,
+  FileScanIcon,
   HeartPulseIcon,
   MessageSquareIcon,
+  PencilRulerIcon,
   ShoppingCartIcon,
   StethoscopeIcon,
-  SquareArrowOutUpRightIcon,
-  TableIcon,
+  UsersRoundIcon,
   type LucideIcon,
 } from "lucide-react";
-import { isActiveRoute, navItems, type NavId, type NavItem } from "@/schemas";
+import { Badge } from "@/components/ui/badge";
+import {
+  isActiveRoute,
+  navGroups,
+  navHref,
+  opensInNewTab,
+  type NavGroup,
+  type NavId,
+  type NavItem,
+} from "@/schemas";
 import { mergeTailwindClasses } from "@/lib/utils";
 
 const ICONS: Record<NavId, LucideIcon> = {
-  claims: ClipboardListIcon,
-  checkout: ShoppingCartIcon,
-  records: TableIcon,
+  leads: ContactIcon,
   embeddedFeedback: MessageSquareIcon,
   embeddedChart: StethoscopeIcon,
   embeddedClinic: HeartPulseIcon,
+  claims: FileScanIcon,
+  fillTogether: UsersRoundIcon,
+  editTogether: PencilRulerIcon,
+  starter: ShoppingCartIcon,
+  definition: BracesIcon,
 };
 
 const ITEM_CLASS =
@@ -29,6 +44,7 @@ const ITEM_CLASS =
 
 function ItemBody({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = ICONS[item.id];
+  const external = opensInNewTab(item);
   return (
     <>
       <Icon
@@ -40,10 +56,24 @@ function ItemBody({ item, active }: { item: NavItem; active: boolean }) {
         )}
       />
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="flex items-center gap-1.5">
+        <span className="flex items-center gap-1.5 font-medium">
           {item.label}
-          {item.layout === "embedded" && (
-            <SquareArrowOutUpRightIcon className="text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground size-3" />
+          {external && (
+            <>
+              <span
+                aria-hidden
+                className="text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground text-xs"
+              >
+                {/* U+FE0E: the text glyph, not the emoji some platforms substitute. */}
+                {"↗︎"}
+              </span>
+              <span className="sr-only">(opens in a new tab)</span>
+            </>
+          )}
+          {item.badge && (
+            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+              {item.badge}
+            </Badge>
           )}
         </span>
         <span className="text-muted-foreground text-xs leading-tight">
@@ -54,19 +84,32 @@ function ItemBody({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
-export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname();
+function Group({
+  group,
+  pathname,
+  onNavigate,
+}: {
+  group: NavGroup;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const labelId = useId();
 
   return (
-    <nav aria-label="Primary" className="flex flex-col gap-1 p-3">
-      {navItems.map((item) => {
-        const active = item.layout === "shell" && isActiveRoute(pathname, item.path);
-
-        if (item.layout === "embedded") {
+    <div role="group" aria-labelledby={labelId} className="flex flex-col gap-1">
+      <p
+        id={labelId}
+        className="text-muted-foreground px-3 pt-4 pb-1 text-[11px] font-medium tracking-wide uppercase"
+      >
+        {group.label}
+      </p>
+      {group.items.map((item) => {
+        // Another site, or a page pretending to be one: a new tab, never active.
+        if (opensInNewTab(item)) {
           return (
             <a
               key={item.id}
-              href={item.path}
+              href={navHref(item)}
               target="_blank"
               rel="noreferrer"
               onClick={onNavigate}
@@ -80,16 +123,17 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           );
         }
 
+        const active = isActiveRoute(pathname, navHref(item));
         return (
           <Link
             key={item.id}
-            href={item.path}
+            href={navHref(item)}
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={mergeTailwindClasses(
               ITEM_CLASS,
               active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
             )}
           >
@@ -97,6 +141,25 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </Link>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * The admin sidebar: one list for every edition, built from `navGroups`.
+ *
+ * Nothing here knows which edition it is in or special-cases a row. A row's
+ * data decides everything about it — where it goes, whether it opens in a new
+ * tab and carries the ↗, and whether it wears a badge.
+ */
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+
+  return (
+    <nav aria-label="Primary" className="flex flex-col px-3 pb-3">
+      {navGroups.map((group) => (
+        <Group key={group.id} group={group} pathname={pathname} onNavigate={onNavigate} />
+      ))}
     </nav>
   );
 }

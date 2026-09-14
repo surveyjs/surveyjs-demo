@@ -4,7 +4,6 @@ import {
   customerSatisfactionSample,
   encounterNoteSample,
   getSchemaDefinition,
-  medicalFormSample,
   type SurveyData,
   type SurveyJSON,
 } from "@/schemas";
@@ -23,7 +22,7 @@ import { features } from "@/features";
  * editor the edition ships, and it is a URL worth sharing for any form in the
  * template: `/configure?form=<id>`.
  *
- * `user` is what separates the two halves of the list. The three template forms
+ * `user` is what separates the two halves of the list. The two template forms
  * are plain: one definition, one form. The three embedded ones are rendered *for
  * somebody* — their JSON reads `{user.something}` — so the preview needs an
  * account to render for, and it uses the first of the demo's preset users. The
@@ -66,26 +65,18 @@ function form(
 }
 
 export const FORMS: readonly FormEntry[] = [
-  form("medical-form", "medical-form.ts", {
-    label: "Claims intake",
-    hint: "The patient-intake form on this admin's own Claims page.",
-    prefill: medicalFormSample,
-    href: "/claims",
-    previewLabel: "Save and quit",
-    embedded: false,
-  }),
   form("checkout", "checkout.ts", {
     label: "Checkout",
     hint: "A multi-step checkout wizard, validated page by page.",
     prefill: checkoutSample,
-    href: "/checkout",
+    href: "/starter",
     previewLabel: "Save and quit",
     embedded: false,
   }),
   form("insurance-claim", "insurance-claim.ts", {
     label: "Claim record",
-    hint: "The editor behind every row on the Records page.",
-    href: "/records",
+    hint: "The editor behind every row on the Claims page.",
+    href: "/claims",
     previewLabel: "Save and quit",
     embedded: false,
   }),

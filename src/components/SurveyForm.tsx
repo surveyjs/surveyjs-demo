@@ -51,7 +51,7 @@ import "@/styles/survey-overrides-base-nova.css";
  *
  * Server rendering needs nothing special: this component is a client component
  * because survey-react-ui uses browser APIs, but Next.js still prerenders it, so
- * the form is in the HTML the server sends. See `/claims` — view source.
+ * the form is in the HTML the server sends. See `/starter` — view source.
  */
 export function SurveyForm({
   schema,
@@ -76,7 +76,7 @@ export function SurveyForm({
   mode?: SurveyMode;
   /**
    * Called instead of {@link submitResult} when the caller owns persistence
-   * itself, as the records page does.
+   * itself, as the claims page does.
    */
   onComplete?: (data: SurveyData) => void;
   completedMessage?: string;
@@ -84,7 +84,7 @@ export function SurveyForm({
   prefillLabel?: string;
   /**
    * "Save as PDF" in the survey's own navigation bar, when the edition provides
-   * a PDF export. The records page turns it off and keeps the form's navigation
+   * a PDF export. The claims page turns it off and keeps the form's navigation
    * to its own actions.
    */
   pdfInNavigation?: boolean;
@@ -278,7 +278,7 @@ function usePdfAction(
 /**
  * What a completed form does with its answers.
  *
- * `onComplete` wins where the caller owns persistence — the records page writes
+ * `onComplete` wins where the caller owns persistence — the claims page writes
  * the record itself — and otherwise the answers go through the storage seam,
  * which is where a real app POSTs them. `resume` is the "Edit response" way back
  * from the thank-you screen.
