@@ -3,8 +3,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { ClaimsView } from "@/components/ClaimsView";
 import { listResults } from "@/storage/survey-results";
 import { features } from "@/features";
+import { pageMetadata } from "@/lib/metadata";
 
 const nav = getFormNavItem("claims");
+
+export const metadata = pageMetadata(nav.id);
 
 export default async function ClaimsPage() {
   const records = await listResults();

@@ -2,8 +2,11 @@ import { Suspense } from "react";
 import { getNavItem } from "@/schemas";
 import { PageHeader } from "@/components/PageHeader";
 import { JsonWorkbench } from "@/components/configure/JsonWorkbench";
+import { pageMetadata } from "@/lib/metadata";
 
 const nav = getNavItem("definition");
+
+export const metadata = pageMetadata(nav.id);
 
 /**
  * Any form in the template as JSON, with the linter under it, inside the admin

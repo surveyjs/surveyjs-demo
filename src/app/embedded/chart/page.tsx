@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
 import { ChartDemo, CHART_BRAND } from "@/components/embedded/chart/ChartDemo";
 import { DEMO_SURVEYS } from "@/components/embedded/shared/demo-surveys";
 import { brandBootScript } from "@/components/embedded/shared/demo-controls";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Ridgeline Chart — encounter note",
-  description:
-    "A clinician's workspace whose whole screen is one SurveyJS survey: eight pages, dynamic matrices with totals, calculated scores, file and camera capture, and a signed attestation.",
-};
+/** Named for the demo, not for the mock brand the page wears: this is what a shared link previews. */
+export const metadata = pageMetadata("embeddedChart");
 
 /**
  * Embedded demo: an internal clinical workspace, where the survey is the app.

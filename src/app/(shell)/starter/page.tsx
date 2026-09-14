@@ -2,8 +2,11 @@ import { checkoutSample, getFormNavItem, getSchemaDefinition } from "@/schemas";
 import { PageHeader } from "@/components/PageHeader";
 import { SurveyForm } from "@/components/SurveyForm";
 import { features } from "@/features";
+import { pageMetadata } from "@/lib/metadata";
 
 const nav = getFormNavItem("starter");
+
+export const metadata = pageMetadata(nav.id);
 
 export default function StarterPage() {
   return (

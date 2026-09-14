@@ -1,7 +1,10 @@
 import { getNavItem } from "@/schemas";
 import { NotImplemented } from "@/components/NotImplemented";
+import { pageMetadata } from "@/lib/metadata";
 
 const nav = getNavItem("leads");
+
+export const metadata = pageMetadata(nav.id);
 
 /** What the real page will show, once it is built. */
 const LEADS_FEATURES = [

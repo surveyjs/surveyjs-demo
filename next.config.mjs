@@ -6,6 +6,10 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: here,
+  // Every client gets page metadata in the <head>, not streamed after the body.
+  // Only /configure (and /analytics in the full edition) render per request,
+  // their metadata is cheap, and "view source" should show the real tags.
+  htmlLimitedBots: /.*/,
   // The SurveyJS commercial license key, read by src/lib/surveyjs-license.ts.
   //
   // SURVEYJS_KEY has no NEXT_PUBLIC_ prefix, so Next.js does not expose it to

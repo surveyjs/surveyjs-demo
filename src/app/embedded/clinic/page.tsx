@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
 import { RidgelineDemo, RIDGELINE_BRAND } from "@/components/embedded/clinic/RidgelineDemo";
 import { DEMO_SURVEYS } from "@/components/embedded/shared/demo-surveys";
 import { brandBootScript } from "@/components/embedded/shared/demo-controls";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Ridgeline Family Health — request an appointment",
-  description:
-    "A mock US clinic page whose SurveyJS appointment request arrives filled in from the patient's chart, estimates the copay and flags a needed referral as it is answered.",
-};
+/** Named for the demo, not for the mock brand the page wears: this is what a shared link previews. */
+export const metadata = pageMetadata("embeddedClinic");
 
 /**
  * Embedded demo: a US primary-care site whose public request form is rendered
