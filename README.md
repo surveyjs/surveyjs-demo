@@ -6,29 +6,29 @@ Survey Creator is a commercial product. Put your license key in `SURVEYJS_KEY` (
 
 ## Deploy your own
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsurveyjs%2Fsurveyjs-nextjs)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsurveyjs%2Fsurveyjs-demo)
 
 ## How to use
 
 Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init), [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/), or [pnpm](https://pnpm.io) to bootstrap the example:
 
 ```bash
-npx create-next-app --example "https://github.com/surveyjs/surveyjs-nextjs" surveyjs-nextjs-app
+npx create-next-app --example "https://github.com/surveyjs/surveyjs-demo" surveyjs-nextjs-app
 ```
 
 ```bash
-yarn create next-app --example "https://github.com/surveyjs/surveyjs-nextjs" surveyjs-nextjs-app
+yarn create next-app --example "https://github.com/surveyjs/surveyjs-demo" surveyjs-nextjs-app
 ```
 
 ```bash
-pnpm create next-app --example "https://github.com/surveyjs/surveyjs-nextjs" surveyjs-nextjs-app
+pnpm create next-app --example "https://github.com/surveyjs/surveyjs-demo" surveyjs-nextjs-app
 ```
 
 Or clone the repository directly:
 
 ```bash
-git clone https://github.com/surveyjs/surveyjs-nextjs.git
-cd surveyjs-nextjs
+git clone https://github.com/surveyjs/surveyjs-demo.git
+cd surveyjs-demo
 npm i
 npm run dev
 ```
@@ -188,7 +188,7 @@ npm run e2e:ui    # interactive runner
 
 ## Relation to the MIT edition
 
-This repository is a downstream of [surveyjs-nextjs-demo-mit](https://github.com/surveyjs/surveyjs-nextjs-demo-mit), the same application with `survey-core` and `survey-react-ui` only. This edition adds Survey Creator, PDF Generator and Dashboard.
+This repository is a downstream of [surveyjs-demo-mit](https://github.com/surveyjs/surveyjs-demo-mit), the same application with `survey-core` and `survey-react-ui` only. This edition adds Survey Creator, PDF Generator and Dashboard.
 
 Shared code is synchronized from the MIT edition and is not edited here. A change to it is made there and copied over, and a check fails if a shared file differs. See [CLAUDE.md](CLAUDE.md) for the allowlist of files this edition owns and for the sync command.
 

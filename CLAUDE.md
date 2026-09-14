@@ -1,6 +1,6 @@
 # SurveyJS + Next.js template — full edition
 
-This repository is a **downstream** of [surveyjs-nextjs-demo-mit](https://github.com/surveyjs/surveyjs-nextjs-demo-mit). It is the same application plus the three commercial SurveyJS products: Survey Creator, PDF Generator and Dashboard.
+This repository is a **downstream** of [surveyjs-demo-mit](https://github.com/surveyjs/surveyjs-demo-mit). It is the same application plus the three commercial SurveyJS products: Survey Creator, PDF Generator and Dashboard.
 
 Read that repository's `CLAUDE.md` for the application itself — the routes, the schemas, the storage seams, how to add a page. Everything it says is true here.
 
@@ -38,7 +38,7 @@ The two repositories have **unrelated git histories** on purpose. Never merge or
 Once per clone:
 
 ```
-git remote add mit https://github.com/surveyjs/surveyjs-nextjs-demo-mit
+git remote add mit https://github.com/surveyjs/surveyjs-demo-mit
 git fetch mit
 ```
 

@@ -5,7 +5,7 @@
  *   node scripts/mit-sync.mjs check [--no-fetch]
  *   node scripts/mit-sync.mjs apply [--dry-run]
  *
- * This repository is a downstream of surveyjs-nextjs-demo-mit. The two have
+ * This repository is a downstream of surveyjs-demo-mit. The two have
  * unrelated git histories on purpose: they are never merged. Every path that is
  * not listed in `scripts/allowlist.txt` is a byte-for-byte copy of the same path
  * in `mit/main`, and `apply` is what makes that true again after the MIT edition
@@ -13,7 +13,7 @@
  * never copied here.
  *
  * Run it from the repository root, with a remote named `mit` pointing at
- * https://github.com/surveyjs/surveyjs-nextjs-demo-mit. It never commits.
+ * https://github.com/surveyjs/surveyjs-demo-mit. It never commits.
  *
  * No dependencies, so it runs in CI right after checkout.
  */
@@ -130,7 +130,7 @@ function requireMitRef() {
   if (!ref) {
     fail(
       `No ${MIT_REF} in this clone. Add the remote once and fetch it:\n` +
-        "  git remote add mit https://github.com/surveyjs/surveyjs-nextjs-demo-mit\n" +
+        "  git remote add mit https://github.com/surveyjs/surveyjs-demo-mit\n" +
         "  git fetch mit",
     );
   }
