@@ -12,14 +12,12 @@ export type Edition = "mit" | "full";
 export interface Features {
   edition: Edition;
   brand: {
-    /** Title in the top bar. */
-    title: string;
-    /** Badge beside the title, e.g. "MIT" or "Creator". */
-    badge: string;
-    /** Where the "Source" button in the top bar goes. */
+    /** The edition pill in the top bar: "MIT" or "Full". */
+    editionLabel: string;
+    /** This edition's repository. The page-source link and forms.ts build on it. */
     sourceUrl: string;
-    /** The other edition of this template, linked from the top bar. */
-    otherEdition: { label: string; href: string };
+    /** The same app on the other host. The switch link keeps the pathname. */
+    otherEdition: { label: string; baseUrl: string };
   };
   designer: {
     /** Text of the button that opens a form in its editor. */

@@ -42,7 +42,7 @@ function ItemBody({ item, active }: { item: NavItem; active: boolean }) {
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="flex items-center gap-1.5">
           {item.label}
-          {item.openInNewTab && (
+          {item.layout === "embedded" && (
             <SquareArrowOutUpRightIcon className="text-sidebar-foreground/40 group-hover:text-sidebar-accent-foreground size-3" />
           )}
         </span>
@@ -60,9 +60,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav aria-label="Primary" className="flex flex-col gap-1 p-3">
       {navItems.map((item) => {
-        const active = !item.openInNewTab && isActiveRoute(pathname, item.path);
+        const active = item.layout === "shell" && isActiveRoute(pathname, item.path);
 
-        if (item.openInNewTab) {
+        if (item.layout === "embedded") {
           return (
             <a
               key={item.id}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { HowBuiltProvider } from "@/components/how-built/HowBuiltProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,15 +11,17 @@ export const metadata: Metadata = {
 };
 
 /**
- * Only the document and the theme live here. The admin chrome belongs to the
- * `(shell)` route group, so `/embedded` can render a page that looks like it
- * came from a different company altogether.
+ * Only the document, the theme and state every page shares live here. The admin
+ * chrome belongs to the `(shell)` route group, so `/embedded` can render a page
+ * that looks like it came from a different company altogether.
  */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <HowBuiltProvider>{children}</HowBuiltProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

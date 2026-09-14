@@ -16,10 +16,10 @@ export type { Edition, Features } from "./types";
 export const features: Features = {
   edition: "full",
   brand: {
-    title: "SurveyJS + Next.js Template",
-    badge: "Creator",
+    editionLabel: "Full",
     sourceUrl: "https://github.com/surveyjs/surveyjs-demo",
-    otherEdition: { label: "MIT edition", href: "https://github.com/surveyjs/surveyjs-demo-mit" },
+    // The MIT edition's host; the switch link appends the current pathname.
+    otherEdition: { label: "MIT edition", baseUrl: "https://app-mit.demos.surveyjs.io" },
   },
   designer: {
     label: "Open in Creator",

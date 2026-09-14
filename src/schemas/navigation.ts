@@ -13,11 +13,15 @@ export interface NavItem {
   readonly description: string;
   readonly schemaId: string;
   /**
-   * Open the route in a new browser tab instead of inside the admin shell. The
-   * embedded demos pretend to be somebody else's website, so they can't be
-   * framed by this template's chrome without losing the whole point.
+   * Which chrome the page wears. "shell": the admin top bar and sidebar, opened in
+   * the same tab; its route lives under `src/app/(shell)/`. "embedded": somebody
+   * else's website with the demo dock, no sidebar, opened in a new tab; its route
+   * lives under `src/app/embedded/`. The embedded demos pretend to be somebody
+   * else's website, so they can't be framed by this template's chrome without
+   * losing the whole point. The folder is what Next.js obeys, and
+   * `e2e/top-bar.spec.ts` fails when this value and the folder disagree.
    */
-  readonly openInNewTab?: boolean;
+  readonly layout: "shell" | "embedded";
 }
 
 export const navItems: readonly NavItem[] = [
@@ -27,6 +31,7 @@ export const navItems: readonly NavItem[] = [
     path: "/claims",
     description: "Patient intake / medical-insurance form.",
     schemaId: "medical-form",
+    layout: "shell",
   },
   {
     id: "checkout",
@@ -34,6 +39,7 @@ export const navItems: readonly NavItem[] = [
     path: "/checkout",
     description: "Multi-step checkout wizard.",
     schemaId: "checkout",
+    layout: "shell",
   },
   {
     id: "records",
@@ -41,6 +47,7 @@ export const navItems: readonly NavItem[] = [
     path: "/records",
     description: "Browse and edit insurance-claim records.",
     schemaId: "insurance-claim",
+    layout: "shell",
   },
   {
     id: "embeddedFeedback",
@@ -48,7 +55,7 @@ export const navItems: readonly NavItem[] = [
     path: "/embedded/feedback",
     description: "A satisfaction survey inside a product marketing site, addressed to the signed-in user.",
     schemaId: "customer-satisfaction",
-    openInNewTab: true,
+    layout: "embedded",
   },
   {
     id: "embeddedChart",
@@ -57,7 +64,7 @@ export const navItems: readonly NavItem[] = [
     description:
       "A doctor's workspace that is nothing but the survey: eight pages, matrices with totals, calculated scores and a signature.",
     schemaId: "encounter-note",
-    openInNewTab: true,
+    layout: "embedded",
   },
   {
     id: "embeddedClinic",
@@ -66,7 +73,7 @@ export const navItems: readonly NavItem[] = [
     description:
       "A US clinic page whose appointment form arrives already filled from the patient's chart.",
     schemaId: "clinic-visit",
-    openInNewTab: true,
+    layout: "embedded",
   },
 ] as const;
 
