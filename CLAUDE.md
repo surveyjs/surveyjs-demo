@@ -29,7 +29,7 @@ The files the full edition implements still live at their historical paths, not 
 
 - The lint UI here is Survey Creator's built-in one, running the same `survey-core/linter` rules as the MIT edition's status bar.
 - `/api/lint` (`src/app/api/lint/route.ts`, `src/lib/lint/lint-survey.ts`) is the shared server route. It is not edited here, and `e2e/lint-api.spec.ts` runs in both editions.
-- The Monaco front end (`StaticAnalysisBar`, `monaco-adapter.ts`) is copied here but not used.
+- The Monaco front end (`JsonWorkbench`, `StaticAnalysisBar`, `monaco-adapter.ts`) is copied here and used on one route: `/definition`, the shared shell page that shows any form as JSON with the linter. `/configure` is still Survey Creator.
 
 ## Syncing
 

@@ -17,13 +17,13 @@ async function waitForCreator(page: import("@playwright/test").Page) {
 
 test("the designer opens on one form, with no chrome around it", async ({ page }) => {
   test.slow();
-  await page.goto("/configure?form=medical-form");
+  await page.goto("/configure?form=checkout");
   await waitForCreator(page);
 
   // No sidebar, and no way to wander into another form from here.
   await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Back" })).toHaveAttribute("href", "/claims");
-  await expect(page.getByText("Claims intake — form designer")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back" })).toHaveAttribute("href", "/starter");
+  await expect(page.getByText("Checkout — form designer")).toBeVisible();
 });
 
 test("a personalized form names the user its preview is rendered for", async ({

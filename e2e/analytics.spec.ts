@@ -39,11 +39,11 @@ test("the demo toolbar carries Save to PDF and Analytics", async ({ page }) => {
 test("an admin page links to the dashboard, and the survey can save a PDF", async ({
   page,
 }) => {
-  await page.goto("/claims");
+  await page.goto("/starter");
 
   await expect(page.getByRole("link", { name: "View analytics" })).toHaveAttribute(
     "href",
-    "/analytics?form=medical-form",
+    "/analytics?form=checkout",
   );
   // The export sits in the survey's own navigation bar, next to Prefill.
   await expect(page.getByText("Save as PDF")).toBeVisible();

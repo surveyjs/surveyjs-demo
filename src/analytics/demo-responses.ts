@@ -166,7 +166,6 @@ const PRESETS: Record<string, AnalyticsPreset> = {
       "Stable chronic conditions, routine follow-up.",
     ],
   },
-  "medical-form": { responses: 220 },
   checkout: { responses: 200 },
   "insurance-claim": {
     responses: 240,
