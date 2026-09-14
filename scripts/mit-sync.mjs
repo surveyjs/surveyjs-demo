@@ -183,37 +183,51 @@ function readJsonFromRef(ref, path) {
 }
 
 /**
- * This repository's package.json is allowlisted, so nothing forces it to stay in
- * step with the MIT edition's. It still has to: the two ship the same app, and a
- * dependency that drifts here is a difference nobody chose.
+ * This repository's package.json is allowlisted, so the identity check does not
+ * cover it. It still has to stay in step: the two editions ship the same app, and
+ * a dependency that drifts here is a difference nobody chose. So the parts the MIT
+ * edition owns are checked here, and a mismatch fails:
+ *
+ * - every MIT dependency and devDependency is here, with the same spec;
+ * - `scripts` is identical.
+ *
+ * The only extras this edition may add are COMMERCIAL_PACKAGES. Any other extra is
+ * a warning, not a failure: it could be deliberate, but somebody should look.
  */
 function checkPackageJson() {
   const mine = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"));
   const theirs = readJsonFromRef(MIT_REF, "package.json");
-  if (!theirs) return [];
+  if (!theirs) fail(`Could not read package.json from ${MIT_REF}.`);
 
-  const notes = [];
+  const errors = [];
+  const warnings = [];
+  const show = (spec) => (spec === undefined ? "(missing)" : `"${spec}"`);
 
   for (const field of ["dependencies", "devDependencies"]) {
     const ours = mine[field] || {};
     const base = theirs[field] || {};
     for (const [name, spec] of Object.entries(base)) {
-      if (!(name in ours)) notes.push(`${field}: ${name} is in the MIT edition and missing here`);
-      else if (ours[name] !== spec)
-        notes.push(`${field}: ${name} is "${ours[name]}" here and "${spec}" in the MIT edition`);
+      if (ours[name] === spec) continue;
+      errors.push(`${field}: ${name}  mit ${show(spec)}  full ${show(ours[name])}`);
     }
     for (const name of Object.keys(ours)) {
-      if (name in base) continue;
-      if (COMMERCIAL_PACKAGES.includes(name)) continue;
-      notes.push(`${field}: ${name} is here and not in the MIT edition`);
+      if (name in base || COMMERCIAL_PACKAGES.includes(name)) continue;
+      warnings.push(`${field}: ${name} "${ours[name]}" is here and not in the MIT edition`);
     }
   }
 
-  const ourScripts = JSON.stringify(mine.scripts || {});
-  const theirScripts = JSON.stringify(theirs.scripts || {});
-  if (ourScripts !== theirScripts) notes.push("scripts: the two package.json script blocks differ");
+  const ourScripts = mine.scripts || {};
+  const theirScripts = theirs.scripts || {};
+  for (const name of new Set([...Object.keys(theirScripts), ...Object.keys(ourScripts)])) {
+    if (ourScripts[name] === theirScripts[name]) continue;
+    errors.push(`scripts: ${name}  mit ${show(theirScripts[name])}  full ${show(ourScripts[name])}`);
+  }
+  if (!errors.some((line) => line.startsWith("scripts:")) &&
+      JSON.stringify(ourScripts) !== JSON.stringify(theirScripts)) {
+    errors.push("scripts: the same scripts, in a different order");
+  }
 
-  return notes;
+  return { errors, warnings };
 }
 
 // --------------------------------------------------------------------- checks
@@ -224,11 +238,23 @@ function runCheck({ fetch }) {
 
   const { isManaged } = loadLists();
   const offenders = drift(isManaged);
-  const notes = checkPackageJson();
+  const packageJson = checkPackageJson();
 
-  if (notes.length) {
-    console.log("\nWarnings (package.json is allowlisted, so these do not fail the check):");
-    for (const note of notes) console.log(`  ! ${note}`);
+  if (packageJson.warnings.length) {
+    console.log(
+      "\nWarnings: package.json carries a dependency the MIT edition does not, and it is\n" +
+        `not one of ${COMMERCIAL_PACKAGES.join(", ")}:`,
+    );
+    for (const note of packageJson.warnings) console.log(`  ! ${note}`);
+  }
+
+  if (packageJson.errors.length) {
+    console.error("\npackage.json does not carry what the MIT edition's requires:\n");
+    for (const note of packageJson.errors) console.error(`  x ${note}`);
+    console.error(
+      "\nCopy the MIT edition's dependency specs and scripts into package.json, then\n" +
+        "run npm install.",
+    );
   }
 
   if (offenders.length) {
@@ -246,6 +272,8 @@ function runCheck({ fetch }) {
     process.exit(1);
   }
 
+  if (packageJson.errors.length) process.exit(1);
+
   console.log("identity check passed");
 }
 
@@ -254,7 +282,11 @@ function runCheck({ fetch }) {
 function runApply({ dryRun }) {
   const { isManaged } = loadLists();
 
-  const dirty = lines(git(["status", "--porcelain"]))
+  // Not lines(): trimming would eat the leading space of an unstaged " M path" and,
+  // with it, the first letter of the path.
+  const dirty = (git(["status", "--porcelain"]) || "")
+    .split("\n")
+    .filter(Boolean)
     .map((line) => ({ status: line.slice(0, 2).trim(), path: line.slice(3).replace(/^"|"$/g, "") }))
     .filter((entry) => entry.status !== "??" && isManaged(entry.path));
 

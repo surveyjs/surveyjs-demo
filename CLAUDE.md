@@ -19,11 +19,17 @@ Allowlisted today (see `scripts/allowlist.txt` for the file that actually decide
 - `src/app/analytics/**`, `src/analytics/**`, `src/components/analytics/**` — Dashboard
 - `e2e/creator.spec.ts`, `e2e/analytics.spec.ts`
 
-`package.json` is allowlisted but not free: it must be the MIT edition's plus `survey-creator-core`, `survey-creator-react`, `survey-pdf` and `survey-analytics`, with identical `devDependencies` and `scripts`. The check prints a warning for anything else.
+`package.json` is allowlisted but not free. Every MIT `dependency` and `devDependency` must be here with the same spec, and `scripts` must be identical, or the check **fails**. The only extras it may carry without comment are `survey-creator-core`, `survey-creator-react`, `survey-pdf` and `survey-analytics`. Any other extra prints a warning.
 
 `scripts/mit-only.txt` is the other side of the same coin: paths that exist in the MIT edition and are intentionally absent here, so the sync never copies them and the check never asks for them. It lists only `scripts/check-mit-pure.mjs`. This edition is a **superset** of the MIT one: the JSON workbench, the lint front end over Monaco and their specs are copied here like everything else, no route here uses them, and `e2e/configure.spec.ts` and `e2e/lint.spec.ts` skip themselves in this edition.
 
 The files the full edition implements still live at their historical paths, not under `src/features/full/` — `src/lib/surveyjs-license.ts` is one of them, and it is shared: the MIT edition carries the same file and never calls it.
+
+## Validation
+
+- The lint UI here is Survey Creator's built-in one, running the same `survey-core/linter` rules as the MIT edition's status bar.
+- `/api/lint` (`src/app/api/lint/route.ts`, `src/lib/lint/lint-survey.ts`) is the shared server route. It is not edited here, and `e2e/lint-api.spec.ts` runs in both editions.
+- The Monaco front end (`StaticAnalysisBar`, `monaco-adapter.ts`) is copied here but not used.
 
 ## Syncing
 
@@ -55,7 +61,7 @@ node scripts/mit-sync.mjs check              # fetches mit first
 node scripts/mit-sync.mjs check --no-fetch   # against the mit/main already fetched
 ```
 
-It fails, listing every managed path in the working tree that differs from `mit/main`: `A` only here, `M` edited here, `D` deleted here. `package.json` differences are printed as warnings and do not fail it. It runs in CI too — add the remote first, and make sure the checkout is not shallow.
+It fails, listing every managed path in the working tree that differs from `mit/main`: `A` only here, `M` edited here, `D` deleted here. It also fails on a `package.json` that misses or changes an MIT dependency, or whose `scripts` differ, printing the name and both specs. Extra dependencies other than the four commercial packages are printed as warnings. It runs in CI too — add the remote first, and make sure the checkout is not shallow.
 
 ## Environment
 

@@ -186,6 +186,12 @@ npm run e2e:dev   # against `next dev`, where React reports more warnings
 npm run e2e:ui    # interactive runner
 ```
 
+## Relation to the MIT edition
+
+This repository is a downstream of [surveyjs-nextjs-demo-mit](https://github.com/surveyjs/surveyjs-nextjs-demo-mit), the same application with `survey-core` and `survey-react-ui` only. This edition adds Survey Creator, PDF Generator and Dashboard.
+
+Shared code is synchronized from the MIT edition and is not edited here. A change to it is made there and copied over, and a check fails if a shared file differs. See [CLAUDE.md](CLAUDE.md) for the allowlist of files this edition owns and for the sync command.
+
 ## License
 
 [SurveyJS licensing](https://surveyjs.io/licensing) — see [LICENSE](LICENSE). `survey-pdf` and `survey-analytics` are installed but not wired into any page yet.
