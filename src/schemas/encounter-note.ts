@@ -528,8 +528,10 @@ export const encounterNoteJson: SurveyJSON = {
           name: "spo2",
           title: "SpO₂ (%)",
           inputType: "number",
-          min: "50",
-          max: "100",
+          // Numbers, not strings: as strings "50" sorts above "100" and the linter
+          // reports min above max.
+          min: 50,
+          max: 100,
           startWithNewLine: false,
         },
         {

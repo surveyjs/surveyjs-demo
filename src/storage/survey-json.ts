@@ -19,6 +19,32 @@ import type { SurveyJSON } from "@/schemas";
  * The signatures are async already, so swapping the implementation does not
  * change a single call site.
  *
+ * A real `saveSurveyJson` lints before it stores. `/api/lint` runs the same
+ * `survey-core/linter` rules the editor shows while somebody types, so a
+ * definition the editor flagged is refused here too — including one that never
+ * went through the editor:
+ *
+ *   export async function saveSurveyJson(schemaId: string, json: SurveyJSON) {
+ *     const lint = await fetch("/api/lint", {
+ *       method: "POST",
+ *       headers: { "Content-Type": "application/json" },
+ *       body: JSON.stringify({ json }),
+ *     }).then((res) => res.json());
+ *     if (!lint.ok) {
+ *       throw new Error(`Not saved: ${lint.findings.length} static analysis finding(s).`);
+ *     }
+ *     const res = await fetch(`/api/schemas/${schemaId}`, {
+ *       method: "PUT",
+ *       headers: { "Content-Type": "application/json" },
+ *       body: JSON.stringify(json),
+ *     });
+ *     if (!res.ok) throw new Error(`PUT /api/schemas/${schemaId}: ${res.status}`);
+ *   }
+ *
+ * Your own `PUT /api/schemas/:id` handler should call `lintSurveyJson` from
+ * `src/lib/lint/lint-survey.ts` again before it writes: the browser is not the
+ * place a rule is enforced, only the place it is first shown.
+ *
  * This demo keeps each visitor's edits in their own browser, in localStorage.
  * The server always renders the definition that ships with the template, so the
  * prerendered HTML — the one crawlers get — stays canonical, and one visitor's

@@ -1,0 +1,68 @@
+{
+  "name": "Checkout",
+  "description": "The payment page's two conditional blocks, and the review summary calculated from the addresses. Runs against src/schemas/checkout.ts, passed separately.",
+  "starts": [
+    {
+      "name": "on the payment page",
+      "description": "Nothing answered yet; the defaults apply: billing same as shipping, paying by card.",
+      "startPage": "payment"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Card details show for a card and hide for PayPal",
+      "start": "on the payment page",
+      "steps": [
+        { "expect": { "paymentMethod": { "value": "card" }, "cardPanel": { "visible": true } } },
+        { "set": { "paymentMethod": "paypal" } },
+        { "expect": { "cardPanel": { "visible": false } } },
+        { "set": { "paymentMethod": "card" } },
+        { "expect": { "cardPanel": { "visible": true } } }
+      ]
+    },
+    {
+      "name": "The billing address appears only when it differs from shipping",
+      "start": "on the payment page",
+      "steps": [
+        { "expect": { "billingSameAsShipping": { "value": true }, "billingAddress": { "visible": false } } },
+        { "set": { "billingSameAsShipping": false } },
+        { "expect": { "billingAddress": { "visible": true }, "billingCity": { "required": true } } }
+      ]
+    },
+    {
+      "name": "The review summary bills the shipping address by default",
+      "start": {
+        "data": { "fullName": "Ada Lovelace", "city": "Boston" },
+        "startPage": "review"
+      },
+      "steps": [
+        {
+          "expect": {
+            "reviewShipTo": { "value": "Ada Lovelace, Boston" },
+            "reviewBillTo": { "value": "Same as shipping" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "The review summary shows a separate billing address",
+      "start": {
+        "data": {
+          "fullName": "Ada Lovelace",
+          "city": "Boston",
+          "billingSameAsShipping": false,
+          "billingAddress1": "12 Analytical Way",
+          "billingCity": "Cambridge"
+        },
+        "startPage": "review"
+      },
+      "steps": [
+        { "expect": { "reviewBillTo": { "value": "12 Analytical Way, Cambridge" } } },
+        { "prevPage": { "survey": true } },
+        { "expect": { "survey": { "currentPage": "payment" }, "billingAddress": { "visible": true } } },
+        { "set": { "billingSameAsShipping": true } },
+        { "expect": { "billingAddress": { "visible": false }, "reviewBillTo": { "value": "Same as shipping" } } }
+      ]
+    }
+  ]
+}

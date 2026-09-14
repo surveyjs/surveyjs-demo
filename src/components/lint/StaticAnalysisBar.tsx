@@ -8,9 +8,10 @@ import {
   CircleDashedIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import { getRules, lintSurvey } from "survey-core/linter";
-import type { ILintFinding, ISurveyLintResult } from "survey-core/linter";
+import { getRules } from "survey-core/linter";
+import type { ILintFinding } from "survey-core/linter";
 import { Button } from "@/components/ui/button";
+import { lintSurveyJson, type SurveyLintVerdict } from "@/lib/lint/lint-survey";
 import { buildPathIndex, locatePath } from "@/lib/lint/monaco-adapter";
 import { lintMutations } from "@/lib/lint/try-breaking-it";
 import { mergeTailwindClasses } from "@/lib/utils";
@@ -31,7 +32,7 @@ type Analysis =
   | { readonly kind: "waiting" }
   | {
       readonly kind: "done";
-      readonly result: ISurveyLintResult;
+      readonly result: SurveyLintVerdict;
       readonly located: readonly LocatedFinding[];
       readonly elementCount: number;
       readonly durationMs: number;
@@ -128,7 +129,8 @@ export function StaticAnalysisBar({
     }
     const timer = setTimeout(() => {
       const startedAt = performance.now();
-      const result = lintSurvey(
+      // The same call /api/lint makes, so the editor and the server share one verdict.
+      const result = lintSurveyJson(
         json,
         knownVariables ? { knownVariables: [...knownVariables] } : undefined,
       );
