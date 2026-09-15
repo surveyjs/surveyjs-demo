@@ -66,6 +66,7 @@ export function ExtractFromDocument({
   documentName,
   samples,
   onExtracted,
+  onBusyChange,
 }: {
   formId: string;
   /** What a record is called, in the singular: "work order". */
@@ -75,9 +76,25 @@ export function ExtractFromDocument({
   samples: readonly SampleDocument[];
   /** Answers keyed by question name, and the original they were read from. */
   onExtracted: (data: SurveyData, source: SourceDocument) => void | Promise<void>;
+  /** Called whenever a reading starts or ends, so the page can hold the visitor on this panel. */
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    onBusyChange?.(busy !== null);
+  }, [busy, onBusyChange]);
+
+  // Leaving the page while a document is being read abandons that reading: a
+  // result that arrives after this unmounts adds no record and spends nothing.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [enlarged, setEnlarged] = useState<SampleDocument | null>(null);
   const [zoomed, setZoomed] = useState(false);
@@ -127,6 +144,7 @@ export function ExtractFromDocument({
           readAt?: string;
           error?: string;
         };
+        if (!mounted.current) return;
 
         if (!response.ok || !payload.data) {
           setOutcome({
@@ -144,9 +162,13 @@ export function ExtractFromDocument({
         // exactly as long as this tab's in-memory records: both are gone on reload,
         // so the link never outlives the record that points at it.
         const source = await keepSourceDocument(origin, payload.readAt);
+        if (!mounted.current) return;
         const filled = Object.values(payload.data).filter(
           (value) => value !== null && value !== undefined && value !== "",
         ).length;
+        // Opening the new record closes the panel, so this component is gone by
+        // the time the reading is marked as spent below; that is expected, and
+        // the mark is still written.
         await onExtracted(payload.data, source);
         spend(id);
         setOutcome({
@@ -184,7 +206,7 @@ export function ExtractFromDocument({
   const visible = used ? samples.filter((sample) => sample.id === used) : samples;
 
   return (
-    <Card className="mt-6 gap-4 p-4">
+    <Card className="gap-4 p-4">
       <div>
         <h2 className="text-base font-semibold">
           Add {withArticle(noun)} from a filled {documentName} (PDF, scan or photo)

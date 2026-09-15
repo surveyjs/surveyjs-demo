@@ -70,25 +70,33 @@ The assets are in `public/samples/archive/cms-1500/`: the blank, a filled PDF, a
    }),
    ```
 
-5. **The page.** `src/app/(shell)/claims/page.tsx`, like `work-orders/page.tsx`, rendering a view that passes:
+5. **The pages.** `src/app/(shell)/claims/page.tsx`, `claims/[id]/page.tsx` and `claims/from-document/page.tsx`, like the three under `work-orders/`, rendering a view that passes:
 
    ```tsx
    <RecordsView
      collectionId="claims"
+     basePath="/claims"
      exportPdf={(data) => exportClaimToCms1500(data)}
-     listFooter={({ createFrom }) => (
-       <ExtractFromDocument
-         formId="insurance-claim"
-         noun="claim"
-         documentName="CMS-1500"
-         samples={claimSampleDocuments}
-         onExtracted={createFrom}
-       />
-     )}
+     documentImport={{
+       label: "Add from document",
+       segment: "from-document",
+       render: ({ createFrom, onBusyChange }) => (
+         <ExtractFromDocument
+           formId="insurance-claim"
+           noun="claim"
+           documentName="CMS-1500"
+           samples={claimSampleDocuments}
+           onExtracted={createFrom}
+           onBusyChange={onBusyChange}
+         />
+       ),
+     }}
      {...rest}
    />
    ```
 
-6. **CSS.** Copy the rules in `service-lines.css` back into `src/styles/survey-overrides-shadcn.css`, or pass `layout="stacked"` instead.
+   The collection's `rail` shows the patient, then the claim number and status.
+
+6. **CSS.** Copy the rules in `service-lines.css` back into `src/styles/survey-overrides-shadcn.css`. They were written for a form beside the old table at `lg`; beside the rail, from `xl`, check whether the service-line matrix still needs them.
 
 7. **Panel.** Add `claims` to `HOW_BUILT` in `src/lib/how-built.ts`, and `insurance-claim` back to the lint-clean list in `e2e/configure.spec.ts`.

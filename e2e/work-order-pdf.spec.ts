@@ -185,9 +185,11 @@ test.describe("the printer's layout", () => {
 });
 
 test.describe("on /work-orders", () => {
-  /** The list: the first table on the page; the parts matrix is a table too. */
+  /** One record in the rail: a link in the navigation landmark named after the page. */
   function listRow(page: Page, id: string) {
-    return page.getByRole("table").first().getByRole("row", { name: new RegExp(id) });
+    return page
+      .getByRole("navigation", { name: "Work orders", exact: true })
+      .getByRole("link", { name: new RegExp(id) });
   }
 
   test("the blank job sheet is served", async ({ request }) => {
@@ -197,7 +199,7 @@ test.describe("on /work-orders", () => {
   for (const [id, pages] of [["WO-2026-0118", 2], ["WO-2026-0121", 1]] as const) {
     test(`Save as PDF prints ${id} onto the job sheet, ${pages} sheet${pages === 1 ? "" : "s"}`, async ({ page }) => {
       await page.goto("/work-orders");
-      await listRow(page, id).getByRole("cell").first().click();
+      await listRow(page, id).click();
       await expect(page.getByRole("heading", { level: 2, name: `View ${id}` })).toBeVisible();
 
       const download = page.waitForEvent("download");

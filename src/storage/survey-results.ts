@@ -34,7 +34,7 @@ import {
  * change a single call site.
  *
  * Where each one runs: `listResults`, and `getResult` for the first row, are
- * called by the records pages' server components, so the table and the form are
+ * called by the records pages' server components, so the list and the form are
  * in the HTML the server sends; opening another row calls `getResult` from the
  * client, and so do the mutations, the way they would hit your API. Point them
  * all at the same database and that split is what a real app does.

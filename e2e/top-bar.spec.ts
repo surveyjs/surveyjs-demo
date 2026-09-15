@@ -26,6 +26,8 @@ test.describe("helpers", () => {
 
   test("pageSourcePath maps a demo route to the file that serves it", () => {
     expect(pageSourcePath("/work-orders")).toBe("src/app/(shell)/work-orders/page.tsx");
+    // A record's URL is the same page.
+    expect(pageSourcePath("/work-orders/WO-2026-0118")).toBe("src/app/(shell)/work-orders/page.tsx");
     expect(pageSourcePath("/embedded/chart")).toBe("src/app/embedded/chart/page.tsx");
     expect(pageSourcePath("/configure")).toBeUndefined();
   });

@@ -14,7 +14,10 @@ import { features } from "../src/features";
 const ROUTES = [
   "/",
   "/leads",
+  "/leads/LEAD-0001",
   "/work-orders",
+  "/work-orders/WO-2026-0118",
+  "/work-orders/from-document",
   "/starter",
   "/definition",
   "/configure?form=work-order",

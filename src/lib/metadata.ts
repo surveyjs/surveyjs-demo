@@ -70,8 +70,8 @@ const ROOT_COPY: PageCopy = {
 };
 
 /**
- * Per page, keyed by sidebar row. A description that names a commercial feature
- * needs an `mit` variant that does not. A page missing here takes its sidebar
+ * Per page, keyed by sidebar row. A description that names a feature only the
+ * full edition has needs an `mit` variant that does not. A page missing here takes its sidebar
  * label and description instead — see `pageCopy`.
  */
 const PAGE_COPY: Partial<Record<NavId, PageCopy>> = {
@@ -82,8 +82,10 @@ const PAGE_COPY: Partial<Record<NavId, PageCopy>> = {
   },
   workOrders: {
     title: "Work orders — field service job sheets",
-    description:
-      "One form to view, edit and add job sheets: read a filled sheet from a PDF, scan or photo with AI, keep a link to the original, and print the record back onto the company's own sheet.",
+    description: {
+      full: "One form to view, edit and add job sheets: read a filled sheet from a PDF, scan or photo with AI, keep a link to the original, and print the record back onto the company's own sheet.",
+      mit: "One form to view, edit and add job sheets: read a filled sheet from a PDF, scan or photo with AI, and keep a link to the original.",
+    },
   },
   embeddedFeedback: {
     title: "Feedback — a survey in a product site",

@@ -10,16 +10,21 @@
  * strokes) and `samples/<job>.json` (the values written on each sample sheet, in
  * the definition's data shape). From them it writes:
  *
- *  - `public/samples/work-order-blank.pdf`: the blank job sheet and its
- *    continuation sheet, which "Save as PDF" prints a record onto;
- *  - `src/lib/work-order-boxes.ts`: every `data-box` rectangle, measured from the
- *    rendered DOM, in PDF points from the bottom left, and the ruled-row count
- *    of each parts table;
  *  - `src/schemas/data/work-order-signatures.ts`: the signatures as PNG data URLs,
  *    for the seed records entered on a tablet;
  *  - the extractor's sample documents, `work-order-0130.pdf`,
  *    `work-order-0131-photo.jpg`, `work-order-0132-scan.jpg`, their `previews/`,
  *    and `work-order-0120-scan.jpg`, the signed original seed record 0120 links.
+ *
+ * In the full edition, where the job sheet printer lives in `src/features/full/`,
+ * it also writes what that printer reads. The MIT edition has no printer, and
+ * skips both:
+ *
+ *  - `public/samples/work-order-blank.pdf`: the blank job sheet and its
+ *    continuation sheet, which "Save as PDF" prints a record onto;
+ *  - `src/features/full/work-order-boxes.ts`: every `data-box` rectangle, measured
+ *    from the rendered DOM, in PDF points from the bottom left, and the ruled-row
+ *    count of each parts table.
  *
  * The photo and scan effects are CSS transforms and filters and an SVG noise
  * layer with a fixed seed, captured with `page.screenshot`: no image library.
@@ -30,6 +35,7 @@
  * Node ESM, no dependencies beyond `@playwright/test` and `pdf-lib`, which the
  * template already has.
  */
+import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -41,6 +47,8 @@ const ASSETS = path.join(ROOT, "assets", "work-order");
 const SAMPLES_OUT = path.join(ROOT, "public", "samples");
 const PREVIEWS_OUT = path.join(SAMPLES_OUT, "previews");
 const SHEET_URL = pathToFileURL(path.join(ASSETS, "job-sheet.html")).href;
+/** The full edition's job sheet printer. Absent in the MIT edition, which prints no job sheet. */
+const PRINTER_DIR = path.join(ROOT, "src", "features", "full");
 
 /** CSS pixels are 1/96 in, PDF points 1/72 in. */
 const PT_PER_PX = 0.75;
@@ -319,12 +327,12 @@ async function main() {
 
   const browser = await chromium.launch();
   try {
-    // 1. The blank, and the boxes measured from it.
-    {
+    // 1. The blank, and the boxes measured from it: for the full edition's printer only.
+    if (existsSync(PRINTER_DIR)) {
       const { context, page } = await openSheet(browser);
       await assertFits(page, "blank");
       const measured = await measureBoxes(page);
-      await write(path.join(ROOT, "src", "lib", "work-order-boxes.ts"), Buffer.from(boxesModule(measured)),
+      await write(path.join(PRINTER_DIR, "work-order-boxes.ts"), Buffer.from(boxesModule(measured)),
         `${Object.keys(measured.table).length} boxes, parts rows ${measured.rows.first} + ${measured.rows.continuation}`);
       await write(path.join(SAMPLES_OUT, "work-order-blank.pdf"), await printPdf(page, "Job sheet (blank)"));
       await context.close();

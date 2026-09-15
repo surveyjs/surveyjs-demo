@@ -1,22 +1,23 @@
-import { readFile } from "node:fs/promises";
 import { test, expect, type Page } from "@playwright/test";
-import { PDFDocument } from "pdf-lib";
 import { features } from "../src/features";
 import { configureHref } from "../src/lib/routes";
 import { PAGE_ACTIONS } from "../src/lib/site";
-import { HOW_BUILT, HOW_BUILT_TEXT, findVariableReferences } from "../src/lib/how-built";
+import { HOW_BUILT, HOW_BUILT_TEXT, findVariableReferences, itemsInEdition } from "../src/lib/how-built";
+import { getFormNavItem } from "../src/schemas/navigation";
 import { getRecordCollection, recordTitle } from "../src/schemas/records";
 import { getResult, listResults, saveResult } from "../src/storage/survey-results";
 
 /**
- * The shared records page, proved on `/work-orders`: the list and its columns,
- * the header actions, new / cancel / save, the unsaved-changes dialog, and the
- * "How this page is built" panel. Then what a work order adds: totals, the
- * signature rule, a record linked to its original, and the job sheet PDF. Every
- * label comes from the code under test.
+ * The shared records page, proved on `/work-orders`: the rail, record URLs and
+ * Back, the header actions, new / cancel / save / delete, the unsaved-changes
+ * dialog, the import panel, the outline around the form, and the "How this page
+ * is built" panel. Then what a work order adds: totals, the signature rule and a
+ * record linked to its original. Every label comes from the code under test. The
+ * job sheet PDF is the full edition's, and so is its spec.
  */
 
 const workOrders = getRecordCollection("workOrders");
+const workOrdersNav = getFormNavItem("workOrders");
 const statusLabels = workOrders.columns.find((column) => column.key === "status")!.labels!;
 
 /** WO-2026-0118, by hand: parts 186 + 49 + 177 + 31.20 + 142 + 38.40 + 57.90 + 25 = 706.50; labor 5.75 h × $85 = 488.75. */
@@ -72,14 +73,19 @@ function formHeading(page: Page) {
   return page.getByRole("heading", { level: 2 }).filter({ hasText: /^(View|Edit|New) / });
 }
 
-/** The list: the first table on the page; the parts matrix is a table too. */
+/** The rail: a navigation landmark named after the page, holding one link per record. */
+function rail(page: Page, label = workOrdersNav.label) {
+  return page.getByRole("navigation", { name: label, exact: true });
+}
+
+/** One record in the rail. The job number is in the link's text. */
 function listRow(page: Page, id: string) {
-  return page.getByRole("table").first().getByRole("row", { name: new RegExp(id) });
+  return rail(page).getByRole("link", { name: new RegExp(id) });
 }
 
 async function chooseStatus(page: Page, label: string) {
-  // Beneath the list, the form starts below the fold; a dropdown opened while the
-  // page scrolls to it closes again.
+  // The status field can sit below the fold; a dropdown opened while the page
+  // scrolls to it closes again.
   const dropdown = page.locator('[data-name="status"] .sd-dropdown').first();
   await dropdown.scrollIntoViewIfNeeded();
   await dropdown.click();
@@ -87,9 +93,17 @@ async function chooseStatus(page: Page, label: string) {
   await expect(dropdown).toContainText(label);
 }
 
+/** Edit lives in the form's header: open the record from the rail, then edit it. */
 async function openForEdit(page: Page, id: string) {
-  await listRow(page, id).getByRole("button", { name: "Edit" }).click();
+  await listRow(page, id).click();
+  await expect(formHeading(page)).toHaveText(`View ${id}`);
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   await expect(formHeading(page)).toHaveText(`Edit ${id}`);
+}
+
+function addFromDocument(page: Page) {
+  // Exact: the panel's own "Add from your document" must not match.
+  return page.getByRole("button", { name: "Add from document", exact: true });
 }
 
 async function nextPage(page: Page) {
@@ -109,7 +123,13 @@ test.describe("on /work-orders", () => {
     await page.goto("/work-orders");
     await expect(formHeading(page)).toHaveText(`View ${recordTitle(workOrders, rows[0])}`);
 
-    await expect(page.getByRole("button", { name: "Save as PDF" })).toBeVisible();
+    // The job sheet printer, where the edition plugs one in; nothing about it otherwise.
+    await expect(page.getByRole("button", { name: "Save as PDF" })).toHaveCount(
+      features.exportWorkOrderPdf ? 1 : 0,
+    );
+    await expect(page.getByText("prints this work order onto")).toHaveCount(
+      features.exportWorkOrderPdf ? 1 : 0,
+    );
     await expect(page.getByRole("link", { name: features.designer.label })).toHaveAttribute(
       "href",
       configureHref(workOrders.schemaId),
@@ -122,7 +142,7 @@ test.describe("on /work-orders", () => {
 
   test("+ New opens an unsaved record, and Cancel goes back", async ({ page }) => {
     await page.goto("/work-orders");
-    const rows = page.getByRole("table").first().getByRole("row");
+    const rows = rail(page).getByRole("link");
     const before = await rows.count();
     const heading = await formHeading(page).textContent();
 
@@ -157,17 +177,64 @@ test.describe("on /work-orders", () => {
     await chooseStatus(page, statusLabels.completed);
 
     const other = listRow(page, second);
-    await other.getByRole("cell").first().click();
+    await other.click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toContainText(`Discard changes to ${first}?`);
 
     await dialog.getByRole("button", { name: "Keep editing" }).click();
     await expect(dialog).toHaveCount(0);
     await expect(formHeading(page)).toHaveText(`Edit ${first}`);
+    // The URL moves only once the guard lets the click through.
+    await expect(page).toHaveURL(new RegExp(`/work-orders/${first}$`));
 
-    await other.getByRole("cell").first().click();
+    await other.click();
     await page.getByRole("dialog").getByRole("button", { name: "Discard" }).click();
     await expect(formHeading(page)).toHaveText(`View ${second}`);
+    await expect(page).toHaveURL(new RegExp(`/work-orders/${second}$`));
+  });
+
+  for (const how of ["Escape", "the X button"] as const) {
+    test(`Back with a changed form asks first, and dismissing it with ${how} puts the URL back`, async ({ page }) => {
+      await page.goto("/work-orders");
+      await listRow(page, "WO-2026-0119").click();
+      await expect(page).toHaveURL(/\/work-orders\/WO-2026-0119$/);
+      await page.getByRole("button", { name: "Edit", exact: true }).click();
+      await expect(formHeading(page)).toHaveText("Edit WO-2026-0119");
+      await chooseStatus(page, statusLabels.completed);
+
+      await page.goBack();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toContainText("Discard changes to WO-2026-0119?");
+      if (how === "Escape") {
+        await page.keyboard.press("Escape");
+      } else {
+        await dialog.getByRole("button", { name: "Close" }).click();
+      }
+      await expect(dialog).toHaveCount(0);
+      await expect(page).toHaveURL(/\/work-orders\/WO-2026-0119$/);
+      await expect(formHeading(page)).toHaveText("Edit WO-2026-0119");
+    });
+  }
+
+  test("Delete sits in the form's header, removes the record and moves the URL", async ({ page }) => {
+    const rows = await listResults("workOrders");
+    await page.goto("/work-orders/WO-2026-0119");
+    await expect(formHeading(page)).toHaveText("View WO-2026-0119");
+
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    // Cancel first: there is no Delete while editing.
+    await expect(page.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Cancel" }).click();
+
+    await page.getByRole("button", { name: "Delete", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("Delete work order?");
+    await dialog.getByRole("button", { name: "Delete" }).click();
+
+    await expect(rail(page).getByRole("link")).toHaveCount(rows.length - 1);
+    await expect(listRow(page, "WO-2026-0119")).toHaveCount(0);
+    await expect(formHeading(page)).toHaveText(`View ${recordTitle(workOrders, rows[0])}`);
+    await expect(page).toHaveURL(new RegExp(`/work-orders/${rows[0].id}$`));
   });
 
   test("the how-built panel describes the page", async ({ page }) => {
@@ -177,8 +244,10 @@ test.describe("on /work-orders", () => {
 
     const panel = page.getByRole("complementary", { name: PAGE_ACTIONS.howBuilt });
     await expect(panel).toBeVisible();
-    for (const item of [...HOW_BUILT.workOrders!.dataIn, ...HOW_BUILT.workOrders!.dataOut]) {
-      await expect(panel).toContainText(item.label);
+    const { dataIn, dataOut } = HOW_BUILT.workOrders!;
+    for (const item of [...dataIn, ...dataOut]) {
+      const listed = itemsInEdition([item], features.edition).length > 0;
+      await expect(panel.getByText(item.label, { exact: true })).toHaveCount(listed ? 1 : 0);
     }
     await expect(panel).toContainText(HOW_BUILT_TEXT.noVariables);
 
@@ -197,9 +266,8 @@ test.describe("on /work-orders", () => {
 });
 
 test.describe("a work order", () => {
-  test("WO-2026-0118 shows its hand-computed total in the list and in the form", async ({ page }) => {
+  test("WO-2026-0118 shows its hand-computed total in the form", async ({ page }) => {
     await page.goto("/work-orders");
-    await expect(listRow(page, "WO-2026-0118")).toContainText(TOTAL_0118);
     await expect(formHeading(page)).toHaveText("View WO-2026-0118");
     await nextPage(page);
     await expect(page.locator('[data-name="partsTotal"]')).toContainText("$706.50");
@@ -262,7 +330,7 @@ test.describe("a work order", () => {
 
   test("WO-2026-0120 links the document it was read from, and saves as completed without a signature", async ({ page }) => {
     await page.goto("/work-orders");
-    await listRow(page, "WO-2026-0120").getByRole("cell").first().click();
+    await listRow(page, "WO-2026-0120").click();
     await expect(formHeading(page)).toHaveText("View WO-2026-0120");
 
     await expect(page.getByText("Source document", { exact: true })).toBeVisible();
@@ -280,23 +348,194 @@ test.describe("a work order", () => {
     await expect(listRow(page, "WO-2026-0120").locator('[data-slot="badge"]')).toHaveText(statusLabels.completed);
 
     // A record entered on the tablet shows no Source document panel.
-    await listRow(page, "WO-2026-0118").getByRole("cell").first().click();
+    await listRow(page, "WO-2026-0118").click();
     await expect(formHeading(page)).toHaveText("View WO-2026-0118");
     await expect(page.getByText("Source document", { exact: true })).toHaveCount(0);
   });
+});
 
-  for (const [id, pages] of [["WO-2026-0118", 2], ["WO-2026-0121", 1]] as const) {
-    test(`Save as PDF prints ${id} onto the job sheet, ${pages} sheet${pages === 1 ? "" : "s"}`, async ({ page }) => {
-      await page.goto("/work-orders");
-      await listRow(page, id).getByRole("cell").first().click();
-      await expect(formHeading(page)).toHaveText(`View ${id}`);
+test.describe("the rail", () => {
+  for (const id of ["leads", "workOrders"] as const) {
+    const nav = getFormNavItem(id);
+    test(`on ${nav.path} at 1440px it is 260px wide, two lines a record, and nothing scrolls sideways`, async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(nav.path);
+      const list = rail(page, nav.label);
+      await expect(list.getByRole("link").first()).toBeVisible();
 
-      const download = page.waitForEvent("download");
-      await page.getByRole("button", { name: "Save as PDF" }).click();
-      const file = await download;
-      expect(file.suggestedFilename()).toBe(`job-sheet-${id.toLowerCase()}.pdf`);
-      const doc = await PDFDocument.load(await readFile((await file.path())!));
-      expect(doc.getPageCount()).toBe(pages);
+      expect((await list.boundingBox())!.width).toBe(260);
+      const overflow = await list.evaluate((element) => {
+        const links = [...element.querySelectorAll("a")];
+        return {
+          rail: element.scrollWidth - element.clientWidth,
+          links: links.map((link) => link.scrollWidth - link.clientWidth),
+          // Line 1 is one line tall; the whole item is under three.
+          tall: links.filter((link) => {
+            const line = link.firstElementChild!.getBoundingClientRect().height;
+            return link.getBoundingClientRect().height >= 3 * line + 16;
+          }).length,
+        };
+      });
+      expect(overflow.rail).toBeLessThanOrEqual(0);
+      for (const value of overflow.links) expect(value).toBeLessThanOrEqual(0);
+      expect(overflow.tall).toBe(0);
     });
   }
+
+  test("holds links only: no buttons inside", async ({ page }) => {
+    await page.goto("/work-orders");
+    await expect(rail(page).getByRole("link").first()).toBeVisible();
+    await expect(rail(page).getByRole("button")).toHaveCount(0);
+  });
+
+  test("a click moves the URL, and Back returns to the first record", async ({ page }) => {
+    const rows = await listResults("workOrders");
+    await page.goto("/work-orders");
+    await listRow(page, "WO-2026-0119").click();
+    await expect(page).toHaveURL(/\/work-orders\/WO-2026-0119$/);
+    await expect(formHeading(page)).toHaveText("View WO-2026-0119");
+    await expect(listRow(page, "WO-2026-0119")).toHaveAttribute("aria-current", "page");
+
+    await page.goBack();
+    await expect(formHeading(page)).toHaveText(`View ${recordTitle(workOrders, rows[0])}`);
+    await expect(page).toHaveURL(/\/work-orders$/);
+
+    await page.goForward();
+    await expect(formHeading(page)).toHaveText("View WO-2026-0119");
+  });
+
+  test("an unknown id opens the first record, at that record's URL", async ({ page }) => {
+    const response = await page.goto("/work-orders/WO-9999-0000");
+    expect(response?.status()).toBe(200);
+    await expect(formHeading(page)).toHaveText("View WO-2026-0118");
+    await expect(page).toHaveURL(/\/work-orders\/WO-2026-0118$/);
+  });
+
+  test("below xl it is a dropdown above the form, and selects the same way", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.goto("/work-orders");
+    await expect(rail(page)).toBeHidden();
+
+    await page.getByRole("button", { name: "Choose a work order" }).click();
+    await page.getByRole("menuitem", { name: /WO-2026-0119/ }).click();
+    await expect(formHeading(page)).toHaveText("View WO-2026-0119");
+    await expect(page).toHaveURL(/\/work-orders\/WO-2026-0119$/);
+  });
+});
+
+test.describe("the outline around the form", () => {
+  for (const id of ["leads", "workOrders"] as const) {
+    const nav = getFormNavItem(id);
+    test(`on ${nav.path} it outlines only the form, and its label hides it for good`, async ({ page }) => {
+      await page.goto(nav.path);
+      const html = page.locator("html");
+      const root = page.locator("[data-survey-root]");
+      await expect(html).toHaveAttribute("data-demo-highlight", "");
+      await expect(root).toHaveCount(1);
+      await expect(root).toHaveCSS("outline-style", "dashed");
+      await expect(root.locator(".sd-root-modern")).toHaveCount(1);
+      // The heading and the actions are the application's, outside the ring.
+      await expect(root.getByRole("heading", { level: 2 }).filter({ hasText: /^(View|Edit|New) / })).toHaveCount(0);
+
+      await root.getByRole("button", { name: "SurveyJS renders this (hide selection)" }).click();
+      await expect(html).not.toHaveAttribute("data-demo-highlight");
+      await expect(root).toHaveCSS("outline-style", "none");
+
+      // Another record does not bring it back.
+      const second = rail(page, nav.label).getByRole("link").nth(1);
+      const href = await second.getAttribute("href");
+      await second.click();
+      await expect(page).toHaveURL(new RegExp(`${href}$`));
+      await expect(root).toHaveCount(1);
+      await expect(html).not.toHaveAttribute("data-demo-highlight");
+    });
+  }
+});
+
+test.describe("the import panel", () => {
+  test("opening it replaces the form, moves the URL, and selects nothing", async ({ page }) => {
+    await page.goto("/work-orders");
+    await expect(page.locator(".sd-root-modern")).toHaveCount(1);
+    await addFromDocument(page).click();
+
+    await expect(page).toHaveURL(/\/work-orders\/from-document$/);
+    await expect(page.locator(".sd-root-modern")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Add from PDF" })).toBeVisible();
+    await expect(addFromDocument(page)).toBeDisabled();
+    await expect(rail(page).locator('[aria-current="page"]')).toHaveCount(0);
+    // "Save as PDF" is the record's, and no record is open.
+    if (features.exportWorkOrderPdf) {
+      await expect(page.getByRole("button", { name: "Save as PDF" })).toBeDisabled();
+    }
+  });
+
+  test("Close returns to /work-orders when opened there", async ({ page }) => {
+    await page.goto("/work-orders");
+    await addFromDocument(page).click();
+    await expect(page).toHaveURL(/\/work-orders\/from-document$/);
+
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(page).toHaveURL(/\/work-orders$/);
+    await expect(formHeading(page)).toHaveText("View WO-2026-0118");
+  });
+
+  test("Close returns to the record it was opened from", async ({ page }) => {
+    await page.goto("/work-orders/WO-2026-0119");
+    await addFromDocument(page).click();
+    await expect(page).toHaveURL(/\/work-orders\/from-document$/);
+
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(page).toHaveURL(/\/work-orders\/WO-2026-0119$/);
+    await expect(formHeading(page)).toHaveText("View WO-2026-0119");
+  });
+
+  test("New from the panel opens a blank form at the return URL, and Cancel shows the return record", async ({ page }) => {
+    await page.goto("/work-orders/WO-2026-0119");
+    await addFromDocument(page).click();
+    await expect(page).toHaveURL(/\/work-orders\/from-document$/);
+
+    await page.getByRole("button", { name: `New ${workOrders.noun.one}` }).click();
+    await expect(formHeading(page)).toHaveText(`New ${workOrders.noun.one}`);
+    await expect(page).toHaveURL(/\/work-orders\/WO-2026-0119$/);
+
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(formHeading(page)).toHaveText("View WO-2026-0119");
+    await expect(page).toHaveURL(/\/work-orders\/WO-2026-0119$/);
+  });
+
+  test("with unsaved changes, opening it asks first", async ({ page }) => {
+    await page.goto("/work-orders");
+    await openForEdit(page, "WO-2026-0118");
+    await chooseStatus(page, statusLabels.completed);
+
+    await addFromDocument(page).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("Discard changes to WO-2026-0118?");
+    await dialog.getByRole("button", { name: "Keep editing" }).click();
+    await expect(formHeading(page)).toHaveText("Edit WO-2026-0118");
+    await expect(page).toHaveURL(/\/work-orders\/WO-2026-0118$/);
+
+    await addFromDocument(page).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Discard" }).click();
+    await expect(page).toHaveURL(/\/work-orders\/from-document$/);
+    await expect(page.locator(".sd-root-modern")).toHaveCount(0);
+  });
+
+  test("its own URL is rendered on the server, and Close from there goes to the page", async ({ page }) => {
+    const response = await page.goto("/work-orders/from-document");
+    expect(response?.status()).toBe(200);
+    const html = await response!.text();
+    expect(html).toContain("Add from PDF");
+    expect(html).not.toContain("sd-root-modern");
+
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(page).toHaveURL(/\/work-orders$/);
+    await expect(formHeading(page)).toHaveText("View WO-2026-0118");
+  });
+
+  test("/leads has none", async ({ page }) => {
+    await page.goto("/leads");
+    await expect(formHeading(page)).toBeVisible();
+    await expect(addFromDocument(page)).toHaveCount(0);
+  });
 });

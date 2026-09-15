@@ -6,12 +6,13 @@ import { XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { features } from "@/features";
-import { getSchemaDefinition, navPages } from "@/schemas";
+import { getSchemaDefinition, isActiveRoute, navPages } from "@/schemas";
 import { PAGE_ACTIONS } from "@/lib/site";
 import {
   HOW_BUILT,
   HOW_BUILT_TEXT,
   findVariableReferences,
+  itemsInEdition,
   type HowBuiltFeature,
   type HowBuiltItem,
 } from "@/lib/how-built";
@@ -29,7 +30,7 @@ function SectionTitle({ children }: { children: string }) {
 function Items({ items }: { items: readonly HowBuiltItem[] }) {
   return (
     <ul className="space-y-3">
-      {items.map((item) => (
+      {itemsInEdition(items, features.edition).map((item) => (
         <li key={item.label} className="text-sm">
           <p className="font-medium">{item.label}</p>
           <p className="text-muted-foreground mt-0.5">{item.detail}</p>
@@ -88,7 +89,8 @@ export function HowBuiltPanel() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, setOpen]);
 
-  const page = navPages.find((item) => item.path === pathname);
+  // A record's own URL (`/leads/LEAD-0001`) is described by its page.
+  const page = navPages.find((item) => isActiveRoute(pathname, item.path));
   const content = page ? HOW_BUILT[page.id] : undefined;
   const schemaId = page?.schemaId;
 
@@ -118,7 +120,12 @@ export function HowBuiltPanel() {
         <p className="text-muted-foreground px-5 py-4 text-sm">{HOW_BUILT_TEXT.notDescribed}</p>
       ) : (
         <div className="space-y-6 px-5 py-4">
-          <p className="text-sm">{content.summary}</p>
+          <div className="space-y-2">
+            <p className="text-sm">{content.summary}</p>
+            {content.listNote && (
+              <p className="text-muted-foreground text-xs">{content.listNote}</p>
+            )}
+          </div>
 
           <section>
             <SectionTitle>Data in</SectionTitle>

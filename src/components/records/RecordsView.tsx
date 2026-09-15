@@ -1,15 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { FileDownIcon, PlusIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { FileDownIcon, PlusIcon, ScanTextIcon } from "lucide-react";
 import type { Model } from "survey-core";
 import {
   getRecordCollection,
   getSchemaDefinition,
+  isActiveRoute,
   recordTitle,
   sortRows,
-  type RecordColumn,
-  type RecordColumns,
   type RecordRow,
   type SessionUser,
   type SourceDocument,
@@ -19,13 +19,12 @@ import {
 } from "@/schemas";
 import { deleteResult, getResult, saveResult } from "@/storage/survey-results";
 import { features } from "@/features";
-import { configureHref } from "@/lib/routes";
-import { mergeTailwindClasses, stableJson } from "@/lib/utils";
+import { configureHref, recordHref } from "@/lib/routes";
+import { stableJson } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import { SurveyForm } from "@/components/SurveyForm";
-import { Badge } from "@/components/ui/badge";
+import { SurveyOutline, useSurveyOutline } from "@/components/survey-outline/SurveyOutline";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -34,14 +33,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { isEmpty } from "./ColumnValue";
+import { RecordPicker } from "./RecordPicker";
+import { RecordRail } from "./RecordRail";
 import { UserSwitcher } from "./UserSwitcher";
 
 type Mode = "view" | "edit" | "new";
@@ -58,70 +52,73 @@ interface OpenRecord {
   readonly previous?: StoredRecord;
 }
 
-/** Badge tones as classes. The collection names a tone; only this file knows CSS. */
-const TONE_CLASSES: Record<NonNullable<RecordColumn["tones"]>[string], string> = {
-  neutral: "bg-muted text-muted-foreground",
-  info: "bg-sky-500/15 text-sky-700 dark:text-sky-300 dark:bg-sky-400/15",
-  warning: "bg-amber-500/15 text-amber-700 dark:text-amber-300 dark:bg-amber-400/15",
-  success: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 dark:bg-emerald-400/15",
-  danger: "bg-destructive/15 text-destructive dark:text-red-300 dark:bg-red-400/15",
-};
-
-function isEmpty(value: unknown): boolean {
-  return value === null || value === undefined || value === "";
+interface DiscardRequest {
+  readonly title: string;
+  /** What Discard does. */
+  readonly run: () => void;
+  /** What dismissing the dialog undoes, when the URL started the transition: the URL. */
+  readonly cancel?: () => void;
 }
 
-function Cell({ column, columns }: { column: RecordColumn; columns: RecordColumns }) {
-  const value = columns[column.key];
-  if (isEmpty(value)) return <>—</>;
+type CreateFrom = (data: SurveyData, source?: SourceDocument) => Promise<void>;
 
-  switch (column.kind) {
-    case "badge": {
-      const label = column.labels?.[String(value)];
-      return (
-        <Badge
-          variant="secondary"
-          className={mergeTailwindClasses(
-            !label && "capitalize",
-            TONE_CLASSES[column.tones?.[String(value)] ?? "neutral"],
-          )}
-        >
-          {label ?? String(value).replace(/_/g, " ")}
-        </Badge>
-      );
-    }
-    case "money": {
-      if (typeof value !== "number") return <>{String(value)}</>;
-      const code = column.currencyKey ? columns[column.currencyKey] : undefined;
-      const currency = typeof code === "string" && code ? code : "USD";
-      return <>{new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value)}</>;
-    }
-    case "date":
-      // UTC, so an ISO date is the same day on the server and in every browser.
-      return (
-        <>
-          {new Date(String(value)).toLocaleDateString("en-US", {
-            dateStyle: "medium",
-            timeZone: "UTC",
-          })}
-        </>
-      );
-    default:
-      return <>{String(value)}</>;
-  }
+/** A way to add a record from a document, in a panel that takes the form column's place. */
+export interface DocumentImport {
+  /** The header button: "Add from document". */
+  readonly label: string;
+  /** The panel's URL, under the page: "from-document" is `/work-orders/from-document`. */
+  readonly segment: string;
+  /**
+   * The panel. `createFrom` stores a new record made from answers read off
+   * `source`, and opens it. `onBusyChange` reports a reading in flight, during
+   * which nothing on the page leaves the panel.
+   */
+  readonly render: (api: {
+    createFrom: CreateFrom;
+    onBusyChange: (busy: boolean) => void;
+  }) => ReactNode;
 }
 
-const RIGHT_ALIGNED: ReadonlySet<RecordColumn["kind"]> = new Set(["money"]);
+/** What Cancel, Close and a deleted Back target return to. */
+function returnRecord(open: OpenRecord | null): StoredRecord | undefined {
+  return open?.mode === "new" ? open.previous : open?.record;
+}
 
 /**
- * A records page: a list of stored records, and one form that views, edits and
+ * The canonical URL a pathname under the page names: the page itself (which
+ * shows the first record), the import panel, or one record. `undefined` for a
+ * pathname outside the page.
+ */
+function routeOf(pathname: string, basePath: string, segment: string | undefined): string | undefined {
+  if (!isActiveRoute(pathname, basePath)) return undefined;
+  const rest = pathname.slice(basePath.length).replace(/^\/+|\/+$/g, "");
+  if (!rest) return basePath;
+  let id = rest;
+  try {
+    id = decodeURIComponent(rest);
+  } catch {
+    // A malformed escape is just an id nobody has.
+  }
+  return id === segment ? `${basePath}/${segment}` : recordHref(basePath, id);
+}
+
+/**
+ * A records page: a rail of stored records, and one form that views, edits and
  * adds them.
  *
  * Everything page-specific is data in the collection (`src/schemas/records.ts`):
- * the columns, how they derive from a response, the id and the defaults of a
- * new record. The list shows columns only; opening a row fetches its document.
- * Saving writes the document and puts back the columns storage derived from it,
- * never columns computed here.
+ * the columns, the two lines the rail shows, how they derive from a response,
+ * the id and the defaults of a new record. The rail shows columns only; opening
+ * a record fetches its document. Saving writes the document and puts back the
+ * columns storage derived from it, never columns computed here.
+ *
+ * The URL is where the selection lives: `basePath` shows the first record, and
+ * `basePath/<id>` one record. Moving between records writes the URL with
+ * `window.history`, which Next.js syncs into `usePathname`, and never with
+ * `next/link` or `router.push`: those re-render the server component, and the
+ * browser's in-memory store, with every record created or edited here, would be
+ * thrown away for the server's copy. Back and Forward reach the pathname effect
+ * below, and go through the same unsaved-changes guard as a click.
  *
  * It subscribes to no SurveyJS event. It reads `model.data`, calls
  * `model.toJSON()`, `model.validate()` and `model.completeLastPage()`, and gets
@@ -131,46 +128,47 @@ export function RecordsView({
   collectionId,
   title,
   description,
+  basePath,
   initialRows,
   initialRecord,
+  initialImport = false,
   users = [],
   exportPdf,
-  listFooter,
+  documentImport,
   formNote,
-  layout = "split",
 }: {
   collectionId: string;
-  /** The nav label, for the page header. */
+  /** The nav label, for the page header and the rail's landmark. */
   title: string;
   description: string;
+  /** The page's route, `nav.path`. Record URLs are built under it. */
+  basePath: string;
   initialRows: readonly RecordRow[];
-  /** The first row's document, read on the server. */
+  /**
+   * The document read on the server: the URL's record, or the first row's when
+   * the URL names none or one the server does not hold.
+   */
   initialRecord: StoredRecord | undefined;
+  /** The page was loaded at the import panel's URL. */
+  initialImport?: boolean;
   /** From `listSessionUsers`. Fewer than two renders no switcher. */
   users?: readonly SessionUser[];
   /** Replaces the generic PDF export for this collection (Work orders: the job sheet). */
   exportPdf?: (data: SurveyData) => void | Promise<void>;
-  /**
-   * Rendered under the list (Work orders: extraction from a document).
-   * `createFrom` stores a new record made from answers read off `source`, and opens it.
-   */
-  listFooter?: (api: {
-    createFrom: (data: SurveyData, source?: SourceDocument) => Promise<void>;
-  }) => ReactNode;
+  /** Adding a record from a document (Work orders). Without it, no button and no panel. */
+  documentImport?: DocumentImport;
   /** One or two sentences under the form column's heading. */
   formNote?: ReactNode;
-  /**
-   * "split": the list beside the form, from `lg`. "stacked": the list
-   * above a full-width form, for a definition built on wide matrices. Beside the
-   * list the form is narrower than the theme's `--sd-mobile-width` (640px in the
-   * shadcn adapter) at every common laptop width, and survey-core then renders
-   * each matrix row as a stacked card.
-   */
-  layout?: "split" | "stacked";
 }) {
   const collection = getRecordCollection(collectionId);
   const { schemaId, noun } = collection;
   const schema = getSchemaDefinition(schemaId).json;
+  const segment = documentImport?.segment;
+  const importPath = segment === undefined ? undefined : `${basePath}/${segment}`;
+
+  // The ring around the form: the records pages show which part SurveyJS draws,
+  // as the embedded demos do.
+  useSurveyOutline();
 
   const [rows, setRows] = useState<RecordRow[]>(() => [...initialRows]);
   const [open, setOpen] = useState<OpenRecord | null>(() =>
@@ -181,9 +179,14 @@ export function RecordsView({
   const [model, setModel] = useState<Model | null>(null);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<RecordRow | null>(null);
-  const [discard, setDiscard] = useState<{ title: string; run: () => void } | null>(null);
+  const [discard, setDiscard] = useState<DiscardRequest | null>(null);
   const [activeUserId, setActiveUserId] = useState(users[0]?.id);
   const formColumn = useRef<HTMLDivElement>(null);
+
+  // The import panel. `open` stays the record the panel returns to.
+  const [importing, setImporting] = useState(initialImport && importPath !== undefined);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importReturnPath, setImportReturnPath] = useState(basePath);
 
   // Callbacks read the latest state through refs, so the ones handed to the
   // form keep their identity and never rebuild or re-snapshot it.
@@ -195,9 +198,65 @@ export function RecordsView({
     rowsRef.current = rows;
     modelRef.current = model;
   });
+  // Written together with their state, because a transition reads them in the
+  // same handler that changes them.
+  const importingRef = useRef(importing);
+  const importBusyRef = useRef(importBusy);
+  const importReturnPathRef = useRef(importReturnPath);
+  const setImportingNow = useCallback((value: boolean) => {
+    importingRef.current = value;
+    setImporting(value);
+  }, []);
+  const setImportBusyNow = useCallback((value: boolean) => {
+    importBusyRef.current = value;
+    setImportBusy(value);
+  }, []);
+  const setImportReturnPathNow = useCallback((value: string) => {
+    importReturnPathRef.current = value;
+    setImportReturnPath(value);
+  }, []);
 
   const activeUser = users.find((user) => user.id === activeUserId) ?? users[0];
   const variables = useMemo(() => (activeUser ? { user: activeUser } : undefined), [activeUser]);
+
+  /* ── the URL ─────────────────────────────────────────────────────────────── */
+
+  const pathname = usePathname();
+
+  // What the URL the app last wrote names. Set before every push and replace,
+  // so the pathname effect tells the app's own writes from Back and Forward.
+  const loadedRoute = routeOf(pathname, basePath, segment) ?? basePath;
+  const givenRoute = initialRecord ? recordHref(basePath, initialRecord.id) : basePath;
+  const fallsBack = loadedRoute !== basePath && loadedRoute !== importPath && loadedRoute !== givenRoute;
+  const routeTarget = useRef(fallsBack ? givenRoute : loadedRoute);
+  // An id the page was not given a record for (unknown, deleted, or created in
+  // another browser) opened the first record instead; its URL goes in the
+  // address bar, with no notice. Until Next.js reports that URL, the old one is
+  // expected, not a Back.
+  const replacedRoute = useRef(fallsBack ? loadedRoute : null);
+
+  const writeRoute = useCallback((href: string, how: "push" | "replace") => {
+    routeTarget.current = href;
+    if (window.location.pathname === href) return;
+    if (how === "push") window.history.pushState(null, "", href);
+    else window.history.replaceState(null, "", href);
+  }, []);
+
+  useEffect(() => {
+    if (replacedRoute.current === null) return;
+    const href = routeTarget.current;
+    // A tick later: Next.js patches `history` in its router's own effect, which
+    // runs after this one, and only a patched `replaceState` reaches `usePathname`.
+    const timer = setTimeout(() => window.history.replaceState(null, "", href), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  /** The URL of what is on screen: the panel, or the open record (for a new one, the record before it). */
+  const screenRoute = useCallback(() => {
+    if (importingRef.current && importPath) return importPath;
+    const shown = returnRecord(openRef.current);
+    return shown ? recordHref(basePath, shown.id) : basePath;
+  }, [basePath, importPath]);
 
   /* ── unsaved changes ─────────────────────────────────────────────────────── */
 
@@ -217,14 +276,20 @@ export function RecordsView({
     snapshot.current = stableJson(next.data as SurveyData);
   }, []);
 
+  // Bumped by every transition, so a record fetched for an older one is dropped.
+  const request = useRef(0);
+
   const nextKey = (prev: OpenRecord | null) => (prev?.key ?? 0) + 1;
 
   const openTitle = (current: OpenRecord) =>
     current.mode === "new" ? `the new ${noun.one}` : recordTitle(collection, current.record);
 
-  /** Runs `action`, or first asks, when the open form has changes nobody saved. */
+  /**
+   * Runs `action`, or first asks, when the open form has changes nobody saved.
+   * `cancel` runs when the question is dismissed rather than answered.
+   */
   const guard = useCallback(
-    (action: () => void) => {
+    (action: () => void, cancel?: () => void) => {
       const current = openRef.current;
       const form = modelRef.current;
       const changed =
@@ -234,7 +299,7 @@ export function RecordsView({
         snapshot.current !== null &&
         stableJson(form.data as SurveyData) !== snapshot.current;
       if (changed) {
-        setDiscard({ title: openTitle(current), run: action });
+        setDiscard({ title: openTitle(current), run: action, cancel });
       } else {
         action();
       }
@@ -243,17 +308,53 @@ export function RecordsView({
     [collectionId],
   );
 
-  /* ── opening ─────────────────────────────────────────────────────────────── */
+  /** Keep editing, the X, Escape, a click outside: undo what started the transition. */
+  const dismissDiscard = () => {
+    discard?.cancel?.();
+    setDiscard(null);
+  };
 
-  const request = useRef(0);
+  /* ── the import panel ────────────────────────────────────────────────────── */
+
+  /** The one way out of the panel; every transition that leaves it calls this first. */
+  const leaveImport = useCallback(() => {
+    setImportingNow(false);
+    // A reading that finished unmounted the panel before it could report so.
+    setImportBusyNow(false);
+  }, [setImportingNow, setImportBusyNow]);
+
+  const openImport = useCallback(
+    (returnTo: string, cancel?: () => void) => {
+      if (!importPath) return;
+      guard(() => {
+        request.current++;
+        setLoading(false);
+        setImportingNow(true);
+        // No form while the panel is open: "Save as PDF" disables on `!model`,
+        // and the guard has no stale form left to compare after a discard.
+        setModel(null);
+        snapshot.current = null;
+        setImportReturnPathNow(returnTo === importPath ? basePath : returnTo);
+        writeRoute(importPath, "push");
+      }, cancel);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [basePath, importPath, guard, writeRoute],
+  );
+
+  /* ── opening ─────────────────────────────────────────────────────────────── */
 
   const show = useCallback((mode: "view" | "edit", record: StoredRecord) => {
     setOpen((prev) => ({ mode, record, data: record.data, key: nextKey(prev) }));
   }, []);
 
   const openRow = useCallback(
-    (id: string, mode: "view" | "edit") =>
+    (id: string, mode: "view" | "edit", options: { push?: boolean; cancel?: () => void } = {}) =>
       guard(() => {
+        // A rail click or Back and Forward leave the panel.
+        const leftImport = importingRef.current;
+        if (leftImport) leaveImport();
+        if (options.push) writeRoute(recordHref(basePath, id), "push");
         const current = openRef.current;
         if (current && current.mode !== "new" && current.record.id === id) {
           request.current++;
@@ -266,15 +367,32 @@ export function RecordsView({
         void getResult(collectionId, id).then((record) => {
           if (ticket !== request.current) return;
           setLoading(false);
-          if (record) show(mode, record);
+          if (record) {
+            show(mode, record);
+            return;
+          }
+          // A Back or Forward target that is gone, deleted in this tab: stay on
+          // what is open, at its own URL.
+          const back = returnRecord(openRef.current);
+          if (leftImport && back) show("view", back);
+          writeRoute(screenRoute(), "replace");
         });
-      }),
-    [collectionId, guard, show],
+      }, options.cancel),
+    [basePath, collectionId, guard, leaveImport, screenRoute, show, writeRoute],
+  );
+
+  const selectRow = useCallback(
+    (id: string) => openRow(id, "view", { push: true }),
+    [openRow],
   );
 
   const startNew = useCallback(
     () =>
       guard(() => {
+        if (importingRef.current) {
+          leaveImport();
+          writeRoute(importReturnPathRef.current, "push");
+        }
         request.current++;
         setLoading(false);
         const id = collection.newId(rowsRef.current.map((row) => row.id));
@@ -284,24 +402,65 @@ export function RecordsView({
           record: { id, columns: collection.toColumns(id, data), data },
           data,
           key: nextKey(prev),
-          previous: prev?.mode === "new" ? prev.previous : prev?.record,
+          previous: returnRecord(prev),
         }));
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [collectionId, guard, activeUser],
+    [collectionId, guard, leaveImport, writeRoute, activeUser],
   );
 
   const cancel = useCallback(
     () =>
       guard(() => {
-        const current = openRef.current;
-        if (!current) return;
-        const back = current.mode === "new" ? current.previous : current.record;
+        const back = returnRecord(openRef.current);
         if (back) show("view", back);
         else setOpen(null);
       }),
     [guard, show],
   );
+
+  const closeImport = useCallback(() => {
+    if (importBusyRef.current) return;
+    leaveImport();
+    const back = returnRecord(openRef.current);
+    if (back) show("view", back);
+    else setOpen(null);
+    writeRoute(importReturnPathRef.current, "push");
+  }, [leaveImport, show, writeRoute]);
+
+  // Back and Forward. The app's own writes set `routeTarget` first and stop here.
+  useEffect(() => {
+    const route = routeOf(pathname, basePath, segment);
+    if (route === undefined) return;
+    if (route === routeTarget.current) {
+      replacedRoute.current = null;
+      return;
+    }
+    if (route === replacedRoute.current) return;
+
+    if (importBusyRef.current && importPath) {
+      // History cannot be blocked, so a reading in flight puts the panel's URL back.
+      writeRoute(importPath, "push");
+      return;
+    }
+
+    const onScreen = screenRoute();
+    routeTarget.current = route;
+    const restore = () => writeRoute(screenRoute(), "push");
+    if (route === importPath) {
+      openImport(onScreen, restore);
+      return;
+    }
+    const id = route === basePath ? rowsRef.current[0]?.id : decodeURIComponent(route.slice(basePath.length + 1));
+    if (id !== undefined) {
+      openRow(id, "view", { cancel: restore });
+      return;
+    }
+    guard(() => {
+      if (importingRef.current) leaveImport();
+      setOpen(null);
+    }, restore);
+  }, [pathname, basePath, segment, importPath, guard, leaveImport, openImport, openRow, screenRoute, writeRoute]);
 
   /* ── saving ──────────────────────────────────────────────────────────────── */
 
@@ -324,9 +483,10 @@ export function RecordsView({
       if (!current) return;
       const saved = await saveResult(collectionId, current.record.id, data);
       upsertRow(saved);
+      if (current.mode === "new") writeRoute(recordHref(basePath, saved.id), "push");
       show("view", saved);
     },
-    [collectionId, show, upsertRow],
+    [basePath, collectionId, show, upsertRow, writeRoute],
   );
 
   // The header's Save checks every page, not only the one on screen:
@@ -337,8 +497,8 @@ export function RecordsView({
     if (model.validate(true, true, undefined, true)) model.completeLastPage();
   }, [model]);
 
-  const createFrom = useCallback(
-    async (extracted: SurveyData, source?: SourceDocument) => {
+  const createFrom = useCallback<CreateFrom>(
+    async (extracted, source) => {
       // Values a source left blank come back empty, and are dropped rather than
       // written over the new record's own defaults.
       const answers = Object.fromEntries(
@@ -357,7 +517,10 @@ export function RecordsView({
         : { ...answers, ...collection.newRecord(id, activeUser) };
       const saved = await saveResult(collectionId, id, document);
       upsertRow(saved);
+      // The panel cleared the model, so this passes straight through.
       guard(() => {
+        if (importingRef.current) leaveImport();
+        writeRoute(recordHref(basePath, saved.id), "push");
         show("edit", saved);
         requestAnimationFrame(() =>
           formColumn.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
@@ -365,7 +528,7 @@ export function RecordsView({
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [collectionId, activeUser, guard, show, upsertRow],
+    [basePath, collectionId, activeUser, guard, leaveImport, show, upsertRow, writeRoute],
   );
 
   const confirmDelete = useCallback(async () => {
@@ -381,13 +544,17 @@ export function RecordsView({
     if (current && current.mode !== "new" && current.record.id === target.id) {
       const next = remaining[0];
       if (!next) {
+        writeRoute(basePath, "replace");
         setOpen(null);
         return;
       }
       const record = await getResult(collectionId, next.id);
-      if (record) show("view", record);
+      if (record) {
+        writeRoute(recordHref(basePath, record.id), "replace");
+        show("view", record);
+      }
     }
-  }, [collectionId, deleteTarget, show]);
+  }, [basePath, collectionId, deleteTarget, show, writeRoute]);
 
   /* ── the signed-in user ──────────────────────────────────────────────────── */
 
@@ -432,6 +599,9 @@ export function RecordsView({
       : `${open.mode === "edit" ? "Edit" : "View"} ${recordTitle(collection, open.record)}`
     : "";
 
+  // Nothing in the list is selected while a new record or the panel is open.
+  const selectedId = !importing && open && open.mode !== "new" ? open.record.id : undefined;
+
   return (
     <div>
       <PageHeader
@@ -441,6 +611,17 @@ export function RecordsView({
         analyticsHref={features.analyticsHref?.(schemaId)}
         actions={
           <>
+            {documentImport && (
+              <Button
+                size="sm"
+                className="gap-2"
+                disabled={importing}
+                onClick={() => openImport(window.location.pathname)}
+              >
+                <ScanTextIcon />
+                {documentImport.label}
+              </Button>
+            )}
             {activeUser && (
               <UserSwitcher users={users} activeId={activeUser.id} onSelect={selectUser} />
             )}
@@ -460,147 +641,112 @@ export function RecordsView({
         }
       />
 
-      <div
-        className={mergeTailwindClasses(
-          "grid items-start gap-6",
-          layout === "split" && "lg:grid-cols-2",
-        )}
-      >
-        <div className="min-w-0">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-base font-semibold">
-              {rows.length} {rows.length === 1 ? noun.one : noun.many}
-            </h2>
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={startNew}>
-              <PlusIcon />
-              New {noun.one}
-            </Button>
-          </div>
-          <Card className="overflow-hidden py-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {collection.columns.map((column) => (
-                    <TableHead
-                      key={column.key}
-                      className={RIGHT_ALIGNED.has(column.kind) ? "text-right" : undefined}
-                    >
-                      {column.label}
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={collection.columns.length + 1}
-                      className="text-muted-foreground py-10 text-center"
-                    >
-                      No records left.
-                    </TableCell>
-                  </TableRow>
-                )}
-                {rows.map((row) => {
-                  const active = open?.mode !== "new" && open?.record.id === row.id;
-                  return (
-                    <TableRow
-                      key={row.id}
-                      data-state={active ? "selected" : undefined}
-                      className="cursor-pointer"
-                      onClick={() => openRow(row.id, "view")}
-                    >
-                      {collection.columns.map((column) => (
-                        <TableCell
-                          key={column.key}
-                          className={mergeTailwindClasses(
-                            column.kind === "id" && "font-mono",
-                            RIGHT_ALIGNED.has(column.kind) && "text-right",
-                          )}
-                        >
-                          <Cell column={column} columns={row.columns} />
-                        </TableCell>
-                      ))}
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openRow(row.id, "edit");
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setDeleteTarget(row);
-                            }}
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </Card>
-
-          {listFooter?.({ createFrom })}
+      {/* From `xl` the rail sits beside the form; below it, `RecordPicker` takes
+          its place. At 1280px that leaves the form 676px, above the theme's
+          640px `--sd-mobile-width`, so matrices keep their columns. */}
+      <div className="grid items-start gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="hidden min-w-0 overflow-x-hidden xl:sticky xl:top-0 xl:block xl:max-h-[calc(100svh-8rem)] xl:overflow-y-auto">
+          <RecordRail
+            collection={collection}
+            title={title}
+            rows={rows}
+            selectedId={selectedId}
+            basePath={basePath}
+            onSelect={selectRow}
+            onNew={startNew}
+            noun={noun}
+            disabled={importBusy}
+          />
         </div>
 
-        {open && (
-          <div
-            ref={formColumn}
-            className={mergeTailwindClasses("min-w-0", layout === "split" && "lg:sticky lg:top-20")}
-          >
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold">{heading}</h2>
-              <div className="flex gap-2">
-                {open.mode === "view" ? (
-                  <Button size="sm" variant="outline" onClick={() => openRow(open.record.id, "edit")}>
-                    Edit
-                  </Button>
-                ) : (
-                  <>
-                    <Button size="sm" variant="ghost" onClick={cancel}>
-                      Cancel
-                    </Button>
-                    <Button size="sm" disabled={!model} onClick={saveChanges}>
-                      Save changes
-                    </Button>
-                  </>
-                )}
+        <div ref={formColumn} className="min-w-0">
+          <RecordPicker
+            collection={collection}
+            rows={rows}
+            selectedId={selectedId}
+            onSelect={selectRow}
+            onNew={startNew}
+            noun={noun}
+            disabled={importBusy}
+          />
+
+          {importing && documentImport ? (
+            <>
+              <div className="mb-3 flex items-center justify-end gap-2">
+                <Button size="sm" variant="ghost" disabled={importBusy} onClick={closeImport}>
+                  Close
+                </Button>
               </div>
+              {documentImport.render({ createFrom, onBusyChange: setImportBusyNow })}
+            </>
+          ) : open ? (
+            <>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h2 className="text-base font-semibold">{heading}</h2>
+                <div className="flex gap-2">
+                  {open.mode === "view" ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openRow(open.record.id, "edit")}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteTarget(open.record)}
+                      >
+                        Delete
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={cancel}>
+                        Cancel
+                      </Button>
+                      <Button size="sm" disabled={!model} onClick={saveChanges}>
+                        Save changes
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+              {formNote && <div className="text-muted-foreground mb-3 text-xs">{formNote}</div>}
+              {loading && (
+                <p className="text-muted-foreground mb-2 text-xs" role="status">
+                  Loading…
+                </p>
+              )}
+              {/* Only the form: the heading, the actions and the note above are
+                  this application's own markup. */}
+              <SurveyOutline>
+                <SurveyForm
+                  key={open.key}
+                  schema={schema}
+                  schemaId={schemaId}
+                  data={open.data}
+                  variables={variables}
+                  mode={open.mode === "view" ? "display" : "edit"}
+                  onComplete={open.mode === "view" ? undefined : handleComplete}
+                  pdfInNavigation={false}
+                  completeText="Save changes"
+                  onModelReady={handleModelReady}
+                />
+              </SurveyOutline>
+            </>
+          ) : (
+            <div className="text-muted-foreground flex flex-col items-center gap-3 rounded-lg border border-dashed px-6 py-12 text-sm">
+              <p>No {noun.many} yet</p>
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={startNew}>
+                <PlusIcon />
+                New {noun.one}
+              </Button>
             </div>
-            {formNote && <div className="text-muted-foreground mb-3 text-xs">{formNote}</div>}
-            {loading && (
-              <p className="text-muted-foreground mb-2 text-xs" role="status">
-                Loading…
-              </p>
-            )}
-            <SurveyForm
-              key={open.key}
-              schema={schema}
-              schemaId={schemaId}
-              data={open.data}
-              variables={variables}
-              mode={open.mode === "view" ? "display" : "edit"}
-              onComplete={open.mode === "view" ? undefined : handleComplete}
-              pdfInNavigation={false}
-              completeText="Save changes"
-              onModelReady={handleModelReady}
-            />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <Dialog open={deleteTarget !== null} onOpenChange={(value) => !value && setDeleteTarget(null)}>
@@ -626,7 +772,7 @@ export function RecordsView({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={discard !== null} onOpenChange={(value) => !value && setDiscard(null)}>
+      <Dialog open={discard !== null} onOpenChange={(value) => !value && dismissDiscard()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Discard changes to {discard?.title}?</DialogTitle>
@@ -636,7 +782,7 @@ export function RecordsView({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDiscard(null)}>
+            <Button variant="outline" onClick={dismissDiscard}>
               Keep editing
             </Button>
             <Button

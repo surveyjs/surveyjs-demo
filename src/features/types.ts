@@ -31,6 +31,12 @@ export interface Features {
   };
   /** The form as a document. Undefined here: no button renders. */
   exportPdf?: (json: SurveyJSON, opts: { label: string; data?: SurveyData }) => Promise<void>;
+  /**
+   * A work order printed onto the company's own job sheet, box by box: Work
+   * orders' "Save as PDF", in place of `exportPdf`. Undefined here: no button
+   * and no note about it render.
+   */
+  exportWorkOrderPdf?: (data: SurveyData) => Promise<void>;
   /** The dashboard for one form's responses. Undefined here: no link renders. */
   analyticsHref?: (formId: string) => string;
 }

@@ -67,6 +67,7 @@ export const leadsCollection: RecordCollection = {
     { key: "dealValue", label: "Deal value", kind: "money", currencyKey: "currency" },
     { key: "nextStepDate", label: "Next step", kind: "date" },
   ],
+  rail: { primary: "accountName", secondary: ["stage", "dealValue"] },
   titleKey: "accountName",
   // Five displayed, plus `currency` (read by the money column) and
   // `expectedClose` (read by `compare`), stored and not shown.

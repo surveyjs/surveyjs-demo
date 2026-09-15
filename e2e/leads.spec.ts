@@ -1,6 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import { QuestionMatrixDynamicModel, QuestionPanelDynamicModel } from "survey-core";
+import { getFormNavItem } from "../src/schemas/navigation";
 import { assignRowIds, getRecordCollection, recordTitle } from "../src/schemas/records";
+import { PAGE_ACTIONS } from "../src/lib/site";
+import { HOW_BUILT } from "../src/lib/how-built";
 import { createSurveyModel } from "../src/schemas/createSurveyModel";
 import { leadsJson } from "../src/schemas/leads";
 import { getResult, listResults, saveResult } from "../src/storage/survey-results";
@@ -14,6 +17,7 @@ import { LEADS_USERS } from "../src/storage/session";
  */
 
 const leads = getRecordCollection("leads");
+const leadsNav = getFormNavItem("leads");
 const [sales, manager] = LEADS_USERS;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const CONTAINERS = leads.rowIdContainers!;
@@ -94,14 +98,24 @@ function formHeading(page: Page) {
   return page.getByRole("heading", { level: 2 }).filter({ hasText: /^(View|Edit|New) / });
 }
 
+/** The rail: a navigation landmark named after the page. */
+function rail(page: Page) {
+  return page.getByRole("navigation", { name: leadsNav.label, exact: true });
+}
+
+/** One lead in the rail, by account: the account is the link's first line. */
+function listRow(page: Page, account: string) {
+  return rail(page).getByRole("link", { name: new RegExp(account) });
+}
+
+/** Opens a lead from the rail; editing is the form header's Edit. */
 async function openLead(page: Page, account: string, mode: "view" | "edit" = "view") {
-  const row = page.getByRole("row", { name: new RegExp(account) });
+  await listRow(page, account).click();
+  await expect(formHeading(page)).toHaveText(`View ${account}`);
   if (mode === "edit") {
-    await row.getByRole("button", { name: "Edit", exact: true }).click();
-  } else {
-    await row.getByRole("cell").first().click();
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    await expect(formHeading(page)).toHaveText(`Edit ${account}`);
   }
-  await expect(formHeading(page)).toHaveText(`${mode === "edit" ? "Edit" : "View"} ${account}`);
 }
 
 async function nextPage(page: Page) {
@@ -130,14 +144,36 @@ test.describe("on /leads", () => {
   test("opens a lead from the list", async ({ page }) => {
     const rows = await listResults("leads");
     await page.goto("/leads");
-    await expect(page.getByRole("table").first().getByRole("row")).toHaveCount(rows.length + 1);
+    await expect(rail(page).getByRole("link")).toHaveCount(rows.length);
     await openLead(page, "Northwind Labs");
     await expect(form(page).locator('[data-name="accountName"] input')).toHaveValue("Northwind Labs");
     await expect(page.getByRole("button", { name: `Signed in as: ${sales.name}` })).toBeVisible();
     // The list's first row is the soonest expected close.
-    await expect(page.getByRole("table").first().getByRole("row").nth(1)).toContainText(
-      recordTitle(leads, rows[0]),
-    );
+    await expect(rail(page).getByRole("link").first()).toContainText(recordTitle(leads, rows[0]));
+  });
+
+  test("a lead's own URL opens it, marked in the rail", async ({ page }) => {
+    const response = await page.goto("/leads/LEAD-0002");
+    expect(await response!.text()).toContain("View Halcyon Foods");
+    await expect(formHeading(page)).toHaveText("View Halcyon Foods");
+    await expect(listRow(page, "Halcyon Foods")).toHaveAttribute("aria-current", "page");
+    await expect(page).toHaveURL(/\/leads\/LEAD-0002$/);
+  });
+
+  test("/leads opens the first lead and keeps its URL", async ({ page }) => {
+    const rows = await listResults("leads");
+    await page.goto("/leads");
+    await expect(formHeading(page)).toHaveText(`View ${recordTitle(leads, rows[0])}`);
+    await expect(rail(page).getByRole("link").first()).toHaveAttribute("aria-current", "page");
+    await expect(page).toHaveURL(/\/leads$/);
+  });
+
+  test("the how-built panel describes a record's URL, and says what the list is", async ({ page }) => {
+    await page.goto("/leads/LEAD-0001");
+    await page.getByRole("banner").getByRole("button", { name: PAGE_ACTIONS.howBuilt }).click();
+    const panel = page.getByRole("complementary", { name: PAGE_ACTIONS.howBuilt });
+    await expect(panel).toContainText(HOW_BUILT.leads!.summary);
+    await expect(panel).toContainText(HOW_BUILT.leads!.listNote!);
   });
 
   test("a new line item recomputes its total and the deal; removing it leaves the form valid", async ({ page }) => {
@@ -212,7 +248,7 @@ test.describe("on /leads", () => {
     await openLead(page, "Ridgeline Family Health", "edit");
     await nextPage(page);
     await nextPage(page);
-    await page.getByRole("row", { name: /Halcyon Foods/ }).getByRole("cell").first().click();
+    await listRow(page, "Halcyon Foods").click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(formHeading(page)).toHaveText("View Halcyon Foods");
   });
@@ -243,9 +279,10 @@ test.describe("on /leads", () => {
     await page.getByRole("button", { name: "Save changes" }).first().click();
 
     await expect(formHeading(page)).toHaveText("View Tidewater Ports");
-    const row = page.getByRole("row", { name: /Tidewater Ports/ });
-    await expect(row).toContainText(manager.name);
+    // The rail shows the stage and the deal value; the owner is in the form.
+    const row = listRow(page, "Tidewater Ports");
     await expect(row).toContainText("€0.00");
     await expect(row).toContainText("New");
+    await expect(page).toHaveURL(/\/leads\/LEAD-0007$/);
   });
 });

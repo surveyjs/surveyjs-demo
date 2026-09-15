@@ -43,6 +43,7 @@ export const claimsCollection: RecordCollection = {
     },
     { key: "totalCharge", label: "Total charge", kind: "money" },
   ],
+  rail: { primary: "patientName", secondary: ["claimNumber", "status"] },
   titleKey: "claimNumber",
   toColumns: (id, data) => ({
     claimNumber: id,

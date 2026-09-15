@@ -1,3 +1,4 @@
+import { features, type Edition } from "@/features";
 import { EXTERNAL_URLS } from "@/lib/site";
 
 export type NavId =
@@ -15,8 +16,11 @@ interface NavBase {
   readonly id: NavId;
   readonly label: string;
   readonly description: string;
-  /** A small tag after the label, for a demo that is not finished. */
-  readonly badge?: "preview";
+  /**
+   * Set for a row only one edition shows: a demo of a commercial product has no
+   * row in the MIT edition. Filtered out of `navGroups`, so no reader sees it.
+   */
+  readonly edition?: Edition;
 }
 
 /** A route in this app. `schemaId` only on a page that renders one form. */
@@ -52,9 +56,10 @@ export interface NavGroup {
 /**
  * The sidebar, in order. A row with a `path` is a page here; a row with an
  * `href` is another site. Whether a row opens in a new tab, and carries the ↗,
- * follows from that and from `layout` — see `opensInNewTab`.
+ * follows from that and from `layout` — see `opensInNewTab`. Rows for another
+ * edition are dropped in `navGroups`.
  */
-export const navGroups: readonly NavGroup[] = [
+const allNavGroups: readonly NavGroup[] = [
   {
     id: "inYourApp",
     label: "In your app",
@@ -101,7 +106,7 @@ export const navGroups: readonly NavGroup[] = [
         id: "workOrders",
         label: "Work orders",
         path: "/work-orders",
-        description: "Job sheets: a scan or photo into a record with AI, and back onto the sheet as PDF.",
+        description: "Job sheets: a PDF, scan or photo into a record with AI.",
         schemaId: "work-order",
         layout: "shell",
       },
@@ -122,7 +127,7 @@ export const navGroups: readonly NavGroup[] = [
         label: "Edit together",
         href: EXTERNAL_URLS.editTogether,
         description: "A team in Survey Creator on one definition.",
-        badge: "preview",
+        edition: "full",
       },
     ],
   },
@@ -148,6 +153,14 @@ export const navGroups: readonly NavGroup[] = [
     ],
   },
 ];
+
+/** The sidebar this edition shows: the rows for another edition, and a group left empty, dropped. */
+export const navGroups: readonly NavGroup[] = allNavGroups
+  .map((group) => ({
+    ...group,
+    items: group.items.filter((item) => item.edition === undefined || item.edition === features.edition),
+  }))
+  .filter((group) => group.items.length > 0);
 
 /** Every sidebar row, in order. */
 export const navItems: readonly NavItem[] = navGroups.flatMap((group) => group.items);

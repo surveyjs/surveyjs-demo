@@ -6,12 +6,21 @@ import { pageMetadata } from "@/lib/metadata";
 
 const nav = getFormNavItem("leads");
 
+// Canonical to `/leads`: a record's URL is the same page.
 export const metadata = pageMetadata(nav.id);
 
-// The first record, in place: the URL stays `/leads`.
-export default async function LeadsPage() {
+export async function generateStaticParams() {
   const rows = await listResults("leads");
-  const initialRecord = rows[0] && (await getResult("leads", rows[0].id));
+  return rows.map((row) => ({ id: row.id }));
+}
+
+export default async function LeadPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const rows = await listResults("leads");
+  // An id the server does not hold (a record created in a browser, or a typo)
+  // opens the first record, and the browser puts that record's URL in the bar.
+  const initialRecord =
+    (await getResult("leads", id)) ?? (rows[0] && (await getResult("leads", rows[0].id)));
   // In your app: the session's one user.
   const users = await listSessionUsers("leads");
 

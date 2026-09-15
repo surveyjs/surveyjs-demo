@@ -15,7 +15,6 @@ import {
   UsersRoundIcon,
   type LucideIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   isActiveRoute,
   navGroups,
@@ -69,11 +68,6 @@ function ItemBody({ item, active }: { item: NavItem; active: boolean }) {
               </span>
               <span className="sr-only">(opens in a new tab)</span>
             </>
-          )}
-          {item.badge && (
-            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-              {item.badge}
-            </Badge>
           )}
         </span>
         <span className="text-muted-foreground text-xs leading-tight">
@@ -146,11 +140,12 @@ function Group({
 }
 
 /**
- * The admin sidebar: one list for every edition, built from `navGroups`.
+ * The admin sidebar, built from `navGroups`, which already leaves out the rows
+ * for another edition.
  *
  * Nothing here knows which edition it is in or special-cases a row. A row's
  * data decides everything about it — where it goes, whether it opens in a new
- * tab and carries the ↗, and whether it wears a badge.
+ * tab and carries the ↗.
  */
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();

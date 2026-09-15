@@ -76,6 +76,7 @@ export const workOrdersCollection: RecordCollection = {
     },
     { key: "total", label: "Total", kind: "money" },
   ],
+  rail: { primary: "customerName", secondary: ["jobNumber", "status"] },
   titleKey: "jobNumber",
   toColumns: (id, data) => ({
     jobNumber: id,

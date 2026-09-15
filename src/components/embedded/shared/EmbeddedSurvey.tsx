@@ -6,6 +6,7 @@ import type { Model } from "survey-core";
 import { createSurveyModel, type SurveyData, type SurveyJSON } from "@/schemas";
 import "@/lib/surveyjs-license";
 import { mergeTailwindClasses } from "@/lib/utils";
+import { SurveyOutlineLabel } from "@/components/survey-outline/SurveyOutline";
 
 import "survey-core/survey-core.css";
 import "survey-core/themes/adapters/shadcn-base-nova.css";
@@ -82,11 +83,6 @@ export function EmbeddedSurvey({
   return <Survey model={model} />;
 }
 
-/** Drops the outline for the rest of the visit — see `SurveyCard` below. */
-function hideOutline() {
-  document.documentElement.removeAttribute("data-demo-highlight");
-}
-
 /**
  * The container a host page puts a form in — a plain shadcn card.
  *
@@ -98,7 +94,8 @@ function hideOutline() {
  * which element the library drew, and pressing it takes the whole ring away, so
  * the page can be looked at as a visitor would see it without hunting for a
  * control in the toolbar. Both it and the ring are styled in `globals.css`,
- * keyed off the attribute an embedded demo sets on `<html>`.
+ * keyed off the attribute an embedded demo sets on `<html>`; the label and that
+ * attribute are shared with the records pages, in `survey-outline/`.
  */
 export function SurveyCard({
   className,
@@ -115,14 +112,7 @@ export function SurveyCard({
         className,
       )}
     >
-      <button
-        type="button"
-        data-survey-outline-label=""
-        title="Hide the outline and look at the page as a visitor would"
-        onClick={hideOutline}
-      >
-        SurveyJS renders this (hide selection)
-      </button>
+      <SurveyOutlineLabel />
       {children}
     </div>
   );

@@ -12,6 +12,10 @@ const allRoutes = [
   "/",
   ...surveyRoutes,
   "/work-orders",
+  // A record's own URL, and the import panel's.
+  "/leads/LEAD-0001",
+  "/work-orders/WO-2026-0118",
+  "/work-orders/from-document",
   "/definition",
   // The one editor, on a plain form and on a personalized one.
   "/configure",
@@ -80,12 +84,26 @@ test("opening another chart changes the note's shape", async ({ page }) => {
   });
 });
 
-test("/work-orders renders the table and the SurveyJS editor", async ({ page }) => {
+test("/work-orders renders the rail and the SurveyJS editor", async ({ page }) => {
   await page.goto("/work-orders");
-  await expect(page.getByRole("table").first()).toBeVisible();
-  await page.getByRole("button", { name: "Edit" }).first().click();
+  const rail = page.getByRole("navigation", { name: "Work orders", exact: true });
+  await expect(rail.getByRole("link").first()).toBeVisible();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   await expect(page.locator(".sd-root-modern").first()).toBeVisible();
 });
+
+for (const [route, heading] of [
+  ["/leads/LEAD-0003", "View Kestrel Freight"],
+  ["/work-orders/WO-2026-0120", "View WO-2026-0120"],
+] as const) {
+  test(`${route} opens that record in the HTML the server sent`, async ({ page }) => {
+    const response = await page.goto(route);
+    expect(response?.status()).toBe(200);
+    const html = await response!.text();
+    expect(html).toContain("sd-root-modern");
+    expect(html).toContain(heading);
+  });
+}
 
 test("a saved definition is what the pages render, and the server stays canonical", async ({
   page,

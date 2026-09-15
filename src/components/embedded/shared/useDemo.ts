@@ -6,6 +6,7 @@ import { loadSurveyJson } from "@/storage/survey-json";
 import { configureHref } from "@/lib/routes";
 import { stableJson } from "@/lib/utils";
 import { features } from "@/features";
+import { useSurveyOutline } from "@/components/survey-outline/SurveyOutline";
 import { DEFAULT_BRAND_ID, applyBrand, getBrand, type DemoSurvey } from "./demo-controls";
 import { accountName, type DemoRosterEntry, type DemoUser } from "./demo-accounts";
 
@@ -131,14 +132,8 @@ export function useDemo({
   // The demo owns the palette only while it is on screen.
   useEffect(() => () => applyBrand(getBrand("neutral")), []);
 
-  // One attribute on <html> for as long as a demo is on screen; the outline
-  // itself is in `globals.css`, keyed off the `data-survey-root` marker that
-  // `SurveyCard` carries.
-  useEffect(() => {
-    const root = document.documentElement;
-    root.setAttribute("data-demo-highlight", "");
-    return () => root.removeAttribute("data-demo-highlight");
-  }, []);
+  // The "SurveyJS renders this" outline, for as long as a demo is on screen.
+  useSurveyOutline();
 
   /* ── the definition, as the admin left it ────────────────────────────────── */
 

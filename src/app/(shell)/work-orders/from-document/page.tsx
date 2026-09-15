@@ -7,8 +7,9 @@ const nav = getFormNavItem("workOrders");
 
 export const metadata = pageMetadata(nav.id);
 
-// The first record, in place: the URL stays `/work-orders`.
-export default async function WorkOrdersPage() {
+// The import panel's own URL. A static segment, so it wins over `[id]`. The
+// first record is read too: it is what Close returns to.
+export default async function WorkOrdersFromDocumentPage() {
   const rows = await listResults("workOrders");
   const initialRecord = rows[0] && (await getResult("workOrders", rows[0].id));
 
@@ -19,6 +20,7 @@ export default async function WorkOrdersPage() {
       basePath={nav.path}
       initialRows={rows}
       initialRecord={initialRecord}
+      initialImport
     />
   );
 }

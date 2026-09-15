@@ -1,12 +1,14 @@
 <!doctype html>
 <!--
-  The Tallis Mechanical Services job sheet: the blank that "Save as PDF" prints a
-  work order onto, and the sheet every sample document is filled in on.
+  The Tallis Mechanical Services job sheet: the sheet every sample document is
+  filled in on, and in the full edition, the blank that "Save as PDF" prints a
+  work order onto.
 
-  `scripts/render-work-order-assets.mjs` renders it in Chromium. It measures every
-  element carrying `data-box` into `src/lib/work-order-boxes.ts`, prints the blank
-  to `public/samples/work-order-blank.pdf`, and fills it for the samples through
-  `window.fillSheet`. Nothing here is fetched: the fonts sit beside this file.
+  `scripts/render-work-order-assets.mjs` renders it in Chromium and fills it for
+  the samples through `window.fillSheet`. In the full edition it also measures
+  every element carrying `data-box` into `src/features/full/work-order-boxes.ts`
+  and prints the blank to `public/samples/work-order-blank.pdf`. Nothing here is
+  fetched: the fonts sit beside this file.
 
   Box ids are the definition's question names. A choice is `<question>.<value>`,
   a parts cell is `parts.<row>.<column>`, and a box on the continuation sheet is

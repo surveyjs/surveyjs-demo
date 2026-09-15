@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
 import { workOrderSampleDocuments } from "../src/components/extract/sample-documents";
+import { getFormNavItem } from "../src/schemas/navigation";
 import { getRecordCollection } from "../src/schemas/records";
 import { workOrderSeed } from "../src/schemas/data/work-order-seed";
 
@@ -14,9 +15,17 @@ import { workOrderSeed } from "../src/schemas/data/work-order-seed";
  */
 
 const workOrders = getRecordCollection("workOrders");
+const workOrdersNav = getFormNavItem("workOrders");
+
+/** The header button that opens the panel. Exact: the panel's own "Add from your document" must not match. */
+async function openPanel(page: Page) {
+  await page.getByRole("button", { name: "Add from document", exact: true }).click();
+  await expect(page).toHaveURL(/\/work-orders\/from-document$/);
+}
 
 test("the work orders page offers three sample documents and an upload", async ({ page }) => {
   await page.goto("/work-orders");
+  await openPanel(page);
 
   for (const action of ["Add from PDF", "Add from photo", "Add from scan"]) {
     await expect(page.getByRole("button", { name: action })).toBeVisible();
@@ -34,7 +43,6 @@ test("the work orders page offers three sample documents and an upload", async (
   const files = new Set([
     ...workOrderSampleDocuments.flatMap((sample) => [sample.file, sample.preview, sample.full]),
     "/samples/work-order-0120-scan.jpg",
-    "/samples/work-order-blank.pdf",
   ]);
   for (const file of files) {
     expect((await page.request.get(file)).status(), file).toBe(200);
@@ -99,22 +107,28 @@ function formHeading(page: Page) {
   return page.getByRole("heading", { level: 2 }).filter({ hasText: /^(View|Edit|New) / });
 }
 
+function rail(page: Page) {
+  return page.getByRole("navigation", { name: workOrdersNav.label, exact: true });
+}
+
+/** One work order in the rail. The job number is in the link's text. */
 function listRow(page: Page, id: string) {
-  return page.getByRole("table").first().getByRole("row", { name: new RegExp(id) });
+  return rail(page).getByRole("link", { name: new RegExp(id) });
 }
 
 test("a document adds a draft that keeps its printed job number and rate, and links its original", async ({ page }) => {
   await stubExtraction(page, "WO-2026-0130");
   await page.goto("/work-orders");
+  await openPanel(page);
   await page.getByRole("button", { name: "Add from PDF" }).click();
 
   // In the list as a draft, under the job number printed on the sheet, and open
-  // for correction - no Save first.
+  // for correction at its own URL - no Save first.
   const row = listRow(page, "WO-2026-0130");
   await expect(row).toBeVisible();
   await expect(row.locator('[data-slot="badge"]')).toHaveText("Draft");
-  await expect(row).toContainText(TOTAL_AT_120);
   await expect(formHeading(page)).toHaveText("Edit WO-2026-0130");
+  await expect(page).toHaveURL(/\/work-orders\/WO-2026-0130$/);
   await expect(page.getByRole("button", { name: "Save changes" }).first()).toBeVisible();
 
   // Where it came from is the app's to say, not the model's.
@@ -134,6 +148,7 @@ test("a document adds a draft that keeps its printed job number and rate, and li
 test("an upload links a blob URL that opens the same bytes", async ({ page }) => {
   await stubExtraction(page, "WO-2026-0130");
   await page.goto("/work-orders");
+  await openPanel(page);
 
   const bytes = Buffer.from("%PDF-1.4\n% a job sheet of your own\n");
   const chooser = page.waitForEvent("filechooser");
@@ -152,11 +167,65 @@ test("a document whose job number is already stored gets the next free one", asy
   const next = workOrders.newId(workOrderSeed.map((record) => record.id));
   await stubExtraction(page, taken);
   await page.goto("/work-orders");
+  await openPanel(page);
   await page.getByRole("button", { name: "Add from scan" }).click();
 
   await expect(formHeading(page)).toHaveText(`Edit ${next}`);
   await expect(listRow(page, next).locator('[data-slot="badge"]')).toHaveText("Draft");
-  // The stored record with that number is untouched.
-  await expect(page.getByRole("table").first().getByRole("row", { name: new RegExp(taken) })).toHaveCount(1);
-  await expect(listRow(page, taken)).toContainText("$1,195.25");
+  // The stored record with that number is untouched: one of it, with its total.
+  await expect(listRow(page, taken)).toHaveCount(1);
+  await listRow(page, taken).click();
+  await expect(formHeading(page)).toHaveText(`View ${taken}`);
+  await page.getByRole("button", { name: "Next" }).click();
+  await expect(page.locator('[data-name="total"]')).toContainText("$1,195.25");
+});
+
+test("while a document is being read, nothing in the page leaves the panel", async ({ page }) => {
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/extract", async (route: Route) => {
+    await held;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: extracted("WO-2026-0130"), readAt: READ_AT }),
+    });
+  });
+
+  await page.goto("/work-orders");
+  // A record URL first, so Back has somewhere inside the page to go.
+  await listRow(page, "WO-2026-0119").click();
+  await expect(page).toHaveURL(/\/work-orders\/WO-2026-0119$/);
+  await openPanel(page);
+  await page.getByRole("button", { name: "Add from PDF" }).click();
+
+  const close = page.getByRole("button", { name: "Close", exact: true });
+  await expect(close).toBeDisabled();
+  // The rail's New, and the dropdown's New and trigger, hidden at this width.
+  for (const name of [`New ${workOrders.noun.one}`, `Choose a ${workOrders.noun.one}`]) {
+    const buttons = page.getByRole("button", { name, includeHidden: true });
+    expect(await buttons.count()).toBeGreaterThan(0);
+    for (let index = 0; index < (await buttons.count()); index++) {
+      await expect(buttons.nth(index)).toBeDisabled();
+    }
+  }
+
+  // A rail link is marked disabled, and a plain click on it does nothing.
+  const other = listRow(page, "WO-2026-0120");
+  await expect(other).toHaveAttribute("aria-disabled", "true");
+  await other.click({ force: true });
+  await expect(page).toHaveURL(/\/work-orders\/from-document$/);
+  await expect(page.locator(".sd-root-modern")).toHaveCount(0);
+
+  // Back cannot be blocked, so the panel's URL is put back.
+  await page.goBack();
+  await expect(page).toHaveURL(/\/work-orders\/from-document$/);
+  await expect(close).toBeVisible();
+  await expect(page.locator(".sd-root-modern")).toHaveCount(0);
+
+  release();
+  await expect(formHeading(page)).toHaveText("Edit WO-2026-0130");
+  await expect(page).toHaveURL(/\/work-orders\/WO-2026-0130$/);
 });

@@ -50,6 +50,11 @@ export interface RecordCollection {
   readonly schemaId: string;
   readonly noun: { readonly one: string; readonly many: string };
   readonly columns: readonly RecordColumn[];
+  /**
+   * Which columns the rail shows; every column is still derived and stored.
+   * `primary` is the first line, `secondary` the second, both column keys.
+   */
+  readonly rail: { readonly primary: string; readonly secondary: readonly string[] };
   /** Which column names the record in the dialogs and the form heading. */
   readonly titleKey: string;
   /**

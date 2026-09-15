@@ -1,18 +1,23 @@
 import { test, expect } from "@playwright/test";
+import { features } from "../src/features";
 import { navHref, navItems, navPages, opensInNewTab } from "../src/schemas/navigation";
 import { EXTERNAL_URLS } from "../src/lib/site";
 
 /**
- * The admin sidebar, in both editions: one list, the same everywhere.
+ * The admin sidebar, in both editions: one list, less the rows only the other
+ * edition shows.
  *
  * The expected groups are written out here rather than read from `navGroups`,
  * so a change to the navigation data has to be made twice, on purpose.
  */
 
+const FULL = features.edition === "full";
+
 const EXPECTED_GROUPS = [
   { label: "In your app", items: ["Leads", "Feedback", "Encounter note", "Appointment"] },
   { label: "Documents", items: ["Work orders"] },
-  { label: "Together", items: ["Fill together", "Edit together"] },
+  // Edit together is Survey Creator: the full edition only.
+  { label: "Together", items: ["Fill together", ...(FULL ? ["Edit together"] : [])] },
   { label: "For developers", items: ["Starter", "Definition & checks"] },
 ];
 
@@ -56,8 +61,11 @@ test("↗ and a new tab exactly where opensInNewTab says so", async ({ page }) =
     EXTERNAL_URLS.fillTogether,
   );
   const editTogether = sidebar.getByRole("link", { name: /^Edit together/ });
-  await expect(editTogether).toHaveAttribute("href", EXTERNAL_URLS.editTogether);
-  await expect(editTogether.locator('[data-slot="badge"]')).toHaveText("preview");
+  if (FULL) {
+    await expect(editTogether).toHaveAttribute("href", EXTERNAL_URLS.editTogether);
+  } else {
+    await expect(editTogether).toHaveCount(0);
+  }
 });
 
 for (const item of navPages.filter((page) => page.layout === "shell")) {
