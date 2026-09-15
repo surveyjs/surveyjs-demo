@@ -13,7 +13,6 @@ import { getResult, listResults, saveResult } from "../src/storage/survey-result
  */
 
 const claims = getRecordCollection("claims");
-const nounLabel = claims.noun.one.charAt(0).toUpperCase() + claims.noun.one.slice(1);
 
 test.describe("helpers", () => {
   test("findVariableReferences finds references on elements, columns and defaults", () => {
@@ -71,17 +70,10 @@ async function chooseStatus(page: Page, label: string) {
 }
 
 test.describe("on /claims", () => {
-  test("the header names the record and holds its actions", async ({ page }) => {
+  test("the first record is open, and the header holds its actions", async ({ page }) => {
     const rows = await listResults("claims");
     await page.goto("/claims");
-
-    const switcher = page.getByRole("button", {
-      name: `${nounLabel}: ${recordTitle(claims, rows[0])}`,
-    });
-    await expect(switcher).toBeVisible();
-    await switcher.click();
-    await page.getByRole("menuitemradio", { name: recordTitle(claims, rows[1]) }).click();
-    await expect(formHeading(page)).toHaveText(`View ${recordTitle(claims, rows[1])}`);
+    await expect(formHeading(page)).toHaveText(`View ${recordTitle(claims, rows[0])}`);
 
     await expect(page.getByRole("button", { name: "Save as PDF" })).toBeVisible();
     await expect(page.getByRole("link", { name: features.designer.label })).toHaveAttribute(

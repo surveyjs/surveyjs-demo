@@ -89,10 +89,13 @@ export function accountInitials(account: Record<string, unknown>): string {
   return initials || "?";
 }
 
+/** First and last name; an account that keeps one `name` (a records page's session user) shows that. */
 export function accountName(account: Record<string, unknown>): string {
-  return [accountText(account, "firstName"), accountText(account, "lastName")]
-    .filter(Boolean)
-    .join(" ");
+  return (
+    [accountText(account, "firstName"), accountText(account, "lastName")]
+      .filter(Boolean)
+      .join(" ") || accountText(account, "name")
+  );
 }
 
 /**

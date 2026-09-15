@@ -16,6 +16,7 @@ export {
 } from "./customer-satisfaction";
 export { encounterNoteJson, encounterNoteSchema } from "./encounter-note";
 export { insuranceClaimJson, insuranceClaimSchema } from "./insurance-claim";
+export { leadsJson, leadsSchema, LEAD_OWNERS } from "./leads";
 export { planFinderJson, planFinderSchema } from "./plan-finder";
 export {
   patientRecordJson,
@@ -29,12 +30,14 @@ export { customerSatisfactionSample } from "./data/customer-satisfaction-seed";
 export { planFinderSample } from "./data/plan-finder-seed";
 export { encounterNoteSample } from "./data/encounter-note-seed";
 export { insuranceClaimSeed } from "./data/insurance-claim-seed";
+export { leadsSeed } from "./data/leads-seed";
 
 export {
   recordCollections,
   getRecordCollection,
   sortRows,
   recordTitle,
+  assignRowIds,
   type ColumnValue,
   type RecordColumns,
   type RecordColumn,
@@ -71,6 +74,7 @@ import { clinicVisitSchema } from "./clinic-visit";
 import { encounterNoteSchema } from "./encounter-note";
 import { customerSatisfactionSchema } from "./customer-satisfaction";
 import { insuranceClaimSchema } from "./insurance-claim";
+import { leadsSchema } from "./leads";
 import { planFinderSchema } from "./plan-finder";
 import type { SchemaDefinition } from "./types";
 
@@ -80,6 +84,7 @@ export const schemaRegistry: Record<string, SchemaDefinition> = {
   [encounterNoteSchema.id]: encounterNoteSchema,
   [customerSatisfactionSchema.id]: customerSatisfactionSchema,
   [insuranceClaimSchema.id]: insuranceClaimSchema,
+  [leadsSchema.id]: leadsSchema,
   [planFinderSchema.id]: planFinderSchema,
 };
 

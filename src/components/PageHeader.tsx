@@ -32,7 +32,7 @@ export function PageHeader({
   configureHref?: string;
   /** The dashboard for this form. Pages pass `features.analyticsHref?.(id)`. */
   analyticsHref?: string;
-  /** Rendered before the analytics and editor buttons: a records page's switchers and PDF. */
+  /** Rendered before the analytics and editor buttons: a records page's user switcher and PDF. */
   actions?: ReactNode;
 }) {
   const DesignerIcon = DESIGNER_ICONS[features.designer.icon];

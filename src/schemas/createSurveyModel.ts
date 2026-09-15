@@ -1,4 +1,4 @@
-import { Model } from "survey-core";
+import { Model, QuestionMatrixDropdownModelBase } from "survey-core";
 import type { SchemaDefinition, SurveyData, SurveyJSON, SurveyMode } from "./types";
 
 export interface CreateSurveyModelOptions {
@@ -47,9 +47,20 @@ function toJson(schema: SchemaInput): SurveyJSON {
  * what makes this file copy-pasteable into an app that is not Next.js.
  *
  * Order matters in the body below, and it is the only subtle thing here:
- * variables are published before data is loaded, because
- * `defaultValueExpression` is evaluated as the questions are created and would
- * otherwise have nothing to read.
+ *
+ *  - variables are published before data is loaded, because
+ *    `defaultValueExpression` is evaluated as the questions are created and
+ *    would otherwise have nothing to read;
+ *  - the mode is set last. survey-core does not run an `expression` question
+ *    while the form is read-only, and a matrix builds its rows, running its
+ *    cell expressions, only when something first reads them — normally when its
+ *    page is shown. So the rows are built here, in edit mode: a record opened
+ *    for viewing shows its totals, and one opened for editing does not change
+ *    its own data when the viewer reaches the page with the matrix.
+ *
+ * Row identity is data, not model state: a records page lists the containers
+ * whose items carry an `id` (`rowIdContainers`), and storage assigns missing
+ * ids on save. Nothing here listens for rows being added.
  */
 export function createSurveyModel(
   schema: SchemaInput,
@@ -64,8 +75,6 @@ export function createSurveyModel(
       model.setVariable(name, value);
     }
   }
-
-  model.mode = mode;
 
   model.applyTheme({ isPanelless: true });
 
@@ -83,6 +92,16 @@ export function createSurveyModel(
       model.data = data;
     }
   }
+
+  // Build every matrix's rows while the form is still editable, so their cell
+  // expressions, and the totals that read them, have run before anyone looks.
+  for (const question of model.getAllQuestions()) {
+    if (question instanceof QuestionMatrixDropdownModelBase) {
+      void question.visibleRows;
+    }
+  }
+
+  model.mode = mode;
 
   return model;
 }

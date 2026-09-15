@@ -76,9 +76,9 @@ const ROOT_COPY: PageCopy = {
  */
 const PAGE_COPY: Partial<Record<NavId, PageCopy>> = {
   leads: {
-    title: "Leads — CRM records",
+    title: "Leads — CRM opportunity records",
     description:
-      "One form to view, edit and add opportunities: contacts, line items with live totals, security-review tracking. Bound to the record, saved back to your columns.",
+      "One form to view, edit and add opportunities: contacts, line items with live totals, a security review, and rules that follow the signed-in user's role. Saved as a document and back to your list columns.",
   },
   embeddedFeedback: {
     title: "Feedback — a survey in a product site",

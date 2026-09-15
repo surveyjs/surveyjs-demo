@@ -102,6 +102,7 @@ test("a definition saved here is what the embedded site renders", async ({ page 
 for (const id of [
   "checkout",
   "insurance-claim",
+  "leads",
   "customer-satisfaction",
   "encounter-note",
   "clinic-visit",

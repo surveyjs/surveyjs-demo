@@ -1,22 +1,29 @@
-import { getNavItem } from "@/schemas";
-import { NotImplemented } from "@/components/NotImplemented";
+import { getFormNavItem } from "@/schemas";
+import { RecordsView } from "@/components/records/RecordsView";
+import { getResult, listResults } from "@/storage/survey-results";
+import { listSessionUsers } from "@/storage/session";
 import { pageMetadata } from "@/lib/metadata";
 
-const nav = getNavItem("leads");
+const nav = getFormNavItem("leads");
 
 export const metadata = pageMetadata(nav.id);
 
-/** What the real page will show, once it is built. */
-const LEADS_FEATURES = [
-  "Variables from the server",
-  "Choices from your API",
-  "An async validator calling the server",
-  "Live updates with presence",
-  "PDF",
-] as const;
+export default async function LeadsPage() {
+  const rows = await listResults("leads");
+  const initialRecord = rows[0] && (await getResult("leads", rows[0].id));
+  // In your app: the session's one user.
+  const users = await listSessionUsers("leads");
 
-export default function LeadsPage() {
   return (
-    <NotImplemented title={nav.label} description={nav.description} features={LEADS_FEATURES} />
+    <RecordsView
+      collectionId="leads"
+      title={nav.label}
+      description={nav.description}
+      initialRows={rows}
+      initialRecord={initialRecord}
+      users={users}
+      // Four matrices need the full width; see `layout` on RecordsView.
+      layout="stacked"
+    />
   );
 }

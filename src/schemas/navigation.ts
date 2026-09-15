@@ -63,7 +63,8 @@ export const navGroups: readonly NavGroup[] = [
         id: "leads",
         label: "Leads",
         path: "/leads",
-        description: "CRM records: one form to view, edit and add.",
+        description: "CRM opportunities: contacts, line items with totals, roles from the session.",
+        schemaId: "leads",
         layout: "shell",
       },
       {

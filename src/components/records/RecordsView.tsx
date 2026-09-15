@@ -41,7 +41,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RecordSwitcher } from "./RecordSwitcher";
 import { UserSwitcher } from "./UserSwitcher";
 
 type Mode = "view" | "edit" | "new";
@@ -76,18 +75,20 @@ function Cell({ column, columns }: { column: RecordColumn; columns: RecordColumn
   if (isEmpty(value)) return <>—</>;
 
   switch (column.kind) {
-    case "badge":
+    case "badge": {
+      const label = column.labels?.[String(value)];
       return (
         <Badge
           variant="secondary"
           className={mergeTailwindClasses(
-            "capitalize",
+            !label && "capitalize",
             TONE_CLASSES[column.tones?.[String(value)] ?? "neutral"],
           )}
         >
-          {String(value).replace(/_/g, " ")}
+          {label ?? String(value).replace(/_/g, " ")}
         </Badge>
       );
+    }
     case "money": {
       if (typeof value !== "number") return <>{String(value)}</>;
       const code = column.currencyKey ? columns[column.currencyKey] : undefined;
@@ -135,6 +136,7 @@ export function RecordsView({
   exportPdf,
   listFooter,
   formNote,
+  layout = "split",
 }: {
   collectionId: string;
   /** The nav label, for the page header. */
@@ -151,11 +153,18 @@ export function RecordsView({
   listFooter?: (api: { createFrom: (data: SurveyData) => Promise<void> }) => ReactNode;
   /** One or two sentences under the form column's heading. */
   formNote?: ReactNode;
+  /**
+   * "split": the list beside the form, from `lg` (Claims). "stacked": the list
+   * above a full-width form, for a definition built on wide matrices. Beside the
+   * list the form is narrower than the theme's `--sd-mobile-width` (640px in the
+   * shadcn adapter) at every common laptop width, and survey-core then renders
+   * each matrix row as a stacked card.
+   */
+  layout?: "split" | "stacked";
 }) {
   const collection = getRecordCollection(collectionId);
   const { schemaId, noun } = collection;
   const schema = getSchemaDefinition(schemaId).json;
-  const nounLabel = noun.one.charAt(0).toUpperCase() + noun.one.slice(1);
 
   const [rows, setRows] = useState<RecordRow[]>(() => [...initialRows]);
   const [open, setOpen] = useState<OpenRecord | null>(() =>
@@ -188,13 +197,15 @@ export function RecordsView({
 
   // The answers as the form loaded them, computed values included.
   const snapshot = useRef<string | null>(null);
-  // Set by a user switch, whose rebuilt model must not count as a fresh load.
-  const keepSnapshot = useRef(false);
+  // Set by a user switch: the page the viewer was on, for the rebuilt model,
+  // which must not count as a fresh load either.
+  const carriedPage = useRef<number | null>(null);
 
   const handleModelReady = useCallback((next: Model) => {
     setModel(next);
-    if (keepSnapshot.current) {
-      keepSnapshot.current = false;
+    if (carriedPage.current !== null) {
+      next.currentPageNo = carriedPage.current;
+      carriedPage.current = null;
       return;
     }
     snapshot.current = stableJson(next.data as SurveyData);
@@ -372,11 +383,11 @@ export function RecordsView({
       if (id === activeUserId) return;
       // Switching user shows what the *same answers* look like to somebody
       // else, which is the claim a role-aware form makes. So the rebuilt model
-      // carries the answers on screen, saved or not, and the snapshot stays: the
-      // switch alone is not a change.
+      // carries the answers on screen, saved or not, and the page they were on;
+      // the snapshot stays, because the switch alone is not a change.
       const form = modelRef.current;
       if (form && openRef.current) {
-        keepSnapshot.current = true;
+        carriedPage.current = form.currentPageNo;
         const data = form.data as SurveyData;
         setOpen((prev) => prev && { ...prev, data, key: nextKey(prev) });
       }
@@ -408,8 +419,6 @@ export function RecordsView({
       : `${open.mode === "edit" ? "Edit" : "View"} ${recordTitle(collection, open.record)}`
     : "";
 
-  const switcherOptions = rows.map((row) => ({ id: row.id, title: recordTitle(collection, row) }));
-
   return (
     <div>
       <PageHeader
@@ -419,17 +428,6 @@ export function RecordsView({
         analyticsHref={features.analyticsHref?.(schemaId)}
         actions={
           <>
-            {rows.length > 0 && (
-              <RecordSwitcher
-                label={nounLabel}
-                current={
-                  !open ? "none" : open.mode === "new" ? "New" : recordTitle(collection, open.record)
-                }
-                activeId={open?.mode === "new" ? undefined : open?.record.id}
-                options={switcherOptions}
-                onSelect={(id) => openRow(id, "view")}
-              />
-            )}
             {activeUser && (
               <UserSwitcher users={users} activeId={activeUser.id} onSelect={selectUser} />
             )}
@@ -449,7 +447,12 @@ export function RecordsView({
         }
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div
+        className={mergeTailwindClasses(
+          "grid items-start gap-6",
+          layout === "split" && "lg:grid-cols-2",
+        )}
+      >
         <div className="min-w-0">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-base font-semibold">
@@ -542,7 +545,10 @@ export function RecordsView({
         </div>
 
         {open && (
-          <div ref={formColumn} className="min-w-0 lg:sticky lg:top-20">
+          <div
+            ref={formColumn}
+            className={mergeTailwindClasses("min-w-0", layout === "split" && "lg:sticky lg:top-20")}
+          >
             <div className="mb-3 flex items-center justify-between gap-2">
               <h2 className="text-base font-semibold">{heading}</h2>
               <div className="flex gap-2">

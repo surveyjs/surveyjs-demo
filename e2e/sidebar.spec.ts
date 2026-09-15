@@ -16,15 +16,6 @@ const EXPECTED_GROUPS = [
   { label: "For developers", items: ["Starter", "Definition & checks"] },
 ];
 
-/** Mirrors `LEADS_FEATURES` in `src/app/(shell)/leads/page.tsx`. */
-const LEADS_FEATURES = [
-  "Variables from the server",
-  "Choices from your API",
-  "An async validator calling the server",
-  "Live updates with presence",
-  "PDF",
-];
-
 test("the groups and their items appear in order", async ({ page }) => {
   await page.goto("/leads");
   const sidebar = page.getByRole("navigation", { name: "Primary" });
@@ -79,17 +70,6 @@ for (const item of navPages.filter((page) => page.layout === "shell")) {
     ).toHaveAttribute("aria-current", "page");
   });
 }
-
-test("/leads says plainly that it is not built yet", async ({ page }) => {
-  await page.goto("/leads");
-  const panel = page.locator("[data-not-implemented]");
-  await expect(panel).toContainText("Not implemented yet");
-  for (const feature of LEADS_FEATURES) {
-    await expect(panel.getByRole("listitem").filter({ hasText: feature })).toHaveCount(1);
-  }
-  // No form pretending to be the page.
-  await expect(page.locator(".sd-root-modern")).toHaveCount(0);
-});
 
 test("/definition is the JSON editor and its linter, inside the shell", async ({ page }) => {
   test.slow();

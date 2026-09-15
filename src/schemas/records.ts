@@ -1,5 +1,6 @@
 import type { SessionUser, SurveyData, SurveyResult } from "./types";
 import { claimsCollection } from "./collections/insurance-claim";
+import { leadsCollection } from "./collections/leads";
 
 /**
  * A records page, described as data: what a list query returns, how a stored
@@ -26,6 +27,8 @@ export interface RecordColumn {
   readonly kind: "id" | "text" | "badge" | "money" | "date";
   /** For `badge`: value → tone. The component maps tones to classes; no CSS here. */
   readonly tones?: Readonly<Record<string, "neutral" | "info" | "warning" | "success" | "danger">>;
+  /** For `badge`: value → the text shown. Without an entry, the value with `_` as spaces. */
+  readonly labels?: Readonly<Record<string, string>>;
   /** For `money`: the column holding an ISO 4217 code. Without one, USD. */
   readonly currencyKey?: string;
 }
@@ -47,7 +50,7 @@ export interface RecordCollection {
   readonly schemaId: string;
   readonly noun: { readonly one: string; readonly many: string };
   readonly columns: readonly RecordColumn[];
-  /** Which column names the record in the switcher, the dialogs and the form heading. */
+  /** Which column names the record in the dialogs and the form heading. */
   readonly titleKey: string;
   /**
    * The columns written back on every save, derived from the document. Never
@@ -66,11 +69,18 @@ export interface RecordCollection {
   /** List order. Stable: ties keep insertion order. */
   readonly compare?: (a: RecordColumns, b: RecordColumns) => number;
   readonly seed: readonly SurveyResult[];
+  /**
+   * Top-level arrays of the document whose items carry a stable `id`: the
+   * dynamic panels and matrices. Storage fills a missing one on save, so a later
+   * change can address a row rather than its index.
+   */
+  readonly rowIdContainers?: readonly string[];
 }
 
 /** Every records page's collection, by storage key. */
 export const recordCollections: Record<string, RecordCollection> = {
   [claimsCollection.id]: claimsCollection,
+  [leadsCollection.id]: leadsCollection,
 };
 
 export function getRecordCollection(id: string): RecordCollection {
@@ -92,4 +102,24 @@ export function sortRows<T extends RecordRow>(collection: RecordCollection, rows
 export function recordTitle(collection: RecordCollection, row: RecordRow): string {
   const value = row.columns[collection.titleKey];
   return value === null || value === undefined || value === "" ? row.id : String(value);
+}
+
+/**
+ * A copy of `data` in which every object item of each named top-level array has
+ * a non-empty string `id`. Items that have one keep it; the rest get
+ * `crypto.randomUUID()`. Never an index, so two clients adding rows at once
+ * cannot collide. Arrays not named, and non-object items, are left alone.
+ */
+export function assignRowIds(data: SurveyData, containers: readonly string[]): SurveyData {
+  const result: Record<string, unknown> = { ...data };
+  for (const name of containers) {
+    const items = data[name];
+    if (!Array.isArray(items)) continue;
+    result[name] = items.map((item) => {
+      if (typeof item !== "object" || item === null || Array.isArray(item)) return item;
+      const { id } = item as { id?: unknown };
+      return typeof id === "string" && id !== "" ? item : { ...item, id: crypto.randomUUID() };
+    });
+  }
+  return result;
 }

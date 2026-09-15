@@ -42,6 +42,56 @@ export const HOW_BUILT_TEXT = {
 } as const;
 
 export const HOW_BUILT: Partial<Record<NavId, HowBuiltContent>> = {
+  leads: {
+    summary:
+      "A CRM opportunity as one form: contacts in a dynamic panel, line items and totals in matrices, and rules that follow the signed-in user. The list shows seven columns derived from each record; the form edits the whole document.",
+    dataIn: [
+      {
+        label: "The definition",
+        detail: "Three pages of JSON: every question, every total and every rule on this page, including the ones that read the user.",
+        source: "src/schemas/leads.ts",
+      },
+      {
+        label: "The record",
+        detail: "getResult returns the whole stored document, contacts, rows and ids included, loaded into the form as its data.",
+        source: "src/storage/survey-results.ts",
+      },
+      {
+        label: "variables.user",
+        detail: "listSessionUsers(\"leads\") returns who the page is rendered for: name, role and currency. In your app, getSession(). Budget amount is shown to managers only; a discount above 20% needs a manager to save.",
+        source: "src/storage/session.ts",
+      },
+      {
+        label: "New-lead defaults",
+        detail: "newRecord sets the owner and the currency from the signed-in user, in code, so opening an existing lead never rewrites them.",
+        source: "src/schemas/collections/leads.ts",
+      },
+    ],
+    dataOut: [
+      {
+        label: "The document",
+        detail: "saveResult stores every answer, and gives each contact and row without one a stable id.",
+        source: "src/storage/survey-results.ts",
+      },
+      {
+        label: "Seven columns",
+        detail: "toColumns derives account, owner name, stage, deal value (recomputed from the line items), next step date, currency and expected close. The list reads only these.",
+        source: "src/schemas/collections/leads.ts",
+      },
+    ],
+    variables: ["user"],
+    features: [
+      { label: "Variables from the server", status: "shown" },
+      { label: "Expressions over a dynamic panel and matrices", status: "shown" },
+      { label: "Mapped columns plus the document", status: "shown" },
+      { label: "Choices from your API", status: "coming" },
+      { label: "An async validator calling the server", status: "coming" },
+      { label: "Live updates with presence", status: "coming" },
+      { label: "PDF export", status: "shown", edition: "full" },
+      { label: "Dashboard (View analytics)", status: "shown", edition: "full" },
+      { label: "Survey Creator (Open in Creator)", status: "shown", edition: "full" },
+    ],
+  },
   claims: {
     summary:
       "A records page: a list of stored claims and one form that views, edits and adds them. The form is the CMS-1500 box by box, filled from a document or by hand.",

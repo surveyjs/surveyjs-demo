@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { features } from "../src/features";
 
 const surveyRoutes = [
+  "/leads",
   "/starter",
   "/embedded/feedback",
   "/embedded/chart",
@@ -11,7 +12,6 @@ const allRoutes = [
   "/",
   ...surveyRoutes,
   "/claims",
-  "/leads",
   "/definition",
   // The one editor, on a plain form and on a personalized one.
   "/configure",

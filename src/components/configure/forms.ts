@@ -12,6 +12,7 @@ import {
   RIDGELINE_USER,
   type DemoUser,
 } from "@/components/embedded/shared/demo-accounts";
+import { LEADS_USERS } from "@/storage/session";
 import { features } from "@/features";
 
 /**
@@ -36,8 +37,12 @@ export interface FormEntry {
   readonly json: SurveyJSON;
   /** Answers behind the preview's Prefill, where the form has a sample. */
   readonly prefill?: SurveyData;
-  /** Set when the form is rendered per user — the embedded demos. */
-  readonly user?: DemoUser;
+  /**
+   * Set when the form is rendered per user. Only the two members that turn it
+   * into the `user` variable are required, so a records page's session user
+   * — a plain object, with no editor form — fits as well as a demo account.
+   */
+  readonly user?: Pick<DemoUser, "defaults" | "toAccount">;
   /** Where the form itself lives, and what the primary button opens. */
   readonly href: string;
   /** The primary button's label: the honest verb for where it lands. */
@@ -77,6 +82,15 @@ export const FORMS: readonly FormEntry[] = [
     label: "Claim record",
     hint: "The editor behind every row on the Claims page.",
     href: "/claims",
+    previewLabel: "Save and quit",
+    embedded: false,
+  }),
+  form("leads", "leads.ts", {
+    label: "Lead record",
+    hint: "The CRM opportunity behind every row on the Leads page, rendered for its first session user.",
+    // A session user is already the object the form reads, so it passes as is.
+    user: { defaults: { ...LEADS_USERS[0] }, toAccount: (data) => ({ ...data }) },
+    href: "/leads",
     previewLabel: "Save and quit",
     embedded: false,
   }),

@@ -1,4 +1,5 @@
 import {
+  assignRowIds,
   getRecordCollection,
   sortRows,
   type RecordRow,
@@ -88,10 +89,16 @@ export async function saveResult(
   data: SurveyData,
 ): Promise<StoredRecord> {
   const collection = getRecordCollection(collectionId);
+  // Rows and panels without an id get one before anything is derived. In a real
+  // app the API assigns these on write, which is the one place both clients of
+  // a record agree on.
+  const document = collection.rowIdContainers
+    ? assignRowIds(data, collection.rowIdContainers)
+    : data;
   const saved: StoredRecord = {
     id,
-    columns: collection.toColumns(id, data),
-    data: structuredClone(data),
+    columns: collection.toColumns(id, document),
+    data: structuredClone(document),
   };
   const records = store(collectionId);
   const index = records.findIndex((record) => record.id === id);
