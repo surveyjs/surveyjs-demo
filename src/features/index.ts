@@ -32,5 +32,10 @@ export const features: Features = {
     const { exportSurveyToPdf } = await import("@/lib/pdf-export");
     await exportSurveyToPdf(json, opts);
   },
+  // The job sheet printer loads pdf-lib and the blank sheet on demand.
+  exportWorkOrderPdf: async (data) => {
+    const { exportWorkOrderToPdf } = await import("./full/work-order-pdf");
+    await exportWorkOrderToPdf(data);
+  },
   analyticsHref: (formId) => `/analytics?form=${encodeURIComponent(formId)}`,
 };

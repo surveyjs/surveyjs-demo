@@ -18,6 +18,7 @@ Allowlisted today (see `scripts/allowlist.txt` for the file that actually decide
 - `src/lib/pdf-export.ts` — PDF Generator
 - `src/app/analytics/**`, `src/analytics/**`, `src/components/analytics/**` — Dashboard
 - `e2e/creator.spec.ts`, `e2e/analytics.spec.ts`
+- `public/samples/work-order-blank.pdf`, `e2e/work-order-pdf.spec.ts` — the job sheet printer's blank and spec; the printer is `src/features/full/work-order-pdf.ts`, wired in as `exportWorkOrderPdf`. The MIT edition has no job sheet PDF, and its `npm run assets:work-order` writes the blank and the box table only where `src/features/full/` exists
 
 `package.json` is allowlisted but not free. Every MIT `dependency` and `devDependency` must be here with the same spec, and `scripts` must be identical, or the check **fails**. The only extras it may carry without comment are `survey-creator-core`, `survey-creator-react`, `survey-pdf` and `survey-analytics`. Any other extra prints a warning.
 

@@ -27,3 +27,8 @@ src/components/configure/SurveyDesigner.tsx
 src/lib/pdf-export.ts
 e2e/analytics.spec.ts
 e2e/creator.spec.ts
+
+# The job sheet printer's blank, and its spec: Work orders' "Save as PDF" is
+# the full edition's (the printer itself is under src/features/full/).
+public/samples/work-order-blank.pdf
+e2e/work-order-pdf.spec.ts
