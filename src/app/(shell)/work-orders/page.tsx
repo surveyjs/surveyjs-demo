@@ -1,18 +1,18 @@
 import { getFormNavItem } from "@/schemas";
-import { ClaimsView } from "@/components/ClaimsView";
+import { WorkOrdersView } from "@/components/WorkOrdersView";
 import { getResult, listResults } from "@/storage/survey-results";
 import { pageMetadata } from "@/lib/metadata";
 
-const nav = getFormNavItem("claims");
+const nav = getFormNavItem("workOrders");
 
 export const metadata = pageMetadata(nav.id);
 
-export default async function ClaimsPage() {
-  const rows = await listResults("claims");
-  const initialRecord = rows[0] && (await getResult("claims", rows[0].id));
+export default async function WorkOrdersPage() {
+  const rows = await listResults("workOrders");
+  const initialRecord = rows[0] && (await getResult("workOrders", rows[0].id));
 
   return (
-    <ClaimsView
+    <WorkOrdersView
       title={nav.label}
       description={nav.description}
       initialRows={rows}

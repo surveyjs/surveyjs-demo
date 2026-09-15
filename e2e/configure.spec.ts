@@ -101,7 +101,7 @@ test("a definition saved here is what the embedded site renders", async ({ page 
  */
 for (const id of [
   "checkout",
-  "insurance-claim",
+  "work-order",
   "leads",
   "customer-satisfaction",
   "encounter-note",

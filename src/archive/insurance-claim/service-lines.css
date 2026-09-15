@@ -1,0 +1,20 @@
+/*
+ * Archived with the CMS-1500 claim. Nothing imports this file; to use it again,
+ * add these rules back to src/styles/survey-overrides-shadcn.css.
+ */
+
+/**
+ * The six service lines of a CMS-1500 are eleven columns wide, and the records
+ * page gives the form half the screen. Squeezed into that, every cell is a
+ * two-character box; so the table keeps a width its inputs are usable at and
+ * scrolls sideways inside the question instead. Narrower than that, survey-core
+ * stacks the cells one per row on its own, which is the right answer for a
+ * phone and needs nothing from here.
+ */
+[data-name="serviceLines"] .sd-table-wrapper {
+  overflow-x: auto;
+}
+
+[data-name="serviceLines"]:not(.sd-question--mobile) table.sd-table {
+  min-width: 68rem;
+}

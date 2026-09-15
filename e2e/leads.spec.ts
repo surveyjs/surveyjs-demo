@@ -10,7 +10,7 @@ import { LEADS_USERS } from "../src/storage/session";
  * `/leads`: a CRM opportunity on the shared records page. Totals over the line
  * items, the economic-buyer rule over the contacts, the signed-in user's role
  * and currency, and stable row ids. The page mechanics themselves are covered
- * on `/claims` by `records.spec.ts`.
+ * on `/work-orders` by `records.spec.ts`.
  */
 
 const leads = getRecordCollection("leads");

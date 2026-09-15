@@ -14,18 +14,18 @@ const switchName = `${features.brand.otherEdition.label} →`;
 
 test.describe("helpers", () => {
   test("otherEditionHref keeps the host, the base path and the pathname", () => {
-    expect(otherEditionHref("http://localhost:3001", "/claims")).toBe("http://localhost:3001/claims");
+    expect(otherEditionHref("http://localhost:3001", "/work-orders")).toBe("http://localhost:3001/work-orders");
     expect(otherEditionHref("https://full.example/", "/starter")).toBe("https://full.example/starter");
-    expect(otherEditionHref("https://example.com/demos/full", "/claims")).toBe(
-      "https://example.com/demos/full/claims",
+    expect(otherEditionHref("https://example.com/demos/full", "/work-orders")).toBe(
+      "https://example.com/demos/full/work-orders",
     );
-    expect(otherEditionHref("https://example.com/demos/full//", "/claims")).toBe(
-      "https://example.com/demos/full/claims",
+    expect(otherEditionHref("https://example.com/demos/full//", "/work-orders")).toBe(
+      "https://example.com/demos/full/work-orders",
     );
   });
 
   test("pageSourcePath maps a demo route to the file that serves it", () => {
-    expect(pageSourcePath("/claims")).toBe("src/app/(shell)/claims/page.tsx");
+    expect(pageSourcePath("/work-orders")).toBe("src/app/(shell)/work-orders/page.tsx");
     expect(pageSourcePath("/embedded/chart")).toBe("src/app/embedded/chart/page.tsx");
     expect(pageSourcePath("/configure")).toBeUndefined();
   });
@@ -49,7 +49,7 @@ test.describe("layout guard", () => {
   }
 
   test("the sidebar opens a row in a new tab exactly when opensInNewTab says so", async ({ page }) => {
-    await page.goto("/claims");
+    await page.goto("/work-orders");
     const sidebar = page.getByRole("navigation", { name: "Primary" });
     for (const item of navItems) {
       const link = sidebar.locator(`a[href="${navHref(item)}"]`);
@@ -130,7 +130,7 @@ test.describe("the top bar at every width", () => {
   for (const viewport of widths) {
     test(`${viewport.width}px`, async ({ page }) => {
       await page.setViewportSize(viewport);
-      await page.goto("/claims");
+      await page.goto("/work-orders");
       const banner = page.getByRole("banner");
 
       // Wait for the theme button, which renders a placeholder until mounted.

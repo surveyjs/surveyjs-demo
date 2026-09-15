@@ -11,7 +11,7 @@ import { EXTERNAL_URLS } from "../src/lib/site";
 
 const EXPECTED_GROUPS = [
   { label: "In your app", items: ["Leads", "Feedback", "Encounter note", "Appointment"] },
-  { label: "Documents", items: ["Claims"] },
+  { label: "Documents", items: ["Work orders"] },
   { label: "Together", items: ["Fill together", "Edit together"] },
   { label: "For developers", items: ["Starter", "Definition & checks"] },
 ];
@@ -81,9 +81,9 @@ test("/definition is the JSON editor and its linter, inside the shell", async ({
   ).toBeVisible({ timeout: 20_000 });
 
   // The picker opens any form in the template on the same page.
-  await page.getByRole("combobox", { name: "Form" }).selectOption("insurance-claim");
-  await expect(page).toHaveURL(/\/definition\?form=insurance-claim$/);
-  await expect(page.getByText("Claim record — form JSON")).toBeVisible();
+  await page.getByRole("combobox", { name: "Form" }).selectOption("work-order");
+  await expect(page).toHaveURL(/\/definition\?form=work-order$/);
+  await expect(page.getByText("Work order — form JSON")).toBeVisible();
 });
 
 test("the root lands on /leads", async ({ page }) => {
@@ -94,11 +94,12 @@ test("the root lands on /leads", async ({ page }) => {
 test.describe("legacy redirects", () => {
   // The only place in e2e/ that names a legacy path.
   const REDIRECTS = [
-    ["/records", "/claims"],
+    ["/records", "/work-orders"],
+    ["/claims", "/work-orders"],
     ["/checkout", "/starter"],
     ["/checkout/configure", "/configure?form=checkout"],
-    ["/records/configure", "/configure?form=insurance-claim"],
-    ["/claims/configure", "/configure?form=insurance-claim"],
+    ["/records/configure", "/configure?form=work-order"],
+    ["/claims/configure", "/configure?form=work-order"],
   ] as const;
 
   for (const [from, to] of REDIRECTS) {

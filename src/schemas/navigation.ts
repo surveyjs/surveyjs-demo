@@ -5,7 +5,7 @@ export type NavId =
   | "embeddedFeedback"
   | "embeddedChart"
   | "embeddedClinic"
-  | "claims"
+  | "workOrders"
   | "fillTogether"
   | "editTogether"
   | "starter"
@@ -98,11 +98,11 @@ export const navGroups: readonly NavGroup[] = [
     label: "Documents",
     items: [
       {
-        id: "claims",
-        label: "Claims",
-        path: "/claims",
-        description: "CMS-1500: scans into records with AI, and back onto the sheet as PDF.",
-        schemaId: "insurance-claim",
+        id: "workOrders",
+        label: "Work orders",
+        path: "/work-orders",
+        description: "Job sheets: a scan or photo into a record with AI, and back onto the sheet as PDF.",
+        schemaId: "work-order",
         layout: "shell",
       },
     ],

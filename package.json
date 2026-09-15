@@ -11,7 +11,8 @@
     "test": "npm run build",
     "e2e:ci": "playwright install chromium && playwright test",
     "e2e:dev": "playwright install chromium && playwright test --config=playwright.dev.config.ts",
-    "e2e:ui": "npx playwright test --ui"
+    "e2e:ui": "npx playwright test --ui",
+    "assets:work-order": "node scripts/render-work-order-assets.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

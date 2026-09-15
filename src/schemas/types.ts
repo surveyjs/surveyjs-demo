@@ -22,7 +22,7 @@ export interface SchemaDefinition {
   readonly title: string;
   /** Short description for cards / page intros. */
   readonly description: string;
-  /** The SurveyJS V3 JSON. Replace freely with real CMS-1500 / intake JSON. */
+  /** The SurveyJS V3 JSON. Replace freely with your own definition. */
   readonly json: SurveyJSON;
 }
 
@@ -30,6 +30,19 @@ export interface SchemaDefinition {
 export interface SurveyResult {
   readonly id: string;
   readonly data: SurveyData;
+}
+
+/**
+ * Where a record's original document lives, as the record links it. Kept by
+ * `keepSourceDocument` in `src/storage/documents.ts`; declared here so a
+ * collection can name it without depending on storage.
+ */
+export interface SourceDocument {
+  readonly name: string;
+  readonly type: string;
+  readonly url: string;
+  /** When it was read, from `/api/extract`: `YYYY-MM-DDTHH:mm`, UTC. */
+  readonly readAt: string;
 }
 
 /** Whoever the page is rendered for. `name` is what the switcher shows; the rest is the page's business. */

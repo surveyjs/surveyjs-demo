@@ -12,6 +12,7 @@ import {
   type RecordColumns,
   type RecordRow,
   type SessionUser,
+  type SourceDocument,
   type StoredRecord,
   type SurveyData,
   type SurveyJSON,
@@ -147,14 +148,19 @@ export function RecordsView({
   initialRecord: StoredRecord | undefined;
   /** From `listSessionUsers`. Fewer than two renders no switcher. */
   users?: readonly SessionUser[];
-  /** Replaces the generic PDF export for this collection (Claims: CMS-1500). */
+  /** Replaces the generic PDF export for this collection (Work orders: the job sheet). */
   exportPdf?: (data: SurveyData) => void | Promise<void>;
-  /** Rendered under the list (Claims: extraction from a document). */
-  listFooter?: (api: { createFrom: (data: SurveyData) => Promise<void> }) => ReactNode;
+  /**
+   * Rendered under the list (Work orders: extraction from a document).
+   * `createFrom` stores a new record made from answers read off `source`, and opens it.
+   */
+  listFooter?: (api: {
+    createFrom: (data: SurveyData, source?: SourceDocument) => Promise<void>;
+  }) => ReactNode;
   /** One or two sentences under the form column's heading. */
   formNote?: ReactNode;
   /**
-   * "split": the list beside the form, from `lg` (Claims). "stacked": the list
+   * "split": the list beside the form, from `lg`. "stacked": the list
    * above a full-width form, for a definition built on wide matrices. Beside the
    * list the form is narrower than the theme's `--sd-mobile-width` (640px in the
    * shadcn adapter) at every common laptop width, and survey-core then renders
@@ -332,17 +338,24 @@ export function RecordsView({
   }, [model]);
 
   const createFrom = useCallback(
-    async (extracted: SurveyData) => {
+    async (extracted: SurveyData, source?: SourceDocument) => {
       // Values a source left blank come back empty, and are dropped rather than
-      // written over the new record's own defaults, which win.
+      // written over the new record's own defaults.
       const answers = Object.fromEntries(
         Object.entries(extracted).filter(([, value]) => !isEmpty(value)),
       );
-      const id = collection.newId(rowsRef.current.map((row) => row.id));
-      const saved = await saveResult(collectionId, id, {
-        ...answers,
-        ...collection.newRecord(id, activeUser),
-      });
+      const existing = rowsRef.current.map((row) => row.id);
+      const { fromDocument } = collection;
+      const id = fromDocument?.id?.(answers, existing) ?? collection.newId(existing);
+      // Precedence, lowest first. With `fromDocument`: the new record's defaults
+      // fill only what the document left blank, every answer read off it wins
+      // over them, and `pinned` (the id, the draft status, where the record came
+      // from) wins over both, so a document can neither complete a record nor
+      // forge its own provenance. Without it: the defaults win over every answer.
+      const document = fromDocument
+        ? { ...collection.newRecord(id, activeUser), ...answers, ...fromDocument.pinned(id, source) }
+        : { ...answers, ...collection.newRecord(id, activeUser) };
+      const saved = await saveResult(collectionId, id, document);
       upsertRow(saved);
       guard(() => {
         show("edit", saved);

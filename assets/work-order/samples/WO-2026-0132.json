@@ -1,0 +1,40 @@
+{
+  "$comment": "Sample 3, Scanned JPEG: handwritten, then scanned. Values in the definition's data shape.",
+  "signature": "dalePruitt",
+  "hand": true,
+  "data": {
+    "jobNumber": "WO-2026-0132",
+    "status": "completed",
+    "visitDate": "2026-09-09",
+    "arrivalTime": "13:20",
+    "departureTime": "16:05",
+    "hoursOnSite": 2.8,
+    "customerName": "Kestrel Freight",
+    "purchaseOrder": "KF-21007",
+    "contactName": "Dale Pruitt",
+    "contactPhone": "(503) 555-0144",
+    "siteAddress": "Kestrel Freight, cold dock\n2260 NW Front Ave, Portland, OR 97209",
+    "equipmentType": "refrigeration",
+    "warranty": false,
+    "manufacturer": "Norvanta",
+    "modelNumber": "WC-220",
+    "serialNumber": "N22-210419-0613",
+    "installedOn": "2021-04-19",
+    "faultReported": "Walk-in cooler on the cold dock at 48 F. Compressor short cycling.",
+    "workPerformed": "Low charge from a leaking Schrader core. Replaced the core and the low-pressure switch, leak tested, topped up 4 lb R-448A. Holding 36 F.",
+    "outcome": "resolved",
+    "parts": [
+      { "partNumber": "SCH-CORE", "description": "Schrader valve cores, pack of 5", "quantity": 1, "unitPrice": 12.4, "linePrice": 12.4 },
+      { "partNumber": "LPS-20", "description": "Low-pressure switch", "quantity": 1, "unitPrice": 48.9, "linePrice": 48.9 },
+      { "partNumber": "R448A-LB", "description": "Refrigerant R-448A, per lb", "quantity": 4, "unitPrice": 14.75, "linePrice": 59 }
+    ],
+    "partsTotal": 120.3,
+    "laborHours": 2.75,
+    "laborRate": 95,
+    "laborTotal": 261.25,
+    "total": 381.55,
+    "technicianName": "gracePellerin",
+    "signedByName": "Dale Pruitt",
+    "signedAt": "2026-09-09"
+  }
+}

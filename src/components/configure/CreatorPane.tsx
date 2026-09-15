@@ -19,6 +19,10 @@ import type { SurveyJSON } from "@/schemas";
 import type { FormEntry } from "./forms";
 
 import "@/lib/surveyjs-license";
+// Registers `aiHint` before the Creator is built, so the property grid edits it
+// under Description and a saved definition keeps it. The `@/schemas` import
+// above is types only and is stripped at build time, so it registers nothing.
+import "@/schemas/custom-properties";
 import "survey-core/survey-core.css";
 import "survey-creator-core/survey-creator-core.css";
 import "survey-core/themes/adapters/shadcn-base-nova.css";
@@ -90,6 +94,21 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
         },
       );
     };
+
+    // `aiHint` is registered with `nextToProperty: "description"`, but Survey
+    // Creator 3.0.4 does not move a property up next to an anchor in the same
+    // tab (`movePropertiesToAdjacentPositions` removes the copy it has just
+    // inserted), so the hint lands at the end of General. Put it under
+    // Description in the property grid itself, until Creator does.
+    instance.onSurveyInstanceCreated.add((_, options) => {
+      if (options.area !== "property-grid") return;
+      const hint = options.survey.getQuestionByName("aiHint");
+      const description = options.survey.getQuestionByName("description");
+      const panel = hint?.parent;
+      if (!hint || !description || !panel || description.parent !== panel) return;
+      panel.removeElement(hint);
+      panel.addElement(hint, panel.elements.indexOf(description) + 1);
+    });
 
     // A personalized definition has to be rendered for somebody: the demo's
     // first preset user, published as the one variable the JSON reads. The event

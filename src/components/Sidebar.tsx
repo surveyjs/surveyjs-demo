@@ -5,8 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BracesIcon,
+  ClipboardListIcon,
   ContactIcon,
-  FileScanIcon,
   HeartPulseIcon,
   MessageSquareIcon,
   PencilRulerIcon,
@@ -32,7 +32,7 @@ const ICONS: Record<NavId, LucideIcon> = {
   embeddedFeedback: MessageSquareIcon,
   embeddedChart: StethoscopeIcon,
   embeddedClinic: HeartPulseIcon,
-  claims: FileScanIcon,
+  workOrders: ClipboardListIcon,
   fillTogether: UsersRoundIcon,
   editTogether: PencilRulerIcon,
   starter: ShoppingCartIcon,

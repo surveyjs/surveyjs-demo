@@ -11,7 +11,7 @@ const surveyRoutes = [
 const allRoutes = [
   "/",
   ...surveyRoutes,
-  "/claims",
+  "/work-orders",
   "/definition",
   // The one editor, on a plain form and on a personalized one.
   "/configure",
@@ -80,8 +80,8 @@ test("opening another chart changes the note's shape", async ({ page }) => {
   });
 });
 
-test("/claims renders the table and the SurveyJS editor", async ({ page }) => {
-  await page.goto("/claims");
+test("/work-orders renders the table and the SurveyJS editor", async ({ page }) => {
+  await page.goto("/work-orders");
   await expect(page.getByRole("table").first()).toBeVisible();
   await page.getByRole("button", { name: "Edit" }).first().click();
   await expect(page.locator(".sd-root-modern").first()).toBeVisible();

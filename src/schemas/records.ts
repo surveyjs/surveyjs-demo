@@ -1,6 +1,6 @@
-import type { SessionUser, SurveyData, SurveyResult } from "./types";
-import { claimsCollection } from "./collections/insurance-claim";
+import type { SessionUser, SourceDocument, SurveyData, SurveyResult } from "./types";
 import { leadsCollection } from "./collections/leads";
+import { workOrdersCollection } from "./collections/work-order";
 
 /**
  * A records page, described as data: what a list query returns, how a stored
@@ -45,7 +45,7 @@ export interface StoredRecord extends RecordRow {
 }
 
 export interface RecordCollection {
-  /** The storage key, e.g. "claims". */
+  /** The storage key, e.g. "workOrders". */
   readonly id: string;
   readonly schemaId: string;
   readonly noun: { readonly one: string; readonly many: string };
@@ -75,12 +75,25 @@ export interface RecordCollection {
    * change can address a row rather than its index.
    */
   readonly rowIdContainers?: readonly string[];
+  /**
+   * How `createFrom` turns answers read from a document into a record. Without
+   * it, `newId` names the record and `newRecord` wins over every answer.
+   */
+  readonly fromDocument?: {
+    /** The id the document itself carries, when usable; `undefined` falls back to `newId`. */
+    readonly id?: (data: SurveyData, existing: readonly string[]) => string | undefined;
+    /**
+     * Values forced over the answers: the id field, the draft status, and where the
+     * record came from. The rest of `newRecord` only fills what the document left blank.
+     */
+    readonly pinned: (id: string, source: SourceDocument | undefined) => SurveyData;
+  };
 }
 
 /** Every records page's collection, by storage key. */
 export const recordCollections: Record<string, RecordCollection> = {
-  [claimsCollection.id]: claimsCollection,
   [leadsCollection.id]: leadsCollection,
+  [workOrdersCollection.id]: workOrdersCollection,
 };
 
 export function getRecordCollection(id: string): RecordCollection {

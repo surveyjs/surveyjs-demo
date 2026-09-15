@@ -92,38 +92,55 @@ export const HOW_BUILT: Partial<Record<NavId, HowBuiltContent>> = {
       { label: "Survey Creator (Open in Creator)", status: "shown", edition: "full" },
     ],
   },
-  claims: {
+  workOrders: {
     summary:
-      "A records page: a list of stored claims and one form that views, edits and adds them. The form is the CMS-1500 box by box, filled from a document or by hand.",
+      "A field service job sheet as one form: a list of stored work orders, and one form that views, edits and adds them. A filled sheet becomes a draft record through AI extraction, and a record prints back onto the company's own sheet.",
     dataIn: [
       {
         label: "The definition",
-        detail: "One JSON document for every claim: the questions, their validation and their conditions.",
-        source: "src/schemas/insurance-claim.ts",
+        detail: "Two pages of JSON: the questions, the totals, the rules that require a signature, and an aiHint per question naming its box on the sheet.",
+        source: "src/schemas/work-order.ts",
       },
       {
         label: "The record",
-        detail: "getResult returns the whole stored response, loaded into the form as its data.",
+        detail: "getResult returns the whole stored document, loaded into the form as its data.",
         source: "src/storage/survey-results.ts",
       },
       {
         label: "The list",
-        detail: "listResults returns the columns only: claim number, patient, status and total. No documents.",
+        detail: "listResults returns the columns only: job number, customer, equipment, status and total. No documents.",
         source: "src/storage/survey-results.ts",
+      },
+      {
+        label: "An uploaded document",
+        detail: "A PDF, scan or photo of a filled sheet, read by /api/extract against the definition, and kept by keepSourceDocument as the new record's original.",
+        source: "src/storage/documents.ts",
       },
     ],
     dataOut: [
       {
-        label: "The document and its columns",
-        detail: "saveResult stores the response whole, and derives the list's columns from it on every write.",
-        source: "src/schemas/collections/insurance-claim.ts",
+        label: "The document",
+        detail: "saveResult stores every answer. A record read from a document also stores a link to its original and when it was read: forced by fromDocument.pinned, never taken from the model's answers.",
+        source: "src/schemas/collections/work-order.ts",
+      },
+      {
+        label: "Five columns",
+        detail: "toColumns derives job number, customer, equipment, status and the total, recomputed from the parts and labor. The list reads only these.",
+        source: "src/schemas/collections/work-order.ts",
+      },
+      {
+        label: "The job sheet PDF",
+        detail: "Save as PDF prints the record box by box onto the company's blank, adding continuation sheets for as many parts as it has.",
+        source: "src/lib/work-order-pdf.ts",
       },
     ],
     variables: [],
     features: [
-      { label: "AI extraction from a document", status: "shown" },
-      { label: "CMS-1500 PDF", status: "shown" },
+      { label: "AI extraction from a PDF, scan or photo", status: "shown" },
+      { label: "Job sheet PDF", status: "shown" },
       { label: "One JSON definition, edited from the page header", status: "shown" },
+      { label: "Choices from your API", status: "coming" },
+      { label: "Per-field confidence in the review", status: "coming" },
       { label: "Survey Creator (Open in Creator)", status: "shown", edition: "full" },
       { label: "Dashboard (View analytics)", status: "shown", edition: "full" },
     ],

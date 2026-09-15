@@ -19,7 +19,7 @@ import type { SurveyData } from "@/schemas";
  * browser only when somebody asks for a file.
  */
 
-const BLANK = "/samples/cms-1500-blank.pdf";
+const BLANK = "/samples/archive/cms-1500/cms-1500-blank.pdf";
 
 /** Body text, in points. */
 const SIZE = 7.5;

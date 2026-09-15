@@ -1,4 +1,4 @@
-import type { SurveyResult } from "../types";
+import type { SurveyResult } from "../../schemas/types";
 
 /**
  * Seed/demo records for the insurance-claim CRUD entity, shaped to match

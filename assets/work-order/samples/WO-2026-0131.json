@@ -1,0 +1,38 @@
+{
+  "$comment": "Sample 2, Phone photo: handwritten on site, the simplest of the three. Values in the definition's data shape.",
+  "signature": "luisOrtega",
+  "hand": true,
+  "data": {
+    "jobNumber": "WO-2026-0131",
+    "status": "completed",
+    "visitDate": "2026-09-11",
+    "arrivalTime": "10:00",
+    "departureTime": "11:30",
+    "hoursOnSite": 1.5,
+    "customerName": "Halcyon Foods",
+    "contactName": "Luis Ortega",
+    "contactPhone": "(503) 555-0131",
+    "siteAddress": "Halcyon Foods, staff kitchen\n5120 NE Columbia Blvd, Portland, OR 97218",
+    "equipmentType": "ventilation",
+    "warranty": true,
+    "manufacturer": "Aerolyne",
+    "modelNumber": "EF-250",
+    "serialNumber": "E250-230117-0088",
+    "installedOn": "2023-01-17",
+    "faultReported": "Kitchen extract fan noisy and slow.",
+    "workPerformed": "Replaced the fan belt and one bearing. Runs quiet.",
+    "outcome": "resolved",
+    "parts": [
+      { "partNumber": "BLT-A42", "description": "V-belt A42", "quantity": 1, "unitPrice": 15, "linePrice": 15 },
+      { "partNumber": "BRG-6204", "description": "Bearing 6204", "quantity": 1, "unitPrice": 25, "linePrice": 25 }
+    ],
+    "partsTotal": 40,
+    "laborHours": 1.5,
+    "laborRate": 80,
+    "laborTotal": 120,
+    "total": 160,
+    "technicianName": "tomasHartley",
+    "signedByName": "Luis Ortega",
+    "signedAt": "2026-09-11"
+  }
+}

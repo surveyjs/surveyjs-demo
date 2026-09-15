@@ -80,6 +80,11 @@ const PAGE_COPY: Partial<Record<NavId, PageCopy>> = {
     description:
       "One form to view, edit and add opportunities: contacts, line items with live totals, a security review, and rules that follow the signed-in user's role. Saved as a document and back to your list columns.",
   },
+  workOrders: {
+    title: "Work orders — field service job sheets",
+    description:
+      "One form to view, edit and add job sheets: read a filled sheet from a PDF, scan or photo with AI, keep a link to the original, and print the record back onto the company's own sheet.",
+  },
   embeddedFeedback: {
     title: "Feedback — a survey in a product site",
     description:

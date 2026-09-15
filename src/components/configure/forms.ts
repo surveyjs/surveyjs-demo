@@ -78,10 +78,10 @@ export const FORMS: readonly FormEntry[] = [
     previewLabel: "Save and quit",
     embedded: false,
   }),
-  form("insurance-claim", "insurance-claim.ts", {
-    label: "Claim record",
-    hint: "The editor behind every row on the Claims page.",
-    href: "/claims",
+  form("work-order", "work-order.ts", {
+    label: "Work order",
+    hint: "The job sheet behind every row on the Work orders page, with a hint per box for the extractor.",
+    href: "/work-orders",
     previewLabel: "Save and quit",
     embedded: false,
   }),

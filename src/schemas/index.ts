@@ -5,6 +5,7 @@ export type {
   SchemaDefinition,
   SurveyResult,
   SessionUser,
+  SourceDocument,
 } from "./types";
 
 export { checkoutJson, checkoutSchema } from "./checkout";
@@ -15,9 +16,16 @@ export {
   customerSatisfactionSchema,
 } from "./customer-satisfaction";
 export { encounterNoteJson, encounterNoteSchema } from "./encounter-note";
-export { insuranceClaimJson, insuranceClaimSchema } from "./insurance-claim";
 export { leadsJson, leadsSchema, LEAD_OWNERS } from "./leads";
 export { planFinderJson, planFinderSchema } from "./plan-finder";
+export {
+  workOrderJson,
+  workOrderSchema,
+  WORK_ORDER_STATUSES,
+  EQUIPMENT_TYPES,
+  TECHNICIANS,
+  OUTCOMES,
+} from "./work-order";
 export {
   patientRecordJson,
   CLINIC_PATIENTS,
@@ -29,8 +37,8 @@ export { clinicVisitSample } from "./data/clinic-visit-seed";
 export { customerSatisfactionSample } from "./data/customer-satisfaction-seed";
 export { planFinderSample } from "./data/plan-finder-seed";
 export { encounterNoteSample } from "./data/encounter-note-seed";
-export { insuranceClaimSeed } from "./data/insurance-claim-seed";
 export { leadsSeed } from "./data/leads-seed";
+export { workOrderSeed } from "./data/work-order-seed";
 
 export {
   recordCollections,
@@ -73,9 +81,9 @@ import { checkoutSchema } from "./checkout";
 import { clinicVisitSchema } from "./clinic-visit";
 import { encounterNoteSchema } from "./encounter-note";
 import { customerSatisfactionSchema } from "./customer-satisfaction";
-import { insuranceClaimSchema } from "./insurance-claim";
 import { leadsSchema } from "./leads";
 import { planFinderSchema } from "./plan-finder";
+import { workOrderSchema } from "./work-order";
 import type { SchemaDefinition } from "./types";
 
 export const schemaRegistry: Record<string, SchemaDefinition> = {
@@ -83,9 +91,9 @@ export const schemaRegistry: Record<string, SchemaDefinition> = {
   [clinicVisitSchema.id]: clinicVisitSchema,
   [encounterNoteSchema.id]: encounterNoteSchema,
   [customerSatisfactionSchema.id]: customerSatisfactionSchema,
-  [insuranceClaimSchema.id]: insuranceClaimSchema,
   [leadsSchema.id]: leadsSchema,
   [planFinderSchema.id]: planFinderSchema,
+  [workOrderSchema.id]: workOrderSchema,
 };
 
 export function getSchemaDefinition(id: string): SchemaDefinition {

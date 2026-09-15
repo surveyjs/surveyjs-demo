@@ -167,16 +167,29 @@ const PRESETS: Record<string, AnalyticsPreset> = {
     ],
   },
   checkout: { responses: 200 },
-  "insurance-claim": {
+  "work-order": {
     responses: 240,
     items: [
       { name: "status", type: "pie" },
-      { name: "insuranceProgram", type: "pie" },
-      { name: "totalCharge", type: "histogram" },
+      { name: "equipmentType", type: "pie" },
+      { name: "outcome", type: "pie" },
+      { name: "total", type: "histogram" },
+      "technicianName",
+      "faultReported",
     ],
-    // A claim is not a number between one and a hundred: the question carries no
-    // min/max, so the range is stated here instead.
-    derived: { totalCharge: [140, 8600] },
+    // The total is an expression over the parts and the labor, which the
+    // generator does not fill in, so its range is stated here instead.
+    derived: { total: [85, 2400] },
+    phrases: [
+      "No cooling, compressor will not start.",
+      "Unit tripping the breaker every few hours.",
+      "Boiler locking out on flame failure.",
+      "Walk-in cooler warm overnight.",
+      "Extract fan noisy and slow.",
+      "Water leaking from the indoor unit.",
+      "Thermostat not responding.",
+      "Heat pump stuck in defrost.",
+    ],
   },
 };
 

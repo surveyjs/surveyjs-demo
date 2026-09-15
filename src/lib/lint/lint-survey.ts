@@ -1,6 +1,9 @@
 import { Serializer } from "survey-core";
 import { getRules, lintSurvey } from "survey-core/linter";
 import type { ILintFinding, ISuppression, ISurveyLintOptions } from "survey-core/linter";
+// `aiHint`, and any other property this template registers: the linter reads the
+// same Serializer, so it checks them like survey-core's own.
+import "../../schemas/custom-properties";
 
 export type { ILintFinding };
 
@@ -19,15 +22,14 @@ export interface SurveyLintVerdict {
 const AUTOFILL_SECTION = /^(?:section-[\w-]+\s+)?(?:shipping|billing)\s+(\S+)$/;
 
 /**
- * The two things this template writes on purpose and the linter cannot know about. Each
- * one is silenced at its own path, never by switching a rule off, so the same mistake
- * anywhere else is still reported.
+ * The one thing this template writes on purpose and the linter cannot know about. It is
+ * silenced at its own path, never by switching a rule off, so the same mistake anywhere
+ * else is still reported: `autocomplete: "shipping postal-code"` and the like, a valid
+ * HTML autofill token that keeps two address blocks apart. It is silenced only when the
+ * field name after the section token is itself an allowed value, so a typo still reports.
  *
- * - `aiHint` on any element: a note for `/api/extract`, which reads it from the raw JSON.
- *   The model never needs it, so it is not registered as a property.
- * - `autocomplete: "shipping postal-code"` and the like: a valid HTML autofill token that
- *   keeps two address blocks apart. It is silenced only when the field name after the
- *   section token is itself an allowed value, so a typo still reports.
+ * `aiHint` needs no entry: it is a registered property (`src/schemas/custom-properties.ts`),
+ * so a hint where the extractor never reads it, on a page or a panel, is reported.
  */
 export function templateSuppressions(json: unknown): ISuppression[] {
   const allowed = new Set<unknown>(
@@ -42,9 +44,7 @@ export function templateSuppressions(json: unknown): ISuppression[] {
     if (!node || typeof node !== "object") return;
     for (const [key, value] of Object.entries(node)) {
       const childPath = path ? `${path}.${key}` : key;
-      if (key === "aiHint") {
-        found.push({ ruleId: "property/unknown", path: childPath });
-      } else if (key === "autocomplete" && typeof value === "string") {
+      if (key === "autocomplete" && typeof value === "string") {
         const field = AUTOFILL_SECTION.exec(value)?.[1];
         if (field && allowed.has(field)) {
           found.push({ ruleId: "property/invalid-value", path: childPath });

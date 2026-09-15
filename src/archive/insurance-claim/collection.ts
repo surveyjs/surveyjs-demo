@@ -1,6 +1,6 @@
-import type { RecordCollection } from "../records";
-import type { SurveyData } from "../types";
-import { insuranceClaimSeed } from "../data/insurance-claim-seed";
+import type { RecordCollection } from "../../schemas/records";
+import type { SurveyData } from "../../schemas/types";
+import { insuranceClaimSeed } from "./insurance-claim-seed";
 
 /** The patient's name as the list shows it. `null` when the claim has none yet. */
 function patientName(data: SurveyData): string | null {

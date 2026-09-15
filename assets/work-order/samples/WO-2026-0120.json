@@ -1,0 +1,41 @@
+{
+  "$comment": "Not a sample card: the signed paper sheet of seed record WO-2026-0120, which that record links as its original. Every value here must equal the seed's (e2e/work-order-sheet.spec.ts checks it).",
+  "signature": "samWhitaker",
+  "hand": true,
+  "data": {
+    "jobNumber": "WO-2026-0120",
+    "status": "completed",
+    "visitDate": "2026-09-01",
+    "arrivalTime": "08:00",
+    "departureTime": "11:40",
+    "hoursOnSite": 3.7,
+    "customerName": "Bluepeak Energy",
+    "purchaseOrder": "BPE-7714",
+    "contactName": "Sam Whitaker",
+    "contactPhone": "(503) 555-0158",
+    "siteAddress": "Bluepeak Energy training center\n8800 SW Nimbus Ave, Beaverton, OR 97008",
+    "equipmentType": "heatPump",
+    "warranty": false,
+    "manufacturer": "Norvanta",
+    "modelNumber": "HP-60X",
+    "serialNumber": "N60-171012-0932",
+    "installedOn": "2017-10-12",
+    "faultReported": "Heat pump stuck in defrost, blowing cold air into the classrooms every few minutes.",
+    "workPerformed": "Replaced the defrost board, both coil sensors and the reversing valve coil, which read open. Heating normally when I left.",
+    "outcome": "followUpRequired",
+    "followUpNotes": "Outdoor coil fins bent on the north side. Book a coil comb and clean before winter.",
+    "parts": [
+      { "partNumber": "DFT-200", "description": "Defrost control board", "quantity": 1, "unitPrice": 164, "linePrice": 164 },
+      { "partNumber": "SNS-10K", "description": "Coil temperature sensor", "quantity": 2, "unitPrice": 18.5, "linePrice": 37 },
+      { "partNumber": "RV-COIL", "description": "Reversing valve solenoid coil", "quantity": 1, "unitPrice": 46.25, "linePrice": 46.25 }
+    ],
+    "partsTotal": 247.25,
+    "laborHours": 3.5,
+    "laborRate": 85,
+    "laborTotal": 297.5,
+    "total": 544.75,
+    "technicianName": "nadiaSokolov",
+    "signedByName": "Sam Whitaker",
+    "signedAt": "2026-09-01"
+  }
+}

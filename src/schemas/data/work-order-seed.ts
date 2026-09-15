@@ -1,0 +1,211 @@
+import type { SurveyResult } from "../types";
+import { WORK_ORDER_SIGNATURES } from "./work-order-signatures";
+
+/**
+ * Seed records for the `workOrders` collection, shaped to match `workOrderJson`
+ * question names. The customers are the Leads accounts, at sites in the
+ * Portland area; the service company is Tallis Mechanical Services.
+ *
+ * Each document is stored as a save would store it, calculated values
+ * included, and `e2e/work-order-sheet.spec.ts` recomputes every one of them
+ * with the definition. The order here is the list order.
+ *
+ * WO-2026-0120 was read from its signed paper sheet, so it links that original
+ * and carries no signature image. Its scan is drawn from
+ * `assets/work-order/samples/WO-2026-0120.json`, which must print these values.
+ */
+export const workOrderSeed: SurveyResult[] = [
+  {
+    id: "WO-2026-0118",
+    data: {
+      jobNumber: "WO-2026-0118",
+      status: "invoiced",
+      visitDate: "2026-08-18",
+      arrivalTime: "07:30",
+      departureTime: "13:15",
+      hoursOnSite: 5.8,
+      customerName: "Halcyon Foods",
+      purchaseOrder: "HF-PO-44817",
+      contactName: "Luis Ortega",
+      contactPhone: "(503) 555-0131",
+      siteAddress: "Halcyon Foods cold store\n5120 NE Columbia Blvd, Portland, OR 97218",
+      equipmentType: "refrigeration",
+      warranty: false,
+      manufacturer: "Norvanta",
+      modelNumber: "CU-4800",
+      serialNumber: "N48-190514-0277",
+      installedOn: "2019-05-14",
+      faultReported:
+        "Cold store at -2 F against a -10 F setpoint. Evaporator iced over and the condenser fan on unit 2 not turning.",
+      workPerformed:
+        "Replaced expansion valve, filter driers, sight glass, condenser fan motor and blade, and a burnt contactor. Brazed, pressure tested, evacuated and recharged with 12 lb R-448A. Store at -10 F within 90 minutes.",
+      outcome: "resolved",
+      parts: [
+        { partNumber: "EV-2240", description: "Electronic expansion valve", quantity: 1, unitPrice: 186, linePrice: 186 },
+        { partNumber: "FD-163", description: "Filter drier, 16 cu in", quantity: 2, unitPrice: 24.5, linePrice: 49 },
+        { partNumber: "R448A-LB", description: "Refrigerant R-448A, per lb", quantity: 12, unitPrice: 14.75, linePrice: 177 },
+        { partNumber: "SG-38", description: "Sight glass, 3/8 in", quantity: 1, unitPrice: 31.2, linePrice: 31.2 },
+        { partNumber: "CF-13", description: "Condenser fan motor, 1/3 HP", quantity: 1, unitPrice: 142, linePrice: 142 },
+        { partNumber: "FB-18", description: "Fan blade, 18 in", quantity: 1, unitPrice: 38.4, linePrice: 38.4 },
+        { partNumber: "CT-30", description: "Contactor, 30 A", quantity: 1, unitPrice: 57.9, linePrice: 57.9 },
+        { partNumber: "BZ-15", description: "Brazing rod, 15% silver", quantity: 4, unitPrice: 6.25, linePrice: 25 },
+      ],
+      partsTotal: 706.5,
+      laborHours: 5.75,
+      laborRate: 85,
+      laborTotal: 488.75,
+      total: 1195.25,
+      technicianName: "tomasHartley",
+      customerSignature: WORK_ORDER_SIGNATURES.luisOrtega,
+      signedByName: "Luis Ortega",
+      signedAt: "2026-08-18",
+    },
+  },
+  {
+    id: "WO-2026-0119",
+    data: {
+      jobNumber: "WO-2026-0119",
+      status: "inProgress",
+      visitDate: "2026-09-08",
+      arrivalTime: "09:15",
+      departureTime: "11:05",
+      hoursOnSite: 1.8,
+      customerName: "Kestrel Freight",
+      purchaseOrder: "KF-20931",
+      contactName: "Dale Pruitt",
+      contactPhone: "(503) 555-0144",
+      siteAddress: "Kestrel Freight depot office\n2260 NW Front Ave, Portland, OR 97209",
+      equipmentType: "airConditioning",
+      warranty: true,
+      manufacturer: "Aerolyne",
+      modelNumber: "AS-36C",
+      serialNumber: "A36-220603-1184",
+      installedOn: "2022-06-03",
+      faultReported:
+        "Office AC blowing warm since Friday. Outdoor unit hums but the compressor does not start.",
+      workPerformed:
+        "Replaced the failed run capacitor. Compressor starts but draws high amps and trips after ten minutes. Changed both filters and left the unit off to protect the compressor.",
+      outcome: "partsOnOrder",
+      followUpNotes:
+        "Compressor ordered under warranty, 5 to 7 working days. Return to fit it and recharge. Portable unit offered to the office manager.",
+      parts: [
+        { partNumber: "CAP-455", description: "Run capacitor, 45/5 MFD", quantity: 1, unitPrice: 22.8, linePrice: 22.8 },
+        { partNumber: "FLT-2025", description: "Pleated filter, 20 x 25 x 1", quantity: 2, unitPrice: 9.6, linePrice: 19.2 },
+      ],
+      partsTotal: 42,
+      laborHours: 2,
+      laborRate: 85,
+      laborTotal: 170,
+      total: 212,
+      technicianName: "gracePellerin",
+      customerSignature: WORK_ORDER_SIGNATURES.dalePruitt,
+      signedByName: "Dale Pruitt",
+      signedAt: "2026-09-08",
+    },
+  },
+  {
+    id: "WO-2026-0120",
+    data: {
+      sourceDocument: [
+        {
+          name: "work-order-0120-scan.jpg",
+          type: "image/jpeg",
+          content: "/samples/work-order-0120-scan.jpg",
+        },
+      ],
+      importedAt: "2026-09-02T15:20",
+      jobNumber: "WO-2026-0120",
+      status: "completed",
+      visitDate: "2026-09-01",
+      arrivalTime: "08:00",
+      departureTime: "11:40",
+      hoursOnSite: 3.7,
+      customerName: "Bluepeak Energy",
+      purchaseOrder: "BPE-7714",
+      contactName: "Sam Whitaker",
+      contactPhone: "(503) 555-0158",
+      siteAddress: "Bluepeak Energy training center\n8800 SW Nimbus Ave, Beaverton, OR 97008",
+      equipmentType: "heatPump",
+      warranty: false,
+      manufacturer: "Norvanta",
+      modelNumber: "HP-60X",
+      serialNumber: "N60-171012-0932",
+      installedOn: "2017-10-12",
+      faultReported:
+        "Heat pump stuck in defrost, blowing cold air into the classrooms every few minutes.",
+      workPerformed:
+        "Replaced the defrost board, both coil sensors and the reversing valve coil, which read open. Heating normally when I left.",
+      outcome: "followUpRequired",
+      followUpNotes: "Outdoor coil fins bent on the north side. Book a coil comb and clean before winter.",
+      parts: [
+        { partNumber: "DFT-200", description: "Defrost control board", quantity: 1, unitPrice: 164, linePrice: 164 },
+        { partNumber: "SNS-10K", description: "Coil temperature sensor", quantity: 2, unitPrice: 18.5, linePrice: 37 },
+        { partNumber: "RV-COIL", description: "Reversing valve solenoid coil", quantity: 1, unitPrice: 46.25, linePrice: 46.25 },
+      ],
+      partsTotal: 247.25,
+      laborHours: 3.5,
+      laborRate: 85,
+      laborTotal: 297.5,
+      total: 544.75,
+      technicianName: "nadiaSokolov",
+      signedByName: "Sam Whitaker",
+      signedAt: "2026-09-01",
+    },
+  },
+  {
+    id: "WO-2026-0121",
+    data: {
+      jobNumber: "WO-2026-0121",
+      status: "completed",
+      visitDate: "2026-09-10",
+      arrivalTime: "14:10",
+      departureTime: "16:40",
+      hoursOnSite: 2.5,
+      customerName: "Northwind Labs",
+      purchaseOrder: "NWL-3390",
+      contactName: "Rachel Kim",
+      contactPhone: "(503) 555-0126",
+      siteAddress: "Northwind Labs, server room B2\n1450 NW 185th Ave, Hillsboro, OR 97006",
+      equipmentType: "airConditioning",
+      warranty: false,
+      manufacturer: "Aerolyne",
+      modelNumber: "CR-12D",
+      serialNumber: "A12-200320-0415",
+      installedOn: "2020-03-20",
+      faultReported: "Server room at 84 F and rising. Cooling unit 1 alarming on high head pressure.",
+      workPerformed:
+        "Condenser coil blocked with cottonwood fluff. Cleaned it and reset the unit; room back to 70 F in 40 minutes. Condenser fan motor bearings are noisy.",
+      outcome: "temporaryFix",
+      followUpNotes: "Replace the condenser fan motor on the next visit, before it seizes. Quote to follow.",
+      partsTotal: 0,
+      laborHours: 2.5,
+      laborRate: 85,
+      laborTotal: 212.5,
+      total: 212.5,
+      technicianName: "tomasHartley",
+      customerSignature: WORK_ORDER_SIGNATURES.rachelKim,
+      signedByName: "Rachel Kim",
+      signedAt: "2026-09-10",
+    },
+  },
+  {
+    id: "WO-2026-0122",
+    data: {
+      jobNumber: "WO-2026-0122",
+      status: "scheduled",
+      visitDate: "2026-09-22",
+      customerName: "Ridgeline Family Health",
+      purchaseOrder: "RFH-1186",
+      contactName: "Devon Hale",
+      contactPhone: "(503) 555-0117",
+      siteAddress: "Ridgeline Family Health, Westbridge\n47 Westbridge Avenue, Portland, OR 97205",
+      equipmentType: "ventilation",
+      faultReported: "Exam room 3 extract fan rattling, and the room feels stuffy by midday.",
+      partsTotal: 0,
+      laborRate: 85,
+      laborTotal: 0,
+      total: 0,
+      technicianName: "gracePellerin",
+    },
+  },
+];

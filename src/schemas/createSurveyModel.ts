@@ -1,5 +1,7 @@
 import { Model, QuestionMatrixDropdownModelBase } from "survey-core";
 import type { SchemaDefinition, SurveyData, SurveyJSON, SurveyMode } from "./types";
+// Registers `aiHint` before any model is built, so `model.toJSON()` keeps it.
+import "./custom-properties";
 
 export interface CreateSurveyModelOptions {
   /** Initial response data to load into the model. */

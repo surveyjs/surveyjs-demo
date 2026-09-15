@@ -19,13 +19,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { SurveyData } from "@/schemas";
-import { sampleDocuments, type SampleDocument } from "./sample-documents";
+import type { SourceDocument, SurveyData } from "@/schemas";
+import { keepSourceDocument } from "@/storage/documents";
+import type { SampleDocument } from "./sample-documents";
 
 const ACCEPTED = ".pdf,.png,.jpg,.jpeg,.webp";
 
-/** Which document this browser has already had read, if any. */
-const USED_KEY = "sjs-demo-claim-extracted";
+/** Which document this browser has already had read for a form, if any. */
+const usedKey = (formId: string) => `sjs-demo-extracted:${formId}`;
 
 /** What is written there when the document was the visitor's own upload. */
 const UPLOAD_ID = "your-document";
@@ -35,61 +36,83 @@ interface Outcome {
   readonly message: string;
 }
 
+/** "a job sheet", "an invoice". */
+function withArticle(noun: string): string {
+  return `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`;
+}
+
 /**
- * "Add a claim from paper" - the way into the records list that does not
- * involve retyping.
+ * "Add a record from paper": the way into a records list that does not involve
+ * retyping.
  *
- * A claim still arrives as a PDF from billing software, or as a scan of the
- * printed form, more often than anyone would like. This strip hands the
- * document and the survey's own JSON to `/api/extract`, and what comes back is
- * kept as a draft claim: the answers land in the real inputs, with the real
- * validation and the real conditional logic, for a person to correct. Nothing
- * is accepted blindly, which is the whole design.
+ * Paperwork still arrives as a PDF out of another system, or as a scan or a
+ * phone photo of a sheet filled in by hand, more often than anyone would like.
+ * This strip hands the document and the survey's own JSON to `/api/extract`,
+ * and what comes back is kept as a draft record: the answers land in the real
+ * inputs, with the real validation and the real conditional logic, for a person
+ * to correct against the original, which the record links. Nothing is accepted
+ * blindly, which is the whole design.
  *
- * Two documents ship with the template - the same CMS-1500, once as a digital
- * PDF and once as a scan - so the field-for-field mapping can be seen in one
- * click, on both kinds of input. Any other CMS-1500 can be dropped in too.
+ * The samples ship with the template, so the field-for-field mapping can be seen
+ * in one click on each kind of input. Any other document of the same kind can
+ * be dropped in too.
  *
  * The key lives on the server, so until one is configured the route answers 501
- * and that is what shows up here - wired, not pretending.
+ * and that is what shows up here: wired, not pretending.
  */
 export function ExtractFromDocument({
   formId,
+  noun,
+  documentName,
+  samples,
   onExtracted,
 }: {
   formId: string;
-  /** Answers keyed by question name, straight into the claim on screen. */
-  onExtracted: (data: SurveyData) => void;
+  /** What a record is called, in the singular: "work order". */
+  noun: string;
+  /** What the paper is called, in the singular: "job sheet". */
+  documentName: string;
+  samples: readonly SampleDocument[];
+  /** Answers keyed by question name, and the original they were read from. */
+  onExtracted: (data: SurveyData, source: SourceDocument) => void | Promise<void>;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [enlarged, setEnlarged] = useState<SampleDocument | null>(null);
   const [zoomed, setZoomed] = useState(false);
-  // One reading per browser: every extraction is a real call to a paid model,
-  // and a demo does not need a second one to make its point. The document that
-  // was read stays on screen, marked, and the other ways in go away.
+  // One reading per browser and form: every extraction is a real call to a paid
+  // model, and a demo does not need a second one to make its point. The document
+  // that was read stays on screen, marked, and the other ways in go away.
   const [used, setUsed] = useState<string | null>(null);
 
   useEffect(() => {
     try {
-      setUsed(window.localStorage.getItem(USED_KEY));
+      setUsed(window.localStorage.getItem(usedKey(formId)));
     } catch {
       // A browser that refuses storage just gets the buttons back.
     }
-  }, []);
+  }, [formId]);
 
-  const spend = useCallback((id: string) => {
-    setUsed(id);
-    try {
-      window.localStorage.setItem(USED_KEY, id);
-    } catch {
-      // Nothing to do: the lock is a courtesy, not a security boundary.
-    }
-  }, []);
+  const spend = useCallback(
+    (id: string) => {
+      setUsed(id);
+      try {
+        window.localStorage.setItem(usedKey(formId), id);
+      } catch {
+        // Nothing to do: the lock is a courtesy, not a security boundary.
+      }
+    },
+    [formId],
+  );
 
   const extract = useCallback(
-    async (file: File, label: string, id: string) => {
+    async (
+      file: File,
+      origin: File | { url: string; name: string; type: string },
+      label: string,
+      id: string,
+    ) => {
       setBusy(label);
       setOutcome(null);
 
@@ -101,6 +124,7 @@ export function ExtractFromDocument({
         const response = await fetch("/api/extract", { method: "POST", body });
         const payload = (await response.json()) as {
           data?: SurveyData;
+          readAt?: string;
           error?: string;
         };
 
@@ -111,15 +135,23 @@ export function ExtractFromDocument({
           });
           return;
         }
+        if (!payload.readAt) {
+          setOutcome({ tone: "error", message: "The server did not say when it read the document." });
+          return;
+        }
 
+        // A sample keeps its public URL. An upload gets an object URL, which lives
+        // exactly as long as this tab's in-memory records: both are gone on reload,
+        // so the link never outlives the record that points at it.
+        const source = await keepSourceDocument(origin, payload.readAt);
         const filled = Object.values(payload.data).filter(
           (value) => value !== null && value !== undefined && value !== "",
         ).length;
-        onExtracted(payload.data);
+        await onExtracted(payload.data, source);
         spend(id);
         setOutcome({
           tone: "ok",
-          message: `New draft claim: ${filled} field${filled === 1 ? "" : "s"} filled from ${label}. Check them against the document.`,
+          message: `New draft ${noun}: ${filled} field${filled === 1 ? "" : "s"} filled from ${label}. Check them against the document.`,
         });
       } catch (failure) {
         setOutcome({ tone: "error", message: (failure as Error).message });
@@ -127,7 +159,7 @@ export function ExtractFromDocument({
         setBusy(null);
       }
     },
-    [formId, onExtracted, spend],
+    [formId, noun, onExtracted, spend],
   );
 
   const fillFromSample = useCallback(
@@ -137,39 +169,34 @@ export function ExtractFromDocument({
       try {
         const response = await fetch(sample.file);
         const blob = await response.blob();
-        const name = sample.file.split("/").pop() ?? "claim";
-        await extract(
-          new File([blob], name, { type: blob.type }),
-          sample.label,
-          sample.id,
-        );
+        const name = sample.file.split("/").pop() ?? documentName;
+        const file = new File([blob], name, { type: blob.type });
+        await extract(file, { url: sample.file, name, type: blob.type }, sample.label, sample.id);
       } catch (failure) {
         setOutcome({ tone: "error", message: (failure as Error).message });
         setBusy(null);
       }
     },
-    [extract],
+    [documentName, extract],
   );
 
   // Once a document has been read, it is the only one still on the page.
-  const visible = used
-    ? sampleDocuments.filter((sample) => sample.id === used)
-    : sampleDocuments;
+  const visible = used ? samples.filter((sample) => sample.id === used) : samples;
 
   return (
     <Card className="mt-6 gap-4 p-4">
       <div>
         <h2 className="text-base font-semibold">
-          Add a new claim from a filled document (PDF or scan)
+          Add {withArticle(noun)} from a filled {documentName} (PDF, scan or photo)
         </h2>
         <p className="text-muted-foreground mt-1 text-sm">
           {used
-            ? "This browser has had its reading: the document below is the one that was read, and the claim it produced is in the list. Reading costs a call to a paid model, so a demo does one."
-            : "Pick a document below: the survey's own JSON tells the model which CMS-1500 box each answer comes from, and the claim arrives in the list as a draft, open beside it in the real inputs for you to check against the document."}
+            ? `This browser has had its reading: the document below is the one that was read, and the ${noun} it produced is in the list. Reading costs a call to a paid model, so a demo does one.`
+            : `Pick a document below: the survey's own JSON tells the model which box on the ${documentName} each answer comes from. The ${noun} arrives in the list as a draft, open in the real inputs for you to check against the document, which it links as its original.`}
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         {visible.map((sample) => {
           const loading = busy === sample.label;
           return (
@@ -188,10 +215,10 @@ export function ExtractFromDocument({
               >
                 <Image
                   src={sample.preview}
-                  alt={`${sample.label} - a filled CMS-1500 claim form`}
+                  alt={`${sample.label} - a filled ${documentName}`}
                   width={sample.previewWidth}
                   height={sample.previewHeight}
-                  sizes="(min-width: 640px) 300px, 90vw"
+                  sizes="(min-width: 640px) 33vw, 90vw"
                   className="h-40 w-full object-cover object-top transition-opacity hover:opacity-80"
                 />
                 <Badge
@@ -223,7 +250,7 @@ export function ExtractFromDocument({
                 {used ? (
                   <p className="text-muted-foreground mt-auto flex items-center gap-2 rounded-md border border-dashed px-3 py-1.5 text-xs">
                     <CheckIcon className="size-3.5" />
-                    Already read into a claim
+                    Already read into {withArticle(noun)}
                   </p>
                 ) : (
                   <Button
@@ -257,15 +284,16 @@ export function ExtractFromDocument({
       {!used && (
         <div className="flex flex-wrap items-center gap-3 border-t pt-4">
           <span className="text-muted-foreground min-w-0 flex-1 text-sm">
-            Or try it with a CMS-1500 of your own - a PDF, a scan or a photo.
+            Or try it with {withArticle(documentName)} of your own: a PDF, a scan or a photo.
             <span className="mt-1 block text-xs">
               Supported formats: PDF, PNG, JPG, WEBP. Up to 8 MB.
             </span>
             <span className="mt-1 block text-xs">
               This is a demo, not a service. The file is sent to an LLM provider
-              for this one reading and is not stored here, and the claim it
-              produces lives in this demo&apos;s memory until the server restarts
-              - so please upload sample or made-up forms, never real patient data.
+              for this one reading. The new {noun} links it as its original in
+              this browser tab only, until the page is reloaded, and nothing is
+              stored on the server. Please upload sample or made-up documents,
+              never real customer data.
             </span>
           </span>
 
@@ -277,7 +305,7 @@ export function ExtractFromDocument({
             onChange={(event) => {
               const file = event.target.files?.[0];
               event.target.value = "";
-              if (file) void extract(file, file.name, UPLOAD_ID);
+              if (file) void extract(file, file, file.name, UPLOAD_ID);
             }}
           />
 
@@ -340,7 +368,7 @@ export function ExtractFromDocument({
             <div className="max-h-[75vh] overflow-auto rounded-md border">
               <Image
                 src={enlarged.full}
-                alt={`${enlarged.label} - a filled CMS-1500 claim form`}
+                alt={`${enlarged.label} - a filled ${documentName}`}
                 width={enlarged.fullWidth}
                 height={enlarged.fullHeight}
                 unoptimized

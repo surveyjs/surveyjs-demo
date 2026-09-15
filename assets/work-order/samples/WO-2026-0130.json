@@ -1,0 +1,39 @@
+{
+  "$comment": "Sample 1, Digital PDF: typed by the office system. Values in the definition's data shape; the render script prints them onto the job sheet.",
+  "signature": "ellenVarga",
+  "data": {
+    "jobNumber": "WO-2026-0130",
+    "status": "completed",
+    "visitDate": "2026-09-14",
+    "arrivalTime": "06:45",
+    "departureTime": "09:00",
+    "hoursOnSite": 2.3,
+    "customerName": "Ashgrove District Schools",
+    "purchaseOrder": "ADS-PO-2026-311",
+    "contactName": "Ellen Varga",
+    "contactPhone": "(503) 555-0172",
+    "siteAddress": "Ashgrove Middle School, boiler room\n3300 SE Harold St, Portland, OR 97202",
+    "equipmentType": "boiler",
+    "warranty": false,
+    "manufacturer": "Caldeira Thermal",
+    "modelNumber": "CT-399",
+    "serialNumber": "CT399-150908-0041",
+    "installedOn": "2015-09-08",
+    "faultReported": "Boiler 2 locking out on flame failure before school opens. Building below 60 F at 6 am.",
+    "workPerformed": "Cleaned the flame sensor and replaced it, and replaced the cracked igniter and a worn condensate trap. Test fired ten cycles with no lockout.",
+    "outcome": "resolved",
+    "parts": [
+      { "partNumber": "IGN-399", "description": "Hot surface igniter", "quantity": 1, "unitPrice": 68, "linePrice": 68 },
+      { "partNumber": "FS-12", "description": "Flame sensor", "quantity": 1, "unitPrice": 34.5, "linePrice": 34.5 },
+      { "partNumber": "CT-075", "description": "Condensate trap assembly", "quantity": 1, "unitPrice": 52.25, "linePrice": 52.25 }
+    ],
+    "partsTotal": 154.75,
+    "laborHours": 2,
+    "laborRate": 120,
+    "laborTotal": 240,
+    "total": 394.75,
+    "technicianName": "nadiaSokolov",
+    "signedByName": "Ellen Varga",
+    "signedAt": "2026-09-14"
+  }
+}

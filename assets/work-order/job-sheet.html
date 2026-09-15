@@ -1,0 +1,367 @@
+<!doctype html>
+<!--
+  The Tallis Mechanical Services job sheet: the blank that "Save as PDF" prints a
+  work order onto, and the sheet every sample document is filled in on.
+
+  `scripts/render-work-order-assets.mjs` renders it in Chromium. It measures every
+  element carrying `data-box` into `src/lib/work-order-boxes.ts`, prints the blank
+  to `public/samples/work-order-blank.pdf`, and fills it for the samples through
+  `window.fillSheet`. Nothing here is fetched: the fonts sit beside this file.
+
+  Box ids are the definition's question names. A choice is `<question>.<value>`,
+  a parts cell is `parts.<row>.<column>`, and a box on the continuation sheet is
+  prefixed `continued.`.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Job sheet - Tallis Mechanical Services</title>
+<style>
+  @font-face { font-family: "Barlow"; font-weight: 400; src: url("fonts/barlow/Barlow-Regular.ttf"); }
+  @font-face { font-family: "Barlow"; font-weight: 600; src: url("fonts/barlow/Barlow-SemiBold.ttf"); }
+  @font-face { font-family: "Caveat"; font-weight: 400 700; src: url("fonts/caveat/Caveat-wght.ttf"); }
+  @font-face { font-family: "Plex Mono"; font-weight: 400; src: url("fonts/ibm-plex-mono/IBMPlexMono-Regular.ttf"); }
+
+  @page { size: 8.5in 11in; margin: 0; }
+
+  :root {
+    --rule: #a3adb8;
+    --label: #5b6875;
+    --text: #1f2933;
+    --accent: #0e6b62;
+    --accent-soft: #e3f1ef;
+    --gap: 4px;
+  }
+
+  html, body { margin: 0; padding: 0; background: #fff; }
+  body {
+    font-family: "Barlow", sans-serif;
+    color: var(--text);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .sheet {
+    position: relative;
+    box-sizing: border-box;
+    width: 816px;
+    height: 1056px;
+    padding: 30px 42px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+    background: #fff;
+    break-after: page;
+  }
+  .sheet:last-child { break-after: auto; }
+
+  /* ── header ─────────────────────────────────────────────────────────── */
+  .head { display: flex; justify-content: space-between; align-items: stretch; gap: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  .company { display: flex; gap: 12px; align-items: center; }
+  .mark { width: 46px; height: 46px; border-radius: 6px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 26px; letter-spacing: -0.02em; }
+  .company h1 { margin: 0; font-size: 21px; font-weight: 600; line-height: 1.1; }
+  .company p { margin: 2px 0 0; font-size: 10.5px; line-height: 1.3; color: var(--label); }
+  .title { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+  .title h2 { margin: 0; font-size: 22px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; line-height: 1; }
+  .title h2.continued { font-size: 15px; white-space: nowrap; }
+  .title .ids { display: flex; gap: var(--gap); }
+
+  /* ── boxes ──────────────────────────────────────────────────────────── */
+  .f { box-sizing: border-box; border: 1px solid var(--rule); border-radius: 2px; padding: 2px 5px 3px; display: flex; flex-direction: column; min-width: 0; }
+  .l { display: block; height: 11px; font-size: 8.5px; line-height: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--label); white-space: nowrap; }
+  .v { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+  .h1 { height: 38px; } .h2 { height: 50px; } .h3 { height: 64px; } .h4 { height: 78px; }
+
+  .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap); }
+  .s2 { grid-column: span 2; } .s3 { grid-column: span 3; } .s4 { grid-column: span 4; }
+  .s5 { grid-column: span 5; } .s6 { grid-column: span 6; } .s7 { grid-column: span 7; }
+  .s8 { grid-column: span 8; } .s9 { grid-column: span 9; } .s12 { grid-column: span 12; }
+
+  .sec h3 { margin: 0 0 2px; display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--accent); line-height: 16px; }
+  .sec h3 .aside { margin-left: auto; font-size: 9px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--label); }
+  .sec h3 .n { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; letter-spacing: 0; }
+
+  .choices { flex: 1; display: flex; align-items: center; flex-wrap: nowrap; gap: 14px; font-size: 11px; white-space: nowrap; }
+  .choice { display: inline-flex; align-items: center; gap: 5px; }
+  .sq { position: relative; box-sizing: border-box; width: 12px; height: 12px; border: 1px solid var(--label); border-radius: 1px; background: #fff; flex: none; }
+
+  /* ── parts table ────────────────────────────────────────────────────── */
+  .parts { border: 1px solid var(--rule); border-radius: 2px; display: flex; flex-direction: column; }
+  .parts.fill { flex: 1; min-height: 0; overflow: hidden; }
+  .prow { flex: none; display: grid; grid-template-columns: 118px minmax(0, 1fr) 52px 92px 98px; }
+  .prow > div { box-sizing: border-box; padding: 0 5px; border-left: 1px solid var(--rule); min-width: 0; overflow: hidden; position: relative; }
+  .prow > div:first-child { border-left: 0; }
+  .phead { background: var(--accent-soft); height: 16px; }
+  .phead > div { font-size: 8.5px; line-height: 16px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--label); }
+  .pline { height: 22px; border-top: 1px solid var(--rule); }
+  .phead > .num, .pline > .num { text-align: right; }
+
+  .total { border-color: var(--accent); border-width: 1.5px; background: var(--accent-soft); }
+
+  .note { font-size: 10px; line-height: 1.35; color: var(--label); align-self: center; }
+  .foot { margin-top: auto; display: flex; justify-content: space-between; font-size: 9px; color: var(--label); border-top: 1px solid var(--rule); padding-top: 4px; }
+
+  /* ── filled in, for the samples ─────────────────────────────────────── */
+  .ink { position: absolute; left: 0; right: 0; top: 0; bottom: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  body.typed .ink { font-family: "Plex Mono", monospace; font-size: 11.5px; line-height: 14px; color: #111827; padding-top: 3px; }
+  body.hand .ink { font-family: "Caveat", cursive; font-size: 18px; line-height: 16px; font-weight: 500; color: #1d3470; padding-top: 1px; }
+  body.hand .pline .ink { font-size: 18px; line-height: 22px; padding-top: 0; }
+  body.typed .pline .ink { line-height: 22px; padding-top: 0; }
+  .num .ink { text-align: right; right: 5px; }
+  .mark-ink { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%); font-family: "Caveat", cursive; font-weight: 700; font-size: 20px; line-height: 1; color: #1d3470; }
+  body.typed .mark-ink { font-family: "Plex Mono", monospace; font-weight: 400; font-size: 12px; color: #111827; }
+  .sig-ink { position: absolute; inset: 0; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+
+<!-- ═══ Sheet 1 ════════════════════════════════════════════════════════════ -->
+<section class="sheet" data-page="1">
+  <header class="head">
+    <div class="company">
+      <div class="mark">T</div>
+      <div>
+        <h1>Tallis Mechanical Services</h1>
+        <p>Heating, cooling, refrigeration and ventilation &nbsp;|&nbsp; License No. CCB-000000 (placeholder)</p>
+        <p>1840 SE Division Street, Portland, OR 97202 &nbsp;|&nbsp; (503) 555-0187</p>
+      </div>
+    </div>
+    <div class="title">
+      <h2>Job sheet</h2>
+      <div class="ids">
+        <div class="f h1" style="width: 170px"><span class="l">Job no.</span><div class="v" data-box="jobNumber"></div></div>
+        <div class="f h1" style="width: 44px"><span class="l">Sheet</span><div class="v" data-box="sheetNumber"></div></div>
+        <div class="f h1" style="width: 44px"><span class="l">Of</span><div class="v" data-box="sheetCount"></div></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="sec">
+    <h3><span class="n">1</span>Job</h3>
+    <div class="grid">
+      <div class="f h1 s3"><span class="l">Visit date</span><div class="v" data-box="visitDate"></div></div>
+      <div class="f h1 s3"><span class="l">Arrived</span><div class="v" data-box="arrivalTime"></div></div>
+      <div class="f h1 s3"><span class="l">Left</span><div class="v" data-box="departureTime"></div></div>
+      <div class="f h1 s3"><span class="l">Hours on site</span><div class="v" data-box="hoursOnSite"></div></div>
+      <div class="f h1 s12"><span class="l">Status (office use)</span>
+        <div class="choices">
+          <span class="choice"><span class="sq" data-box="status.draft"></span>Draft</span>
+          <span class="choice"><span class="sq" data-box="status.scheduled"></span>Scheduled</span>
+          <span class="choice"><span class="sq" data-box="status.inProgress"></span>In progress</span>
+          <span class="choice"><span class="sq" data-box="status.completed"></span>Completed</span>
+          <span class="choice"><span class="sq" data-box="status.invoiced"></span>Invoiced</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h3><span class="n">2</span>Customer and site</h3>
+    <div class="grid">
+      <div class="f h1 s8"><span class="l">Customer</span><div class="v" data-box="customerName"></div></div>
+      <div class="f h1 s4"><span class="l">Customer PO / reference</span><div class="v" data-box="purchaseOrder"></div></div>
+      <div class="f h2 s7"><span class="l">Site address</span><div class="v" data-box="siteAddress"></div></div>
+      <div class="f h2 s3"><span class="l">Site contact</span><div class="v" data-box="contactName"></div></div>
+      <div class="f h2 s2"><span class="l">Phone</span><div class="v" data-box="contactPhone"></div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h3><span class="n">3</span>Equipment</h3>
+    <div class="grid">
+      <div class="f h1 s9"><span class="l">Type</span>
+        <div class="choices">
+          <span class="choice"><span class="sq" data-box="equipmentType.airConditioning"></span>Air conditioning</span>
+          <span class="choice"><span class="sq" data-box="equipmentType.heatPump"></span>Heat pump</span>
+          <span class="choice"><span class="sq" data-box="equipmentType.boiler"></span>Boiler</span>
+          <span class="choice"><span class="sq" data-box="equipmentType.ventilation"></span>Ventilation</span>
+          <span class="choice"><span class="sq" data-box="equipmentType.refrigeration"></span>Refrigeration</span>
+          <span class="choice"><span class="sq" data-box="equipmentType.other"></span>Other</span>
+        </div>
+      </div>
+      <div class="f h1 s3"><span class="l">Under warranty</span>
+        <div class="choices">
+          <span class="choice"><span class="sq" data-box="warranty.yes"></span>Yes</span>
+          <span class="choice"><span class="sq" data-box="warranty.no"></span>No</span>
+        </div>
+      </div>
+      <div class="f h1 s3"><span class="l">Manufacturer</span><div class="v" data-box="manufacturer"></div></div>
+      <div class="f h1 s3"><span class="l">Model no.</span><div class="v" data-box="modelNumber"></div></div>
+      <div class="f h1 s3"><span class="l">Serial no.</span><div class="v" data-box="serialNumber"></div></div>
+      <div class="f h1 s3"><span class="l">Installed</span><div class="v" data-box="installedOn"></div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h3><span class="n">4</span>Work</h3>
+    <div class="grid">
+      <div class="f h2 s12"><span class="l">Fault reported</span><div class="v" data-box="faultReported"></div></div>
+      <div class="f h3 s12"><span class="l">Work performed</span><div class="v" data-box="workPerformed"></div></div>
+      <div class="f h1 s12"><span class="l">Outcome</span>
+        <div class="choices">
+          <span class="choice"><span class="sq" data-box="outcome.resolved"></span>Resolved</span>
+          <span class="choice"><span class="sq" data-box="outcome.temporaryFix"></span>Temporary fix</span>
+          <span class="choice"><span class="sq" data-box="outcome.partsOnOrder"></span>Parts on order</span>
+          <span class="choice"><span class="sq" data-box="outcome.followUpRequired"></span>Follow-up visit required</span>
+        </div>
+      </div>
+      <div class="f h2 s12"><span class="l">Follow-up notes</span><div class="v" data-box="followUpNotes"></div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h3><span class="n">5</span>Parts and labor<span class="aside">More than six parts? Continue on a continuation sheet.</span></h3>
+    <div class="parts" data-parts="parts" data-rows="6"></div>
+    <div class="grid" style="margin-top: var(--gap)">
+      <div class="f h1 s3"><span class="l">Parts total ($)</span><div class="v" data-box="partsTotal"></div></div>
+      <div class="f h1 s2"><span class="l">Labor hours</span><div class="v" data-box="laborHours"></div></div>
+      <div class="f h1 s2"><span class="l">Rate / hr ($)</span><div class="v" data-box="laborRate"></div></div>
+      <div class="f h1 s2"><span class="l">Labor total ($)</span><div class="v" data-box="laborTotal"></div></div>
+      <div class="f h1 s3 total"><span class="l">Total ($)</span><div class="v" data-box="total"></div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h3><span class="n">6</span>Sign-off</h3>
+    <div class="grid">
+      <div class="f h1 s4"><span class="l">Technician</span><div class="v" data-box="technicianName"></div></div>
+      <div class="f s8" style="height: 80px; grid-row: span 2"><span class="l">Customer signature: the work above was carried out</span><div class="v" data-box="customerSignature"></div></div>
+      <div class="s4" style="display: grid; gap: var(--gap); grid-template-columns: 3fr 2fr">
+        <div class="f h1"><span class="l">Print name</span><div class="v" data-box="signedByName"></div></div>
+        <div class="f h1"><span class="l">Date</span><div class="v" data-box="signedAt"></div></div>
+      </div>
+    </div>
+  </section>
+
+</section>
+
+<!-- ═══ Sheet 2: continuation ══════════════════════════════════════════════ -->
+<section class="sheet" data-page="2">
+  <header class="head">
+    <div class="company">
+      <div class="mark">T</div>
+      <div>
+        <h1>Tallis Mechanical Services</h1>
+        <p>Heating, cooling, refrigeration and ventilation &nbsp;|&nbsp; License No. CCB-000000 (placeholder)</p>
+        <p>1840 SE Division Street, Portland, OR 97202 &nbsp;|&nbsp; (503) 555-0187</p>
+      </div>
+    </div>
+    <div class="title">
+      <h2 class="continued">Job sheet (continued)</h2>
+      <div class="ids">
+        <div class="f h1" style="width: 170px"><span class="l">Job no.</span><div class="v" data-box="continued.jobNumber"></div></div>
+        <div class="f h1" style="width: 44px"><span class="l">Sheet</span><div class="v" data-box="continued.sheetNumber"></div></div>
+        <div class="f h1" style="width: 44px"><span class="l">Of</span><div class="v" data-box="continued.sheetCount"></div></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="sec" style="flex: 1; min-height: 0; display: flex; flex-direction: column">
+    <h3><span class="n">5</span>Parts (continued)</h3>
+    <div class="parts fill" data-parts="continued.parts" data-rows="fill"></div>
+  </section>
+
+  <footer class="foot">
+    <span>Totals are on sheet 1.</span>
+    <span>Tallis Mechanical Services</span>
+  </footer>
+</section>
+
+<script>
+  // Parts tables: a header, then ruled rows. Sheet 1 has a fixed number; the
+  // continuation sheet takes as many as fit, and that count is measured, not typed.
+  const COLUMNS = [
+    { key: "partNumber", label: "Part no." },
+    { key: "description", label: "Description" },
+    { key: "quantity", label: "Qty", num: true },
+    { key: "unitPrice", label: "Unit price", num: true },
+    { key: "linePrice", label: "Line price", num: true },
+  ];
+
+  function cell(tag, className, text) {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text) element.textContent = text;
+    return element;
+  }
+
+  function addRow(table, index) {
+    const row = cell("div", "prow pline");
+    for (const column of COLUMNS) {
+      const box = cell("div", column.num ? "num" : "");
+      box.dataset.box = `${table.dataset.parts}.${index}.${column.key}`;
+      row.append(box);
+    }
+    table.append(row);
+    return row;
+  }
+
+  function buildTables() {
+  for (const table of document.querySelectorAll("[data-parts]")) {
+    const head = cell("div", "prow phead");
+    for (const column of COLUMNS) head.append(cell("div", column.num ? "num" : "", column.label));
+    table.append(head);
+    if (table.dataset.rows === "fill") {
+      const bottom = () => table.getBoundingClientRect().bottom;
+      for (let index = 0; ; index++) {
+        const row = addRow(table, index);
+        if (row.getBoundingClientRect().bottom > bottom() + 0.5) {
+          row.remove();
+          break;
+        }
+      }
+    } else {
+      for (let index = 0; index < Number(table.dataset.rows); index++) addRow(table, index);
+    }
+    table.dataset.count = String(table.querySelectorAll(".pline").length);
+  }
+  }
+
+  // Rows are counted against the laid-out page, so the fonts that size the
+  // header must have loaded first.
+  Promise.all(Array.from(document.fonts, (font) => font.load())).then(() => {
+    buildTables();
+    document.body.dataset.ready = "";
+  });
+
+  /** A small seeded generator, so a filled sample is the same on every run. */
+  function random(seed) {
+    let state = seed >>> 0;
+    return () => {
+      state = (state * 1664525 + 1013904223) >>> 0;
+      return state / 4294967296;
+    };
+  }
+
+  /**
+   * Fill the sheet for a sample: `texts` by box id, `marks` as box ids to cross,
+   * `signature` as SVG markup. `hand` writes in a pen; otherwise it is typed.
+   */
+  window.fillSheet = ({ texts, marks, signature, hand, seed }) => {
+    document.body.classList.add(hand ? "hand" : "typed");
+    const next = random(seed ?? 1);
+    for (const [id, text] of Object.entries(texts)) {
+      const box = document.querySelector(`[data-box="${id}"]`);
+      if (!box) throw new Error(`No box ${id}`);
+      const ink = cell("div", "ink", text);
+      if (hand) {
+        const tilt = (next() - 0.5) * 1.6;
+        const shift = (next() - 0.5) * 3;
+        ink.style.transform = `translate(${shift}px, ${(next() - 0.5) * 2}px) rotate(${tilt}deg)`;
+      }
+      box.append(ink);
+    }
+    for (const id of marks) {
+      const box = document.querySelector(`[data-box="${id}"]`);
+      if (!box) throw new Error(`No box ${id}`);
+      box.append(cell("span", "mark-ink", "X"));
+    }
+    if (signature) {
+      const box = document.querySelector('[data-box="customerSignature"]');
+      box.insertAdjacentHTML("beforeend", signature);
+    }
+  };
+</script>
+</body>
+</html>

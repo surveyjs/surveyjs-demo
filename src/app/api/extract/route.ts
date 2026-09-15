@@ -18,7 +18,7 @@ import { getSchemaDefinition } from "@/schemas";
  *   OPENAI_API_KEY=…       # then EXTRACTOR_MODEL defaults to gpt-4o
  *   ANTHROPIC_API_KEY=…    # then EXTRACTOR_MODEL defaults to claude-sonnet-5
  *
- * With neither set the route answers 501 and the button on `/claims` says so —
+ * With neither set the route answers 501 and the buttons on `/work-orders` say so —
  * the feature is wired, and it starts working the moment a key appears.
  */
 export const runtime = "nodejs";
@@ -78,9 +78,13 @@ export async function POST(request: Request) {
       formDefinition,
     });
 
-    // `confidence` is per field, which is what makes a review step honest: the
-    // page can mark what the model was unsure about.
-    return NextResponse.json({ data: result.data, confidence: result.confidence });
+    // `readAt` is this server's clock when the reading succeeded, in UTC to the
+    // minute (`YYYY-MM-DDTHH:mm`): a record stores when it was read, and the
+    // browser never makes that time up. `confidence` is per field, which is
+    // what makes a review step honest: the page can mark what the model was
+    // unsure about (nothing reads it yet).
+    const readAt = new Date().toISOString().slice(0, 16);
+    return NextResponse.json({ data: result.data, confidence: result.confidence, readAt });
   } catch (failure) {
     return NextResponse.json(
       { error: (failure as Error).message || "Extraction failed." },

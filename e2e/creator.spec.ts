@@ -47,3 +47,57 @@ test("the primary button lands on the page the form lives in", async ({ page }) 
   await expect(page).toHaveURL(/\/embedded\/clinic$/);
   await expect(page.locator("[data-survey-root]")).toBeVisible();
 });
+
+/** Every `aiHint` in a definition, by the name of the element that carries it (`(survey)` at the root). */
+function hintsOf(json: unknown): Record<string, string> {
+  const found: Record<string, string> = {};
+  const walk = (node: unknown, name: string) => {
+    if (Array.isArray(node)) return node.forEach((item) => walk(item, name));
+    if (!node || typeof node !== "object") return;
+    const element = node as Record<string, unknown>;
+    const own = typeof element.name === "string" ? element.name : name;
+    if (typeof element.aiHint === "string") found[own] = element.aiHint;
+    for (const [key, value] of Object.entries(element)) if (key !== "aiHint") walk(value, own);
+  };
+  walk(json, "(survey)");
+  return found;
+}
+
+test("Creator edits the AI extraction hint under Description, and a save keeps every hint", async ({ page }) => {
+  test.slow();
+  const { workOrderJson } = await import("../src/schemas/work-order");
+  const shipped = hintsOf(workOrderJson);
+  expect(Object.keys(shipped).length).toBeGreaterThan(30);
+
+  // The designer renders questions as they scroll into view; this one is near the top.
+  await page.setViewportSize({ width: 1600, height: 1100 });
+  await page.goto("/configure?form=work-order");
+  await waitForCreator(page);
+  const grid = page.locator(".svc-side-bar");
+
+  /** The property grid's rows, in order, as property names. */
+  const rows = () => grid.locator("[data-name]").evaluateAll((els) => els.map((el) => el.getAttribute("data-name")));
+
+  // A question: its own hint, on the row after Description.
+  await page.locator('[data-sv-drop-target-survey-element="jobNumber"] .svc-question__content').first().click({ position: { x: 60, y: 8 } });
+  const hint = grid.locator('[data-name="aiHint"]');
+  await expect(hint).toContainText("AI extraction hint");
+  await expect(hint.locator("textarea")).toHaveValue(shipped.jobNumber);
+  let names = await rows();
+  expect(names.indexOf("aiHint")).toBe(names.indexOf("description") + 1);
+
+  // The survey: the survey-level hint, in the same place.
+  await page.locator(".svc-designer-header").first().click({ position: { x: 20, y: 20 } });
+  await expect(hint.locator("textarea")).toHaveValue(shipped["(survey)"]);
+  names = await rows();
+  expect(names.indexOf("aiHint")).toBe(names.indexOf("description") + 1);
+
+  // Edit it and save: the stored definition keeps the edit and every other hint.
+  const edited = `${shipped["(survey)"]} Edited in Creator.`;
+  await hint.locator("textarea").fill(edited);
+  await hint.locator("textarea").press("Tab");
+  await page.getByRole("button", { name: "Save and quit" }).click();
+  await expect(page).toHaveURL(/\/work-orders$/);
+  const stored = JSON.parse((await page.evaluate(() => localStorage.getItem("sjs-demo-schema:work-order")))!);
+  expect(hintsOf(stored)).toEqual({ ...shipped, "(survey)": edited });
+});

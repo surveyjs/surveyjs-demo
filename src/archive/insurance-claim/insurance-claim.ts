@@ -1,4 +1,4 @@
-import type { SchemaDefinition, SurveyJSON } from "./types";
+import type { SchemaDefinition, SurveyJSON } from "../../schemas/types";
 
 /**
  * The CMS-1500 (02/12) claim, as a survey.

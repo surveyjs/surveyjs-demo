@@ -20,20 +20,23 @@ const nextConfig = {
     SURVEYJS_KEY: process.env.SURVEYJS_KEY ?? "",
   },
   // Legacy paths; links to them are out in the world. Temporary (307) on
-  // purpose: browsers cache a 308, and `/claims` has just changed meaning.
+  // purpose: browsers cache a 308, and the Documents page has changed before.
+  // `/claims` was the CMS-1500 claim, archived in `src/archive/insurance-claim`;
+  // `/work-orders` has its place now.
   async redirects() {
     return [
       { source: "/checkout", destination: "/starter", permanent: false },
-      { source: "/records", destination: "/claims", permanent: false },
+      { source: "/records", destination: "/work-orders", permanent: false },
+      { source: "/claims", destination: "/work-orders", permanent: false },
       { source: "/checkout/configure", destination: "/configure?form=checkout", permanent: false },
       {
         source: "/records/configure",
-        destination: "/configure?form=insurance-claim",
+        destination: "/configure?form=work-order",
         permanent: false,
       },
       {
         source: "/claims/configure",
-        destination: "/configure?form=insurance-claim",
+        destination: "/configure?form=work-order",
         permanent: false,
       },
     ];
