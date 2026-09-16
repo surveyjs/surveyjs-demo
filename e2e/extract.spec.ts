@@ -145,6 +145,39 @@ test("a document adds a draft that keeps its printed job number and rate, and li
   await expect(page.locator('[data-name="total"]')).toContainText(TOTAL_AT_120);
 });
 
+test("each document is read once per browser, and the others stay loadable", async ({ page }) => {
+  await stubExtraction(page, "WO-2026-0130");
+  await page.goto("/work-orders");
+  await openPanel(page);
+  await page.getByRole("button", { name: "Add from PDF" }).click();
+  await expect(formHeading(page)).toHaveText("Edit WO-2026-0130");
+
+  // Back on the panel, after a reload too: the PDF is marked, the rest are not.
+  for (const load of ["in the same tab", "after a reload"]) {
+    if (load === "after a reload") await page.goto("/work-orders/from-document");
+    else await openPanel(page);
+    await expect(page.getByRole("button", { name: "Add from PDF" })).toHaveCount(0);
+    await expect(page.getByText("Already read into a work order")).toHaveCount(1);
+    await expect(page.getByText("Loaded", { exact: true })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Add from photo" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Add from scan" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Add from your document" })).toBeEnabled();
+  }
+  expect(await page.evaluate(() => localStorage.getItem("sjs-demo-extracted:work-order"))).toBe(
+    JSON.stringify([workOrderSampleDocuments[0].id]),
+  );
+});
+
+test("a browser that used the old one-reading lock keeps that document marked, and nothing else", async ({ page }) => {
+  const [pdf] = workOrderSampleDocuments;
+  await page.addInitScript((id) => localStorage.setItem("sjs-demo-extracted:work-order", id), pdf.id);
+  await page.goto("/work-orders/from-document");
+  await expect(page.getByText("Already read into a work order")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: pdf.action })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Add from photo" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Add from your document" })).toBeEnabled();
+});
+
 test("an upload links a blob URL that opens the same bytes", async ({ page }) => {
   await stubExtraction(page, "WO-2026-0130");
   await page.goto("/work-orders");

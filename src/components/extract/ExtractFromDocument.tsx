@@ -25,11 +25,23 @@ import type { SampleDocument } from "./sample-documents";
 
 const ACCEPTED = ".pdf,.png,.jpg,.jpeg,.webp";
 
-/** Which document this browser has already had read for a form, if any. */
+/** Which documents this browser has already had read for a form: a JSON array of ids. */
 const usedKey = (formId: string) => `sjs-demo-extracted:${formId}`;
 
 /** What is written there when the document was the visitor's own upload. */
 const UPLOAD_ID = "your-document";
+
+/** The ids in storage. A bare id is what the one-reading-per-form lock used to write. */
+function parseUsed(stored: string | null): string[] {
+  if (!stored) return [];
+  try {
+    const parsed: unknown = JSON.parse(stored);
+    if (Array.isArray(parsed)) return parsed.filter((id): id is string => typeof id === "string");
+  } catch {
+    // Not JSON: the old format.
+  }
+  return [stored];
+}
 
 interface Outcome {
   readonly tone: "ok" | "error";
@@ -98,14 +110,16 @@ export function ExtractFromDocument({
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [enlarged, setEnlarged] = useState<SampleDocument | null>(null);
   const [zoomed, setZoomed] = useState(false);
-  // One reading per browser and form: every extraction is a real call to a paid
-  // model, and a demo does not need a second one to make its point. The document
-  // that was read stays on screen, marked, and the other ways in go away.
-  const [used, setUsed] = useState<string | null>(null);
+  // One reading per document, per browser and form: every extraction is a real
+  // call to a paid model, and reading the same sheet twice proves nothing new. A
+  // document that was read stays on screen, marked; the others stay loadable, so
+  // the PDF, the photo and the scan can each be compared once. The upload has
+  // its own one reading.
+  const [used, setUsed] = useState<readonly string[]>([]);
 
   useEffect(() => {
     try {
-      setUsed(window.localStorage.getItem(usedKey(formId)));
+      setUsed(parseUsed(window.localStorage.getItem(usedKey(formId))));
     } catch {
       // A browser that refuses storage just gets the buttons back.
     }
@@ -113,9 +127,12 @@ export function ExtractFromDocument({
 
   const spend = useCallback(
     (id: string) => {
-      setUsed(id);
+      setUsed((current) => (current.includes(id) ? current : [...current, id]));
       try {
-        window.localStorage.setItem(usedKey(formId), id);
+        const stored = parseUsed(window.localStorage.getItem(usedKey(formId)));
+        if (!stored.includes(id)) {
+          window.localStorage.setItem(usedKey(formId), JSON.stringify([...stored, id]));
+        }
       } catch {
         // Nothing to do: the lock is a courtesy, not a security boundary.
       }
@@ -202,8 +219,7 @@ export function ExtractFromDocument({
     [documentName, extract],
   );
 
-  // Once a document has been read, it is the only one still on the page.
-  const visible = used ? samples.filter((sample) => sample.id === used) : samples;
+  const uploaded = used.includes(UPLOAD_ID);
 
   return (
     <Card className="gap-4 p-4">
@@ -212,15 +228,19 @@ export function ExtractFromDocument({
           Add {withArticle(noun)} from a filled {documentName} (PDF, scan or photo)
         </h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          {used
-            ? `This browser has had its reading: the document below is the one that was read, and the ${noun} it produced is in the list. Reading costs a call to a paid model, so a demo does one.`
-            : `Pick a document below: the survey's own JSON tells the model which box on the ${documentName} each answer comes from. The ${noun} arrives in the list as a draft, open in the real inputs for you to check against the document, which it links as its original.`}
+          Pick a document below: the survey&apos;s own JSON tells the model which box on the{" "}
+          {documentName} each answer comes from. The {noun} arrives in the list as a draft, open
+          in the real inputs for you to check against the document, which it links as its
+          original.
+          {used.length > 0 &&
+            " Each document is read once in this browser, because reading costs a call to a paid model; what was already read is marked below, and its draft is in the list."}
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        {visible.map((sample) => {
+        {samples.map((sample) => {
           const loading = busy === sample.label;
+          const read = used.includes(sample.id);
           return (
             <div
               key={sample.id}
@@ -249,7 +269,7 @@ export function ExtractFromDocument({
                 >
                   {sample.kind}
                 </Badge>
-                {used === sample.id && (
+                {read && (
                   <Badge className="absolute top-2 right-2 gap-1">
                     <CheckIcon className="size-3" />
                     Loaded
@@ -269,7 +289,7 @@ export function ExtractFromDocument({
                     {sample.summary}
                   </p>
                 </div>
-                {used ? (
+                {read ? (
                   <p className="text-muted-foreground mt-auto flex items-center gap-2 rounded-md border border-dashed px-3 py-1.5 text-xs">
                     <CheckIcon className="size-3.5" />
                     Already read into {withArticle(noun)}
@@ -296,14 +316,14 @@ export function ExtractFromDocument({
         })}
       </div>
 
-      {used === UPLOAD_ID && (
+      {uploaded && (
         <p className="text-muted-foreground flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-xs">
           <CheckIcon className="size-3.5" />
           Read from a document of your own.
         </p>
       )}
 
-      {!used && (
+      {!uploaded && (
         <div className="flex flex-wrap items-center gap-3 border-t pt-4">
           <span className="text-muted-foreground min-w-0 flex-1 text-sm">
             Or try it with {withArticle(documentName)} of your own: a PDF, a scan or a photo.
