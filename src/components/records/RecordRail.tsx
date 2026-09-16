@@ -20,6 +20,7 @@ export function RecordRail({
   onNew,
   noun,
   disabled = false,
+  newDisabled = false,
 }: {
   collection: RecordCollection;
   /** The page's nav label, which names the rail's navigation landmark. */
@@ -33,6 +34,8 @@ export function RecordRail({
   noun: RecordCollection["noun"];
   /** While a document is being read, nothing here leaves the panel. */
   disabled?: boolean;
+  /** New alone: a browser whose storage is read-only can still browse. */
+  newDisabled?: boolean;
 }) {
   return (
     <div>
@@ -44,7 +47,7 @@ export function RecordRail({
           size="sm"
           variant="outline"
           aria-label={`New ${noun.one}`}
-          disabled={disabled}
+          disabled={disabled || newDisabled}
           onClick={onNew}
         >
           <PlusIcon />

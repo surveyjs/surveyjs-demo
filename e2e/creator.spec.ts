@@ -98,6 +98,8 @@ test("Creator edits the AI extraction hint under Description, and a save keeps e
   await hint.locator("textarea").press("Tab");
   await page.getByRole("button", { name: "Save and quit" }).click();
   await expect(page).toHaveURL(/\/work-orders$/);
-  const stored = JSON.parse((await page.evaluate(() => localStorage.getItem("sjs-demo-schema:work-order")))!);
+  // Read back through the storage route: `page.request` shares the page's cookie,
+  // so it is this visitor's own definition.
+  const { json: stored } = await (await page.request.get("/api/storage/definitions/work-order")).json();
   expect(hintsOf(stored)).toEqual({ ...shipped, "(survey)": edited });
 });

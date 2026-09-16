@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { HowBuiltProvider } from "@/components/how-built/HowBuiltProvider";
+import { StorageAccessProvider } from "@/components/StorageAccess";
 import { siteMetadata } from "@/lib/metadata";
 import "./globals.css";
 
@@ -18,7 +19,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          <HowBuiltProvider>{children}</HowBuiltProvider>
+          <StorageAccessProvider>
+            <HowBuiltProvider>{children}</HowBuiltProvider>
+          </StorageAccessProvider>
         </ThemeProvider>
       </body>
     </html>

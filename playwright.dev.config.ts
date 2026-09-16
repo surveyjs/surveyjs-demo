@@ -1,5 +1,13 @@
+import { randomUUID } from "node:crypto";
+import os from "node:os";
+import path from "node:path";
 import { defineConfig } from "@playwright/test";
 import base from "./playwright.config";
+
+// The same database rule as the base config, which has already run these two
+// lines by the time this one is read; repeated so this file says it too.
+process.env.SJS_E2E_DB ??= path.join(os.tmpdir(), `sjs-demo-e2e-${randomUUID()}.db`);
+process.env.DATABASE_PATH = process.env.SJS_E2E_DB;
 
 /**
  * The same suite against `next dev`.
@@ -31,5 +39,7 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
+    // Every value is set: `process.env` is only typed as possibly undefined.
+    env: { ...process.env } as Record<string, string>,
   },
 });

@@ -6,7 +6,9 @@ import { PAGE_ACTIONS } from "../src/lib/site";
 import { HOW_BUILT } from "../src/lib/how-built";
 import { createSurveyModel } from "../src/schemas/createSurveyModel";
 import { leadsJson } from "../src/schemas/leads";
-import { getResult, listResults, saveResult } from "../src/storage/survey-results";
+import type { SurveyData } from "../src/schemas/types";
+import { getResult, listResults } from "../src/storage/survey-results";
+import { startSession } from "./session";
 import { LEADS_USERS } from "../src/storage/session";
 
 /**
@@ -39,7 +41,7 @@ test.describe("helpers", () => {
     expect((data.lineItems[1] as { id?: string }).id).toBeUndefined();
   });
 
-  test("every row keeps its id through edits, removals and a second save", async () => {
+  test("every row keeps its id through edits, removals and a second save", async ({ request }) => {
     // Kestrel Freight: four line items, four contacts, five activities.
     const first = (await listResults("leads")).find((row) => row.columns.accountName === "Kestrel Freight")!;
     const stored = (await getResult("leads", first.id))!;
@@ -58,7 +60,17 @@ test.describe("helpers", () => {
     contacts.addPanel();
     activities.addRow();
 
-    const saved = await saveResult("leads", first.id, model.data);
+    // Row ids are assigned by the record route, on write, so the save goes
+    // through it, as a visitor of its own.
+    await startSession(request);
+    const save = async (data: SurveyData) => {
+      const response = await request.put(`/api/storage/results/leads/${first.id}`, { data: { data } });
+      expect(response.ok()).toBe(true);
+      const stored = (await response.json()) as { id: string; data: SurveyData };
+      expect(stored.id).toBe(first.id);
+      return stored;
+    };
+    const saved = await save(model.data);
     for (const name of CONTAINERS) {
       const rows = (saved.data[name] ?? []) as { id: string }[];
       for (const row of rows) expect(row.id, `${name} row`).toMatch(UUID);
@@ -71,7 +83,7 @@ test.describe("helpers", () => {
       before.get("contacts"),
     );
 
-    const again = await saveResult("leads", first.id, saved.data);
+    const again = await save(saved.data);
     for (const name of CONTAINERS) {
       expect(((again.data[name] ?? []) as { id: string }[]).map((row) => row.id)).toEqual(
         ((saved.data[name] ?? []) as { id: string }[]).map((row) => row.id),

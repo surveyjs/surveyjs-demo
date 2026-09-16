@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SurveyData, SurveyJSON } from "@/schemas";
-import { loadSurveyJson } from "@/storage/survey-json";
 import { configureHref } from "@/lib/routes";
 import { stableJson } from "@/lib/utils";
 import { features } from "@/features";
@@ -32,7 +31,7 @@ import { accountName, type DemoRosterEntry, type DemoUser } from "./demo-account
  */
 export interface Demo {
   readonly survey: DemoSurvey;
-  /** The definition to render: the shipped one, or this browser's saved one. */
+  /** The definition to render: the one this visitor stored, or the one that ships. */
   readonly json: SurveyJSON;
   /** Answers to load. `undefined` means start empty. */
   readonly seed: SurveyData | undefined;
@@ -137,7 +136,9 @@ export function useDemo({
 
   /* ── the definition, as the admin left it ────────────────────────────────── */
 
-  const [json, setJson] = useState<SurveyJSON>(survey.json);
+  // The page read the visitor's definition on the server and passed it in
+  // `survey.json`, so the first render is already the form they stored.
+  const [json] = useState<SurveyJSON>(survey.json);
 
   /* ── the user the definition is rendered for ─────────────────────────────── */
 
@@ -156,23 +157,6 @@ export function useDemo({
   // editor on every letter typed into it.
   const editorSeed = useRef<SurveyData>(defaults[0].data);
   const [editorRun, setEditorRun] = useState(0);
-
-  // The server always renders the definition that ships with the template — the
-  // prerendered HTML, the one crawlers get, stays canonical — and a visitor who
-  // edited this form on `/configure` gets their own version a tick later.
-  useEffect(() => {
-    let active = true;
-    void loadSurveyJson(survey.id).then((stored) => {
-      if (!active || !stored) return;
-      setJson(stored);
-      // A different definition is a different form, so the model is rebuilt
-      // rather than re-fed.
-      setRunCount((count) => count + 1);
-    });
-    return () => {
-      active = false;
-    };
-  }, [survey.id]);
 
   const activeRecord = users.find((record) => record.id === activeUserId) ?? users[0];
   const savedRecord = defaults.find((record) => record.id === activeUserId);

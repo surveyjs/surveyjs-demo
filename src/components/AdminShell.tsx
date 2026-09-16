@@ -11,6 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { HowBuiltPanel } from "@/components/how-built/HowBuiltPanel";
+import { StorageReadOnlyBanner } from "@/components/StorageAccess";
 import { Sidebar } from "./Sidebar";
 import { TopBar, TopBarBrand, TopBarLinks } from "./TopBar";
 
@@ -56,6 +57,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <div className="bg-background text-foreground flex h-svh min-h-svh flex-col">
       <TopBar mobileNav={mobileNav} />
+      <StorageReadOnlyBanner />
 
       <div className="flex min-h-0 flex-1" style={{ height: 0 }}>
         <aside

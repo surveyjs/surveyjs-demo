@@ -5,7 +5,9 @@ import { PAGE_ACTIONS } from "../src/lib/site";
 import { HOW_BUILT, HOW_BUILT_TEXT, findVariableReferences, itemsInEdition } from "../src/lib/how-built";
 import { getFormNavItem } from "../src/schemas/navigation";
 import { getRecordCollection, recordTitle } from "../src/schemas/records";
-import { getResult, listResults, saveResult } from "../src/storage/survey-results";
+import type { SurveyData } from "../src/schemas/types";
+import { getResult, listResults } from "../src/storage/survey-results";
+import { startSession } from "./session";
 
 /**
  * The shared records page, proved on `/work-orders`: the rail, record URLs and
@@ -50,7 +52,8 @@ test.describe("helpers", () => {
     ]);
   });
 
-  test("storage returns columns from the list and the document from getResult", async () => {
+  test("storage returns columns from the list and the document from getResult", async ({ request }) => {
+    // Outside a request the seam reads the template, which is the seed.
     const rows = await listResults("workOrders");
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) expect(row).not.toHaveProperty("data");
@@ -58,9 +61,25 @@ test.describe("helpers", () => {
     const record = await getResult("workOrders", rows[0].id);
     expect(record?.data.jobNumber).toBe(rows[0].id);
 
-    const saved = await saveResult("workOrders", record!.id, { ...record!.data, status: "completed" });
-    expect(saved.columns.status).toBe("completed");
+    // Records are written from the browser, so the write goes through the route,
+    // as a visitor of its own.
+    await startSession(request);
+    const put = await request.put(`/api/storage/results/workOrders/${record!.id}`, {
+      data: { data: { ...record!.data, status: "completed" } },
+    });
+    expect(put.ok()).toBe(true);
+    const saved = (await put.json()) as { id: string; data: SurveyData };
+    expect(saved.id).toBe(record!.id);
     expect(saved.data.status).toBe("completed");
+
+    // The list route returns documents; the seam derives the columns from them.
+    const list = (await (await request.get("/api/storage/results/workOrders")).json()) as {
+      id: string;
+      data: SurveyData;
+    }[];
+    const stored = list.find((item) => item.id === record!.id)!;
+    expect(stored).not.toHaveProperty("columns");
+    expect(workOrders.toColumns(stored.id, stored.data).status).toBe("completed");
   });
 
   test("getRecordCollection throws on an unknown id", () => {

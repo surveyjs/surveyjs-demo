@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2Icon } from "lucide-react";
 import { Survey } from "survey-react-ui";
 import type { Model as SurveyModel, Question } from "survey-core";
 import {
@@ -13,8 +12,8 @@ import {
 } from "@/schemas";
 import { features } from "@/features";
 import "@/lib/surveyjs-license";
-import { loadSurveyJson } from "@/storage/survey-json";
 import { submitResult } from "@/storage/survey-results";
+import { useStorageAccess } from "./StorageAccess";
 import { FormCompleted } from "./FormCompleted";
 
 import "survey-core/survey-core.css";
@@ -39,9 +38,6 @@ import "@/styles/survey-overrides-base-nova.css";
  * Everything else in this file is convenience *this template* wanted, and each
  * piece is one hook you can delete without touching the rest:
  *
- *  - {@link useSavedDefinition} — swap in the definition a visitor edited on
- *    `/configure`, on the client only, so the server keeps sending the canonical
- *    form;
  *  - {@link usePrefillAction} — the "Prefill demo data" button in the survey's
  *    own navigation bar, for filling a long form in front of an audience;
  *  - {@link usePdfAction} — "Save as PDF" beside it, when the edition provides a
@@ -50,8 +46,10 @@ import "@/styles/survey-overrides-base-nova.css";
  *    caller, or POST them through the storage seam.
  *
  * Server rendering needs nothing special: this component is a client component
- * because survey-react-ui uses browser APIs, but Next.js still prerenders it, so
- * the form is in the HTML the server sends. See `/starter` — view source.
+ * because survey-react-ui uses browser APIs, but Next.js still renders it on the
+ * server, so the form is in the HTML the server sends. The page passes the
+ * definition the visitor stored, read on the server, so an edit made on
+ * `/configure` is in that HTML too. See `/starter` — view source.
  */
 export function SurveyForm({
   schema,
@@ -69,8 +67,8 @@ export function SurveyForm({
 }: {
   schema: SchemaInput;
   /**
-   * When set, a survey definition saved in localStorage under this id replaces
-   * `schema` on the client, and a completed form is submitted under it.
+   * The form's schema id: a completed form is submitted under this id, and the
+   * PDF export is labelled with it.
    */
   schemaId?: string;
   data?: SurveyData;
@@ -103,12 +101,10 @@ export function SurveyForm({
   completeText?: string;
   onModelReady?: (model: SurveyModel) => void;
 }) {
-  const { definition, swapping } = useSavedDefinition(schema, schemaId);
-
   // The two lines that are the actual integration.
   const model = useMemo(
-    () => createSurveyModel(definition, { data, variables, mode }),
-    [definition, data, variables, mode],
+    () => createSurveyModel(schema, { data, variables, mode }),
+    [schema, data, variables, mode],
   );
 
   useEffect(() => {
@@ -132,77 +128,11 @@ export function SurveyForm({
     return <FormCompleted message={completedMessage} onEdit={editAgain} />;
   }
 
-  // The survey stays mounted while swapping — it has to, otherwise it never
-  // renders and never reports that it is done. The spinner covers it instead.
   return (
     <div className="relative overflow-hidden border">
-      <div className={swapping ? "invisible" : undefined}>
-        <Survey model={model} />
-      </div>
-      {swapping && (
-        <div
-          className="bg-background absolute inset-0 flex min-h-96 items-center justify-center"
-          role="status"
-          aria-label="Loading..."
-        >
-          <Loader2Icon className="text-muted-foreground size-6 animate-spin" />
-        </div>
-      )}
+      <Survey model={model} />
     </div>
   );
-}
-
-/** Minimum time the spinner stays on screen. */
-const SPINNER_MIN_MS = 300;
-
-/**
- * The definition to render: the one that ships, or this browser's edited copy.
- *
- * The server always renders `schema` itself — the prerendered HTML, the one
- * crawlers get, stays canonical — and a visitor who edited this form on
- * `/configure` gets their own version a tick later.
- *
- * The spinner only appears once the store has answered with a definition, so a
- * visitor who has none never sees a loading state. Against localStorage the
- * answer arrives in a microtask, before the browser paints; against a real
- * server the canonical form is briefly visible first, which is honest.
- */
-function useSavedDefinition(
-  schema: SchemaInput,
-  schemaId?: string,
-): { definition: SchemaInput; swapping: boolean } {
-  const [saved, setSaved] = useState<SchemaInput | null>(null);
-  const [swapping, setSwapping] = useState(false);
-
-  useEffect(() => {
-    // A different form starts from its own canonical definition again.
-    setSaved(null);
-    if (!schemaId) return;
-
-    let active = true;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-
-    void loadSurveyJson(schemaId).then((stored) => {
-      if (!active || !stored) return;
-      setSwapping(true);
-
-      // Let the browser paint the spinner, then swap. The delay is a floor, not
-      // the cost of the work: rebuilding the model and rendering the survey
-      // measures about 30ms, so without it the spinner lives a single frame and
-      // reads as a blink.
-      timer = setTimeout(() => {
-        setSaved(stored);
-        setSwapping(false);
-      }, SPINNER_MIN_MS);
-    });
-
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [schema, schemaId]);
-
-  return { definition: saved ?? schema, swapping };
 }
 
 /**
@@ -289,6 +219,10 @@ function usePdfAction(
  * the record itself — and otherwise the answers go through the storage seam,
  * which is where a real app POSTs them. `resume` is the "Edit response" way back
  * from the thank-you screen.
+ *
+ * A submission that fails is logged, and the thank-you screen shows anyway:
+ * nothing on the page reads submissions back, so a retry would be new UI for
+ * nothing. A browser that blocks the storage cookie submits nothing at all.
  */
 function useSubmission(
   model: SurveyModel,
@@ -296,9 +230,9 @@ function useSubmission(
   schemaId: string | undefined,
 ): { completed: boolean; resume: () => void } {
   const [completed, setCompleted] = useState(false);
+  const { readOnly } = useStorageAccess();
 
-  // A rebuilt model is a fresh form: a saved definition arrived, or the records
-  // page opened another record.
+  // A rebuilt model is a fresh form: the records page opened another record.
   useEffect(() => setCompleted(false), [model]);
 
   useEffect(() => {
@@ -306,14 +240,16 @@ function useSubmission(
       setCompleted(true);
       if (onComplete) {
         onComplete(sender.data);
-      } else if (schemaId) {
-        void submitResult(schemaId, sender.data);
+      } else if (schemaId && !readOnly) {
+        submitResult(schemaId, sender.data).catch((failure: unknown) => {
+          console.error(`[survey-results] ${schemaId} was not submitted`, failure);
+        });
       }
     };
 
     model.onComplete.add(handler);
     return () => model.onComplete.remove(handler);
-  }, [model, onComplete, schemaId]);
+  }, [model, onComplete, schemaId, readOnly]);
 
   const resume = useCallback(() => setCompleted(false), []);
 

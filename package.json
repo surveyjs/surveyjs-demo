@@ -12,7 +12,8 @@
     "e2e:ci": "playwright install chromium && playwright test",
     "e2e:dev": "playwright install chromium && playwright test --config=playwright.dev.config.ts",
     "e2e:ui": "npx playwright test --ui",
-    "assets:work-order": "node scripts/render-work-order-assets.mjs"
+    "assets:work-order": "node scripts/render-work-order-assets.mjs",
+    "storage:gc": "node scripts/storage-gc.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
@@ -40,7 +41,7 @@
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.0.0",
-    "@types/node": "^20.14.0",
+    "@types/node": "^24",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "eslint": "^8",
@@ -51,6 +52,6 @@
     "typescript": "^5.6.3"
   },
   "engines": {
-    "node": ">=18.18.0"
+    "node": ">=24.16"
   }
 }

@@ -178,7 +178,7 @@ test("a browser that used the old one-reading lock keeps that document marked, a
   await expect(page.getByRole("button", { name: "Add from your document" })).toBeEnabled();
 });
 
-test("an upload links a blob URL that opens the same bytes", async ({ page }) => {
+test("an upload is stored, and its link opens the same bytes", async ({ page }) => {
   await stubExtraction(page, "WO-2026-0130");
   await page.goto("/work-orders");
   await openPanel(page);
@@ -190,7 +190,7 @@ test("an upload links a blob URL that opens the same bytes", async ({ page }) =>
 
   await expect(formHeading(page)).toHaveText("Edit WO-2026-0130");
   const href = await page.locator('[data-name="sourceDocument"] a').getAttribute("href");
-  expect(href).toMatch(/^blob:/);
+  expect(href).toMatch(/^\/api\/storage\/documents\/[0-9a-f-]{36}$/);
   const opened = await page.evaluate(async (url) => Array.from(new Uint8Array(await (await fetch(url)).arrayBuffer())), href!);
   expect(Buffer.from(opened).equals(bytes)).toBe(true);
 });

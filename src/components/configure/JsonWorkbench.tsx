@@ -18,6 +18,7 @@ import { StaticAnalysisBar, type LintMarker } from "@/components/lint/StaticAnal
 import type { JsonEditorApi } from "@/components/JsonEditor";
 import { accountName, usedVariableKeys } from "@/components/embedded/shared/demo-accounts";
 import { loadSurveyJson, resetSurveyJson, saveSurveyJson } from "@/storage/survey-json";
+import { useStorageAccess } from "@/components/StorageAccess";
 import type { SurveyJSON } from "@/schemas";
 import { FORMS, type FormEntry, getFormEntry } from "./forms";
 
@@ -67,9 +68,9 @@ function parse(source: string): { json?: SurveyJSON; error?: string } {
  * edited, and there is nothing else on the page — no sidebar, no list of the
  * others. A reviewer arrives here from a form and leaves back to it.
  *
- * Edits are kept per browser (localStorage — see `survey-json.ts`), so the URL
- * is safe to hand around: what a visitor breaks is theirs alone, and the server
- * keeps serving the definition that ships with the template.
+ * Edits are kept in each visitor's own sandbox on the server (see
+ * `survey-json.ts`), so the URL is safe to hand around: what a visitor breaks is
+ * theirs alone, and everybody else keeps getting the definition that ships.
  *
  * The users a personalized form is rendered for are not edited here. They belong
  * to the demo — its toolbar signs in as any of the preset ones and opens the
@@ -115,6 +116,10 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
   const [preview, setPreview] = useState(draft ?? defaultSource);
   const [customized, setCustomized] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
+  // A browser that blocks the storage cookie can still edit and preview; it
+  // cannot save, so the two buttons that write are off and the banner's message
+  // sits where a storage error would.
+  const { readOnly, message: readOnlyMessage } = useStorageAccess();
 
   // The survey renders on the client only. It is an editor preview, so nothing
   // needs it in the server's HTML — and survey-core's action ids are numbered per
@@ -122,22 +127,29 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // This browser's saved definition, if it has one, so the editor never sits on
-  // the canonical JSON for somebody who has their own.
+  // This visitor's stored definition, so the editor never sits on the shipped
+  // JSON for somebody who has their own. A failed load keeps the shipped JSON and
+  // says why.
   useEffect(() => {
     if (draft) return;
     let active = true;
-    void loadSurveyJson(form.id).then((saved) => {
-      if (!active || !saved) return;
-      const loaded = JSON.stringify(saved, null, 2);
-      setSource(loaded);
-      setPreview(loaded);
-      setCustomized(true);
-    });
+    loadSurveyJson(form.id).then(
+      (saved) => {
+        if (!active || !saved) return;
+        const loaded = JSON.stringify(saved, null, 2);
+        // Only over text nobody has touched yet: a fast typist keeps their edit.
+        setSource((current) => (current === defaultSource ? loaded : current));
+        setPreview((current) => (current === defaultSource ? loaded : current));
+        setCustomized(loaded !== defaultSource);
+      },
+      (failure: unknown) => {
+        if (active) setStorageError((failure as Error).message);
+      },
+    );
     return () => {
       active = false;
     };
-  }, [draft, form.id]);
+  }, [defaultSource, draft, form.id]);
 
   useEffect(() => {
     const timer = setTimeout(() => setPreview(source), PREVIEW_DEBOUNCE_MS);
@@ -192,7 +204,13 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
   }, [parsedSource]);
 
   const reset = useCallback(async () => {
-    await resetSurveyJson(form.id);
+    try {
+      await resetSurveyJson(form.id);
+    } catch (failure) {
+      // The editor stays as it was.
+      setStorageError((failure as Error).message);
+      return;
+    }
     drafts.delete(form.id);
     setSource(defaultSource);
     setCustomized(false);
@@ -239,7 +257,7 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
             {form.label} — form JSON
           </Title>
           <p className="text-muted-foreground truncate text-xs">
-            The whole form is this document. Edits are kept in this browser only.
+            The whole form is this document. Saved to your own sandbox on this server; Reset restores the one that ships.
           </p>
         </div>
 
@@ -287,7 +305,7 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
             size="sm"
             className="gap-2"
             onClick={reset}
-            disabled={source === defaultSource && !customized}
+            disabled={readOnly || (source === defaultSource && !customized)}
           >
             <RotateCcwIcon />
             Reset
@@ -296,7 +314,7 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
             size="sm"
             className="gap-2"
             onClick={saveAndOpen}
-            disabled={Boolean(syntaxError)}
+            disabled={readOnly || Boolean(syntaxError)}
           >
             {form.embedded ? <SquareArrowOutUpRightIcon /> : <CheckIcon />}
             {form.previewLabel}
@@ -304,9 +322,9 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
         </div>
       </header>
 
-      {(syntaxError || storageError) && (
+      {(syntaxError || storageError || readOnly) && (
         <p className="border-destructive/50 text-destructive shrink-0 border-b px-4 py-2 text-sm sm:px-6">
-          {storageError ?? syntaxError}
+          {storageError ?? syntaxError ?? readOnlyMessage}
         </p>
       )}
 

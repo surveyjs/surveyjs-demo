@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { features } from "../src/features";
+import { checkoutJson } from "../src/schemas/checkout";
+import { startSession } from "./session";
 
 const surveyRoutes = [
   "/leads",
@@ -105,15 +107,14 @@ for (const [route, heading] of [
   });
 }
 
-test("a saved definition is what the pages render, and the server stays canonical", async ({
+test("a saved definition is what the server renders, for that visitor only", async ({
   page,
+  request,
 }) => {
   // Full page loads plus the editor's heavy dynamic import; against `next dev`,
   // where each route compiles on first request, the default budget is too tight.
   test.slow();
 
-  // The saved definition is applied after hydration, so this is exactly where a
-  // mismatch would show up.
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error" || message.type() === "warning") {
@@ -121,77 +122,54 @@ test("a saved definition is what the pages render, and the server stays canonica
     }
   });
 
-  // What the editor writes when somebody saves this form — the storage seam is
+  // What the editor writes when somebody saves this form — the storage route is
   // the contract, so the round trip can be asserted without driving whichever
   // editor the edition ships (configure.spec.ts drives the JSON one).
-  //
-  // Written once, not with `addInitScript`: an init script runs on every
-  // navigation and would put the edit back after Reset below has removed it.
-  await page.goto("/starter");
-  await page.evaluate(() => {
-    localStorage.setItem(
-      "sjs-demo-schema:checkout",
-      JSON.stringify({
+  // `page.request` shares the browser's cookies, so this is the page's visitor.
+  await startSession(page.request);
+  const saved = await page.request.put("/api/storage/definitions/checkout", {
+    data: {
+      json: {
         title: "Edited by the e2e test",
         elements: [{ type: "text", name: "q1", title: "A brand new question" }],
-      }),
-    );
+      },
+    },
   });
+  expect(saved.status()).toBe(204);
 
-  await page.goto("/starter");
-  await expect(page.getByText("A brand new question")).toBeVisible();
-
-  // The definition lives in localStorage, so a full reload keeps it — while the
-  // HTML the server sent stays canonical, which is what search engines get.
-  const response = await page.reload();
+  // The server reads the visitor's definition, so the HTML it sends already
+  // has the edit, with no loading state to swap it in.
+  const response = await page.goto("/starter");
   const serverHtml = await response!.text();
-  expect(serverHtml).not.toContain("A brand new question");
-  expect(serverHtml).toContain("Email address");
+  expect(serverHtml).toContain("A brand new question");
+  expect(serverHtml).not.toContain("Email address");
   await expect(page.getByText("A brand new question")).toBeVisible();
+
+  // Anybody else, a crawler with no cookie among them, still gets the form that ships.
+  const anonymous = await request.get("/starter");
+  expect(await anonymous.text()).not.toContain("A brand new question");
 
   // And the editor's Reset puts the shipped definition back. Reset is disabled
-  // in the server markup and only enables once the saved definition has been
+  // in the server markup and only enables once the stored definition has been
   // read, which happens after hydration — hence waiting for the editor first.
   await page.goto("/configure?form=checkout");
   await expect(page.locator(features.designer.readySelector).first()).toBeVisible({
     timeout: 45_000,
   });
   await page.getByRole("button", { name: "Reset" }).click();
+  // Asserted on the route itself: the page check below would also pass if Reset
+  // had only changed the editor.
+  await expect
+    .poll(async () => {
+      const stored = await page.request.get("/api/storage/definitions/checkout");
+      return ((await stored.json()) as { json: { title?: string } }).json.title;
+    })
+    .toBe(checkoutJson.title);
   await page.goto("/starter");
-  // Asserted on the seam itself: the text check below would also pass in the
-  // moment before a saved definition swaps in, so on its own it proves nothing.
-  expect(
-    await page.evaluate(() => localStorage.getItem("sjs-demo-schema:checkout")),
-  ).toBeNull();
   await expect(page.getByText("A brand new question")).toHaveCount(0);
   await expect(page.getByText("Email address").first()).toBeVisible();
 
   expect(errors).toHaveLength(0);
-});
-
-test("the spinner shows only for a visitor with a saved definition", async ({
-  page,
-}) => {
-  await page.goto("/starter");
-  // Nothing saved: the server markup stays put, no loading state at all.
-  await expect(page.locator('[role="status"]')).toHaveCount(0);
-
-  await page.evaluate(() => {
-    localStorage.setItem(
-      "sjs-demo-schema:checkout",
-      JSON.stringify({
-        title: "Saved by the e2e test",
-        elements: [{ type: "text", name: "q1", title: "A saved question" }],
-      }),
-    );
-  });
-
-  // Swapping in the saved definition is deferred past a paint on purpose, so
-  // the spinner is genuinely drawn rather than collapsed into one frame.
-  await page.reload();
-  await expect(page.locator('[role="status"]')).toBeVisible();
-  await expect(page.getByText("A saved question")).toBeVisible();
-  await expect(page.locator('[role="status"]')).toHaveCount(0);
 });
 
 for (const route of allRoutes) {

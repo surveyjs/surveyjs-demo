@@ -29,6 +29,7 @@ export function RecordPicker({
   onNew,
   noun,
   disabled = false,
+  newDisabled = false,
 }: {
   collection: RecordCollection;
   rows: readonly RecordRow[];
@@ -37,6 +38,8 @@ export function RecordPicker({
   onNew: () => void;
   noun: RecordCollection["noun"];
   disabled?: boolean;
+  /** New alone: a browser whose storage is read-only can still browse. */
+  newDisabled?: boolean;
 }) {
   const selected = rows.find((row) => row.id === selectedId);
 
@@ -71,7 +74,7 @@ export function RecordPicker({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button size="sm" variant="outline" aria-label={`New ${noun.one}`} disabled={disabled} onClick={onNew}>
+      <Button size="sm" variant="outline" aria-label={`New ${noun.one}`} disabled={disabled || newDisabled} onClick={onNew}>
         <PlusIcon />
         New
       </Button>

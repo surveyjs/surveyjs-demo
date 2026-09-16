@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSchemaDefinition } from "@/schemas";
+import { MAX_DOCUMENT_BYTES } from "@/storage/backend/sqlite";
 
 /**
  * Extract answers from a scanned form, a photo or a PDF.
@@ -23,9 +24,6 @@ import { getSchemaDefinition } from "@/schemas";
  */
 export const runtime = "nodejs";
 
-/** Uploads are read into memory, so keep the accepted document small. */
-const MAX_BYTES = 8 * 1024 * 1024;
-
 async function pickProvider() {
   const { openai, anthropic } = await import("ai-form-response-extractor/providers");
   const model = process.env.EXTRACTOR_MODEL;
@@ -43,7 +41,9 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "No document was uploaded." }, { status: 400 });
   }
-  if (file.size > MAX_BYTES) {
+  // Uploads are read into memory, so the document is kept small: the same 8 MB
+  // storage keeps an original up to, one constant for both.
+  if (file.size > MAX_DOCUMENT_BYTES) {
     return NextResponse.json(
       { error: "That document is larger than 8 MB." },
       { status: 413 },

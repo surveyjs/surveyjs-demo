@@ -1,6 +1,6 @@
 "use client";
 
-import type { RecordRow, StoredRecord } from "@/schemas";
+import type { RecordRow, StoredRecord, SurveyJSON } from "@/schemas";
 import { features } from "@/features";
 import { RecordsView, type DocumentImport } from "@/components/records/RecordsView";
 import { ExtractFromDocument } from "@/components/extract/ExtractFromDocument";
@@ -17,6 +17,7 @@ const fromDocument: DocumentImport = {
   render: ({ createFrom, onBusyChange }) => (
     <ExtractFromDocument
       formId="work-order"
+      collectionId="workOrders"
       noun="work order"
       documentName="job sheet"
       samples={workOrderSampleDocuments}
@@ -34,6 +35,7 @@ export function WorkOrdersView({
   title,
   description,
   basePath,
+  schema,
   initialRows,
   initialRecord,
   initialImport,
@@ -41,6 +43,8 @@ export function WorkOrdersView({
   title: string;
   description: string;
   basePath: string;
+  /** The visitor's work order definition, read on the server by the page. */
+  schema: SurveyJSON;
   /** Read on the server by the page, so the first paint is complete. */
   initialRows: readonly RecordRow[];
   initialRecord: StoredRecord | undefined;
@@ -58,6 +62,7 @@ export function WorkOrdersView({
       title={title}
       description={description}
       basePath={basePath}
+      schema={schema}
       initialRows={initialRows}
       initialRecord={initialRecord}
       initialImport={initialImport}

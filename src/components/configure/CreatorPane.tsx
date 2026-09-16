@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { accountName } from "@/components/embedded/shared/demo-accounts";
 import { loadSurveyJson, resetSurveyJson, saveSurveyJson } from "@/storage/survey-json";
+import { useStorageAccess } from "@/components/StorageAccess";
 import type { SurveyJSON } from "@/schemas";
 import type { FormEntry } from "./forms";
 
@@ -35,7 +36,9 @@ import "@/styles/survey-overrides-base-nova.css";
  * theme editor. Translation is off — these demos ship in one language.
  *
  * `isAutoSave` is what makes the Creator call `saveSurveyFunc` as edits happen,
- * so there is no Save button to forget.
+ * so there is no Save button to forget. Each save is a request to the server, so
+ * the Creator's own throttle is raised to a second (`autoSaveDelay`, set on the
+ * instance below); `saveSurveyJson` does no debouncing of its own.
  */
 const CREATOR_OPTIONS: ICreatorOptions = {
   showJSONEditorTab: true,
@@ -55,9 +58,12 @@ const CREATOR_OPTIONS: ICreatorOptions = {
  * about. Everything the previous JSON-editor page did by hand (a Monaco pane, a
  * linter bar, a live preview beside it) is a tab in here.
  *
- * Edits are kept per browser (localStorage — see `survey-json.ts`), so the URL
- * is safe to hand around: what a visitor changes is theirs alone, and the server
- * keeps serving the definition that ships with the template.
+ * Edits are saved to each visitor's own sandbox on the server (see
+ * `survey-json.ts`), so the URL is safe to hand around: what a visitor changes is
+ * theirs alone, every page renders it for them, and everybody else keeps getting
+ * the definition that ships. The route does not lint an autosave: a half-typed
+ * expression would fail every one of them. In a browser that blocks the storage
+ * cookie nothing can be saved, so the designer is read-only there and says why.
  *
  * The users a personalized form is rendered for are not edited here. They belong
  * to the demo — its toolbar signs in as any of the preset ones and opens the
@@ -68,12 +74,14 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   const [storageError, setStorageError] = useState<string | null>(null);
+  const { readOnly, message: readOnlyMessage } = useStorageAccess();
 
   // Built once per form. The Creator owns its state from here on: it is the
   // editor, and rebuilding it on a prop change would throw away the tab, the
   // selection and the undo history.
   const creator = useMemo(() => {
     const instance = new SurveyCreator(CREATOR_OPTIONS);
+    instance.autoSaveDelay = 1000;
     instance.JSON = form.json;
 
     // The callback is what tells the Creator the save went through, so it waits
@@ -132,20 +140,42 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
     creator.preferredColorPalette = resolvedTheme === "dark" ? "dark" : "light";
   }, [creator, resolvedTheme]);
 
-  // This browser's saved definition, if it has one, so the designer never opens
-  // on the canonical JSON for somebody who has their own.
+  // No cookie, no sandbox: the designer shows the form but edits nothing. Only
+  // ever switched on: the handshake answers once, and assigning `readOnly` at all
+  // re-renders the designer.
+  useEffect(() => {
+    if (readOnly) creator.readOnly = true;
+  }, [creator, readOnly]);
+
+  // This visitor's stored definition, so the designer never opens on the shipped
+  // JSON for somebody who has their own. A visitor with no edits gets the shipped
+  // one back, which is not applied: setting `JSON` rebuilds the whole designer.
+  // A failed load keeps the shipped JSON and says why.
   useEffect(() => {
     let active = true;
-    void loadSurveyJson(form.id).then((saved) => {
-      if (active && saved) creator.JSON = saved;
-    });
+    loadSurveyJson(form.id).then(
+      (saved) => {
+        if (active && saved && JSON.stringify(saved) !== JSON.stringify(form.json)) {
+          creator.JSON = saved;
+        }
+      },
+      (failure: unknown) => {
+        if (active) setStorageError((failure as Error).message);
+      },
+    );
     return () => {
       active = false;
     };
-  }, [creator, form.id]);
+  }, [creator, form.id, form.json]);
 
   const reset = useCallback(async () => {
-    await resetSurveyJson(form.id);
+    try {
+      await resetSurveyJson(form.id);
+    } catch (failure) {
+      // The designer stays as it was.
+      setStorageError((failure as Error).message);
+      return;
+    }
     creator.JSON = form.json;
     setStorageError(null);
   }, [creator, form.id, form.json]);
@@ -175,7 +205,7 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
             {form.label} — form designer
           </h1>
           <p className="text-muted-foreground truncate text-xs">
-            Saved as you edit, in this browser only
+            Saved as you edit, to your own sandbox on this server
             {previewUser ? `. Previewed for ${previewUser}, this demo's first preset user` : ""}.
           </p>
         </div>
@@ -188,20 +218,20 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
             </a>
           </Button>
           <ThemeSwitcher />
-          <Button variant="outline" size="sm" className="gap-2" onClick={reset}>
+          <Button variant="outline" size="sm" className="gap-2" disabled={readOnly} onClick={reset}>
             <RotateCcwIcon />
             Reset
           </Button>
-          <Button size="sm" className="gap-2" onClick={saveAndOpen}>
+          <Button size="sm" className="gap-2" disabled={readOnly} onClick={saveAndOpen}>
             {form.embedded ? <SquareArrowOutUpRightIcon /> : <CheckIcon />}
             {form.previewLabel}
           </Button>
         </div>
       </header>
 
-      {storageError && (
+      {(storageError || readOnly) && (
         <p className="border-destructive/50 text-destructive shrink-0 border-b px-4 py-2 text-sm sm:px-6">
-          {storageError}
+          {storageError ?? readOnlyMessage}
         </p>
       )}
 

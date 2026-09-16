@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import type { SourceDocument, SurveyData } from "@/schemas";
 import { keepSourceDocument } from "@/storage/documents";
+import { useStorageAccess } from "@/components/StorageAccess";
 import type { SampleDocument } from "./sample-documents";
 
 const ACCEPTED = ".pdf,.png,.jpg,.jpeg,.webp";
@@ -74,13 +75,17 @@ function withArticle(noun: string): string {
  */
 export function ExtractFromDocument({
   formId,
+  collectionId,
   noun,
   documentName,
   samples,
   onExtracted,
   onBusyChange,
 }: {
+  /** The schema id `/api/extract` reads the document against. */
   formId: string;
+  /** The collection the new record belongs to, which an uploaded original is stored beside. */
+  collectionId: string;
   /** What a record is called, in the singular: "work order". */
   noun: string;
   /** What the paper is called, in the singular: "job sheet". */
@@ -93,6 +98,9 @@ export function ExtractFromDocument({
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  // A browser that blocks the storage cookie could read a document but never
+  // keep the record, so the panel is disabled there rather than spending a call.
+  const { readOnly } = useStorageAccess();
 
   useEffect(() => {
     onBusyChange?.(busy !== null);
@@ -175,10 +183,9 @@ export function ExtractFromDocument({
           return;
         }
 
-        // A sample keeps its public URL. An upload gets an object URL, which lives
-        // exactly as long as this tab's in-memory records: both are gone on reload,
-        // so the link never outlives the record that points at it.
-        const source = await keepSourceDocument(origin, payload.readAt);
+        // A sample keeps its public URL. An upload is stored beside the record it
+        // was read from and served back by `/api/storage/documents`.
+        const source = await keepSourceDocument(origin, payload.readAt, collectionId);
         if (!mounted.current) return;
         const filled = Object.values(payload.data).filter(
           (value) => value !== null && value !== undefined && value !== "",
@@ -198,7 +205,7 @@ export function ExtractFromDocument({
         setBusy(null);
       }
     },
-    [formId, noun, onExtracted, spend],
+    [collectionId, formId, noun, onExtracted, spend],
   );
 
   const fillFromSample = useCallback(
@@ -299,7 +306,7 @@ export function ExtractFromDocument({
                     size="sm"
                     variant="outline"
                     className="mt-auto w-full gap-2"
-                    disabled={busy !== null}
+                    disabled={busy !== null || readOnly}
                     onClick={() => void fillFromSample(sample)}
                   >
                     {loading ? (
@@ -332,10 +339,10 @@ export function ExtractFromDocument({
             </span>
             <span className="mt-1 block text-xs">
               This is a demo, not a service. The file is sent to an LLM provider
-              for this one reading. The new {noun} links it as its original in
-              this browser tab only, until the page is reloaded, and nothing is
-              stored on the server. Please upload sample or made-up documents,
-              never real customer data.
+              for this one reading, and kept in your own sandbox on this server as
+              the new {noun}&apos;s original, until you reset the demo data or it
+              expires. Please upload sample or made-up documents, never real
+              customer data.
             </span>
           </span>
 
@@ -355,7 +362,7 @@ export function ExtractFromDocument({
             variant="outline"
             size="sm"
             className="gap-2"
-            disabled={busy !== null}
+            disabled={busy !== null || readOnly}
             onClick={() => input.current?.click()}
           >
             <UploadIcon />

@@ -8,6 +8,9 @@
 .pnp.js
 .yarn/install-state.gz
 
+# the demo database: see DATABASE_PATH in .env.example
+/.data/
+
 # testing
 /coverage
 /test-results/
@@ -35,9 +38,6 @@ yarn-error.log*
 
 # env files
 .env
-
-# vercel
-.vercel
 
 # typescript
 *.tsbuildinfo

@@ -82,9 +82,9 @@ test("a definition saved here is what the embedded site renders", async ({ page 
   });
   await expect(page.getByText("Ridgeline Family Health").first()).toBeVisible();
 
-  // The server keeps serving the definition that ships with the template.
+  // The server renders what this visitor stored, so the reloaded HTML has it.
   const response = await page.reload();
-  expect(await response!.text()).not.toContain("Renamed for");
+  expect(await response!.text()).toContain("Renamed for");
   await expect(page.locator("#request")).toContainText("Renamed for Maria");
 
   await page.goto(CLINIC);

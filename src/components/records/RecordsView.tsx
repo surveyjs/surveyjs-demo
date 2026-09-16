@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { FileDownIcon, PlusIcon, ScanTextIcon } from "lucide-react";
+import { FileDownIcon, PlusIcon, RotateCcwIcon, ScanTextIcon } from "lucide-react";
 import type { Model } from "survey-core";
 import {
   getRecordCollection,
-  getSchemaDefinition,
   isActiveRoute,
   recordTitle,
   sortRows,
@@ -17,11 +16,12 @@ import {
   type SurveyData,
   type SurveyJSON,
 } from "@/schemas";
-import { deleteResult, getResult, saveResult } from "@/storage/survey-results";
+import { deleteResult, getResult, resetDemoData, saveResult } from "@/storage/survey-results";
 import { features } from "@/features";
 import { configureHref, recordHref } from "@/lib/routes";
 import { stableJson } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
+import { useStorageAccess } from "@/components/StorageAccess";
 import { SurveyForm } from "@/components/SurveyForm";
 import { SurveyOutline, useSurveyOutline } from "@/components/survey-outline/SurveyOutline";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,11 @@ export interface DocumentImport {
   }) => ReactNode;
 }
 
+/** A storage failure, as the message shown under the form's heading. */
+function messageOf(failure: unknown): string {
+  return failure instanceof Error && failure.message ? failure.message : "Storage did not answer.";
+}
+
 /** What Cancel, Close and a deleted Back target return to. */
 function returnRecord(open: OpenRecord | null): StoredRecord | undefined {
   return open?.mode === "new" ? open.previous : open?.record;
@@ -115,10 +120,15 @@ function routeOf(pathname: string, basePath: string, segment: string | undefined
  * The URL is where the selection lives: `basePath` shows the first record, and
  * `basePath/<id>` one record. Moving between records writes the URL with
  * `window.history`, which Next.js syncs into `usePathname`, and never with
- * `next/link` or `router.push`: those re-render the server component, and the
- * browser's in-memory store, with every record created or edited here, would be
- * thrown away for the server's copy. Back and Forward reach the pathname effect
- * below, and go through the same unsaved-changes guard as a click.
+ * `next/link` or `router.push`: those re-render the server component for every
+ * click, and the form, the rail and the unsaved-changes guard would all start
+ * over. Opening a row fetches only its document. Back and Forward reach the
+ * pathname effect below, and go through the same unsaved-changes guard as a click.
+ *
+ * Every write goes through the storage seam, and a refusal (the storage cap, a
+ * network failure) is shown under the form's heading with the form left as it
+ * was. In a browser that blocks the storage cookie every write control is
+ * disabled, and the page is for browsing.
  *
  * It subscribes to no SurveyJS event. It reads `model.data`, calls
  * `model.toJSON()`, `model.validate()` and `model.completeLastPage()`, and gets
@@ -129,6 +139,7 @@ export function RecordsView({
   title,
   description,
   basePath,
+  schema,
   initialRows,
   initialRecord,
   initialImport = false,
@@ -143,6 +154,8 @@ export function RecordsView({
   description: string;
   /** The page's route, `nav.path`. Record URLs are built under it. */
   basePath: string;
+  /** The collection's definition as this visitor stored it, read on the server by the page. */
+  schema: SurveyJSON;
   initialRows: readonly RecordRow[];
   /**
    * The document read on the server: the URL's record, or the first row's when
@@ -162,7 +175,7 @@ export function RecordsView({
 }) {
   const collection = getRecordCollection(collectionId);
   const { schemaId, noun } = collection;
-  const schema = getSchemaDefinition(schemaId).json;
+  const { readOnly } = useStorageAccess();
   const segment = documentImport?.segment;
   const importPath = segment === undefined ? undefined : `${basePath}/${segment}`;
 
@@ -180,6 +193,9 @@ export function RecordsView({
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<RecordRow | null>(null);
   const [discard, setDiscard] = useState<DiscardRequest | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
+  // The last write or read storage refused, until the next transition.
+  const [storageError, setStorageError] = useState<string | null>(null);
   const [activeUserId, setActiveUserId] = useState(users[0]?.id);
   const formColumn = useRef<HTMLDivElement>(null);
 
@@ -345,6 +361,7 @@ export function RecordsView({
   /* ── opening ─────────────────────────────────────────────────────────────── */
 
   const show = useCallback((mode: "view" | "edit", record: StoredRecord) => {
+    setStorageError(null);
     setOpen((prev) => ({ mode, record, data: record.data, key: nextKey(prev) }));
   }, []);
 
@@ -364,19 +381,30 @@ export function RecordsView({
         }
         const ticket = ++request.current;
         setLoading(true);
-        void getResult(collectionId, id).then((record) => {
-          if (ticket !== request.current) return;
-          setLoading(false);
-          if (record) {
-            show(mode, record);
-            return;
-          }
-          // A Back or Forward target that is gone, deleted in this tab: stay on
-          // what is open, at its own URL.
+        // Stay on what is open, at its own URL.
+        const stay = () => {
           const back = returnRecord(openRef.current);
           if (leftImport && back) show("view", back);
           writeRoute(screenRoute(), "replace");
-        });
+        };
+        getResult(collectionId, id).then(
+          (record) => {
+            if (ticket !== request.current) return;
+            setLoading(false);
+            if (record) {
+              show(mode, record);
+              return;
+            }
+            // A Back or Forward target that is gone, deleted in this tab.
+            stay();
+          },
+          (failure: unknown) => {
+            if (ticket !== request.current) return;
+            setLoading(false);
+            stay();
+            setStorageError(messageOf(failure));
+          },
+        );
       }, options.cancel),
     [basePath, collectionId, guard, leaveImport, screenRoute, show, writeRoute],
   );
@@ -395,6 +423,7 @@ export function RecordsView({
         }
         request.current++;
         setLoading(false);
+        setStorageError(null);
         const id = collection.newId(rowsRef.current.map((row) => row.id));
         const data = collection.newRecord(id, activeUser);
         setOpen((prev) => ({
@@ -481,7 +510,19 @@ export function RecordsView({
     async (data: SurveyData) => {
       const current = openRef.current;
       if (!current) return;
-      const saved = await saveResult(collectionId, current.record.id, data);
+      let saved: StoredRecord;
+      try {
+        saved = await saveResult(collectionId, current.record.id, data);
+      } catch (failure) {
+        // The form already completed, so it is rebuilt with the answers that were
+        // not saved, on the page it was on, still unsaved as far as the guard is
+        // concerned.
+        const form = modelRef.current;
+        if (form) carriedPage.current = form.currentPageNo;
+        setOpen((prev) => prev && { ...prev, data, key: nextKey(prev) });
+        setStorageError(messageOf(failure));
+        return;
+      }
       upsertRow(saved);
       if (current.mode === "new") writeRoute(recordHref(basePath, saved.id), "push");
       show("view", saved);
@@ -515,7 +556,14 @@ export function RecordsView({
       const document = fromDocument
         ? { ...collection.newRecord(id, activeUser), ...answers, ...fromDocument.pinned(id, source) }
         : { ...answers, ...collection.newRecord(id, activeUser) };
-      const saved = await saveResult(collectionId, id, document);
+      let saved: StoredRecord;
+      try {
+        saved = await saveResult(collectionId, id, document);
+      } catch (failure) {
+        // The panel reports it, where the visitor is looking, and keeps the
+        // reading unspent.
+        throw new Error(messageOf(failure), { cause: failure });
+      }
       upsertRow(saved);
       // The panel cleared the model, so this passes straight through.
       guard(() => {
@@ -534,10 +582,15 @@ export function RecordsView({
   const confirmDelete = useCallback(async () => {
     const target = deleteTarget;
     if (!target) return;
-    await deleteResult(collectionId, target.id);
+    setDeleteTarget(null);
+    try {
+      await deleteResult(collectionId, target.id);
+    } catch (failure) {
+      setStorageError(messageOf(failure));
+      return;
+    }
     const remaining = rowsRef.current.filter((row) => row.id !== target.id);
     setRows(remaining);
-    setDeleteTarget(null);
     // The form is always open on some record, so deleting the open one falls
     // back to whatever is left.
     const current = openRef.current;
@@ -548,13 +601,46 @@ export function RecordsView({
         setOpen(null);
         return;
       }
-      const record = await getResult(collectionId, next.id);
+      // Until the next record arrives the deleted one is still on screen, so it
+      // counts as loading: Edit and Delete are off, and a second Delete cannot
+      // hit the same id. A row picked meanwhile wins.
+      const ticket = ++request.current;
+      setLoading(true);
+      let record: StoredRecord | undefined;
+      try {
+        record = await getResult(collectionId, next.id);
+      } catch (failure) {
+        if (ticket !== request.current) return;
+        setLoading(false);
+        writeRoute(basePath, "replace");
+        setOpen(null);
+        setStorageError(messageOf(failure));
+        return;
+      }
+      if (ticket !== request.current) return;
+      setLoading(false);
       if (record) {
         writeRoute(recordHref(basePath, record.id), "replace");
         show("view", record);
       }
     }
   }, [basePath, collectionId, deleteTarget, show, writeRoute]);
+
+  /**
+   * "Reset demo data": this visitor's sandbox is deleted and the browser gets a
+   * new id. A full load then shows the seed, which is the honest way to show a
+   * fresh visitor: every piece of state on the page is theirs no longer.
+   */
+  const resetData = useCallback(async () => {
+    setConfirmReset(false);
+    try {
+      await resetDemoData();
+    } catch (failure) {
+      setStorageError(messageOf(failure));
+      return;
+    }
+    window.location.assign(basePath);
+  }, [basePath]);
 
   /* ── the signed-in user ──────────────────────────────────────────────────── */
 
@@ -615,7 +701,7 @@ export function RecordsView({
               <Button
                 size="sm"
                 className="gap-2"
-                disabled={importing}
+                disabled={importing || readOnly}
                 onClick={() => openImport(window.location.pathname)}
               >
                 <ScanTextIcon />
@@ -637,6 +723,18 @@ export function RecordsView({
                 Save as PDF
               </Button>
             )}
+            {/* Enabled with no record open too: an emptied list is exactly when
+                it is wanted. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              disabled={readOnly || importBusy}
+              onClick={() => setConfirmReset(true)}
+            >
+              <RotateCcwIcon />
+              Reset demo data
+            </Button>
           </>
         }
       />
@@ -656,6 +754,7 @@ export function RecordsView({
             onNew={startNew}
             noun={noun}
             disabled={importBusy}
+            newDisabled={readOnly}
           />
         </div>
 
@@ -668,6 +767,7 @@ export function RecordsView({
             onNew={startNew}
             noun={noun}
             disabled={importBusy}
+            newDisabled={readOnly}
           />
 
           {importing && documentImport ? (
@@ -686,9 +786,12 @@ export function RecordsView({
                 <div className="flex gap-2">
                   {open.mode === "view" ? (
                     <>
+                      {/* Off while another row loads: the URL already names it,
+                          and these would act on the record still on screen. */}
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={readOnly || loading}
                         onClick={() => openRow(open.record.id, "edit")}
                       >
                         Edit
@@ -697,6 +800,7 @@ export function RecordsView({
                         size="sm"
                         variant="ghost"
                         className="text-destructive hover:text-destructive"
+                        disabled={readOnly || loading}
                         onClick={() => setDeleteTarget(open.record)}
                       >
                         Delete
@@ -714,6 +818,11 @@ export function RecordsView({
                   )}
                 </div>
               </div>
+              {storageError && (
+                <p role="alert" className="border-destructive/50 text-destructive mb-3 rounded-md border px-3 py-2 text-sm">
+                  {storageError}
+                </p>
+              )}
               {formNote && <div className="text-muted-foreground mb-3 text-xs">{formNote}</div>}
               {loading && (
                 <p className="text-muted-foreground mb-2 text-xs" role="status">
@@ -739,8 +848,13 @@ export function RecordsView({
             </>
           ) : (
             <div className="text-muted-foreground flex flex-col items-center gap-3 rounded-lg border border-dashed px-6 py-12 text-sm">
+              {storageError && (
+                <p role="alert" className="text-destructive">
+                  {storageError}
+                </p>
+              )}
               <p>No {noun.many} yet</p>
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={startNew}>
+              <Button size="sm" variant="outline" className="gap-1.5" disabled={readOnly} onClick={startNew}>
                 <PlusIcon />
                 New {noun.one}
               </Button>
@@ -767,6 +881,27 @@ export function RecordsView({
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmReset} onOpenChange={setConfirmReset}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset demo data?</DialogTitle>
+            <DialogDescription>
+              This deletes everything you changed in this demo: every record, every edited
+              form and every uploaded document, on every page. The page then reloads with the
+              data that ships with the template.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmReset(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={resetData}>
+              Reset demo data
             </Button>
           </DialogFooter>
         </DialogContent>

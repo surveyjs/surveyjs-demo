@@ -17,8 +17,6 @@ Open http://localhost:3000.
 
 Survey Creator, Dashboard and PDF Generator are commercial products. Copy `.env.example` to `.env` and put your key in `NEXTJS_PUBLIC_SLK`; it is applied in [src/lib/surveyjs-license.ts](src/lib/surveyjs-license.ts). Without a key they still run, with a watermark or a banner. [Licensing](https://surveyjs.io/licensing) · [free trial](https://surveyjs.io/licensing#trial).
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsurveyjs%2Fsurveyjs-demo)
-
 Built with Next.js (App Router) and styled with [shadcn/ui](https://ui.shadcn.com) through the SurveyJS theme adapter — one import, and the same definitions run on any SurveyJS UI package.
 
 ## Relationship to the MIT edition
@@ -47,32 +45,38 @@ The embedded pages (`/feedback`, `/encounter-note`, `/appointment`) render witho
 ## What to look at first
 
 - **Forms are JSON, never React.** Definitions live in [src/schemas/](src/schemas/); no page hardcodes a field. [createSurveyModel](src/schemas/createSurveyModel.ts) turns a definition into a configured `survey-core` model and knows nothing about React.
-- **One designer for every form.** [CreatorPane](src/components/configure/CreatorPane.tsx) is Survey Creator itself, not a page built around it: `?form=` says which form, the primary button opens the page the form actually lives in, and `isAutoSave` writes through `saveSurveyFunc` as edits happen. `onSurveyInstanceCreated` publishes the demo's first preset user as the `user` variable, so `{user.firstName}` resolves in the Preview tab exactly as it does on the site.
+- **One designer for every form.** [CreatorPane](src/components/configure/CreatorPane.tsx) is Survey Creator itself, not a page built around it: `?form=` says which form, the primary button opens the page the form actually lives in, and `isAutoSave` writes through `saveSurveyFunc` to the visitor's own sandbox on the server as edits happen, a second after the last one. `onSurveyInstanceCreated` publishes the demo's first preset user as the `user` variable, so `{user.firstName}` resolves in the Preview tab exactly as it does on the site.
 - **The designer needs no theme of its own.** Survey Creator emits the same `.sjs-theme-overrides` root the form does, so the shadcn adapter loaded for the form re-themes the designer, toolbox, tabs and property grid too, and `preferredColorPalette` keeps its chrome in step with the light/dark toggle.
 - **The same definition as a dashboard.** [DashboardPane](src/components/analytics/DashboardPane.tsx) hands `survey.getAllQuestions()` to SurveyJS Dashboard, which picks a visualization per question type, aggregates, cross-filters and filters by date. Nothing maps a question to a chart by hand. The responses are **generated from the definition** — a seeded generator, a few hundred rows, skewed so the charts have a shape — so editing a form in the Creator moves its dashboard with it and there is no 20,000-line fixture in the repository.
 - **The same definition as a PDF.** [exportSurveyToPdf](src/lib/pdf-export.ts) passes `model.toJSON()` and `model.data` to PDF Generator, so the document is the form as it stands: no print layout, no export mapping. `survey-pdf` is imported on demand, so it costs the page nothing until somebody asks for a file.
 - **Paper in, paper out.** `/work-orders` reads a filled sheet with the MIT-licensed [AI Form Response Extractor](https://github.com/surveyjs/ai-form-response-extractor), handing it the file *and the form's own JSON*; each question carries an `aiHint`, the per-field note appended to the prompt that no visitor sees. Tuning those lines, not code, is how extraction is made to land field for field. The other direction prints the record onto the company's blank with pdf-lib, the mapping being one object of coordinates next to the answers it places.
 - **One variable does the personalisation.** The host passes the signed-in user (or the patient chart, or the record) as a variable; the definition reads it in titles, in `defaultValueExpression` and in `visibleIf`. Sign in as somebody else and the greeting, the prefilled values and the number of pages all change, with no branching in the application code.
-- **Two files touch stored data.** See below.
+- **Your own sandbox, rendered by the server.** What a visitor changes in the Creator or on a records page is stored under their cookie, and every page renders it for them. See below.
 
-## Storage: `localStorage` here, your database in production
+## Storage: a sandbox per visitor, your database in production
 
-Everything this app stores goes through **two files in [src/storage/](src/storage/)**. Nothing else in `src/` reads or writes stored data.
+Every visitor gets their own sandbox on the server, keyed by a random cookie: design any form in the Creator, edit or delete records, upload a job sheet, and reset it all whenever you like. The pages render what you stored. The sandbox is cleared on every release and after 14 idle days, so don't enter real personal data.
 
-| File | What it stores | How the demo does it |
-| --- | --- | --- |
-| [survey-json.ts](src/storage/survey-json.ts) | Definitions edited in the Creator | `localStorage`, so a visitor's experiments stay in their own browser and the server keeps rendering the definition that ships |
-| [survey-results.ts](src/storage/survey-results.ts) | Submitted answers, lead and work-order records | An in-memory array — an edit is gone on reload. Nothing is persisted, on purpose: a demo should not look like it stores someone's data when it does not |
+The storage layer is the MIT edition's, copied here unchanged. Three seam files in [src/storage/](src/storage/) are the only code that reads or writes stored data, and they share one backend:
 
-Every function in both files is `async`, so replacing the bodies with calls to your API changes no call site.
+| File | What it stores |
+| --- | --- |
+| [survey-json.ts](src/storage/survey-json.ts) | Definitions, saved by the Creator's autosave, the JSON editor on `/definition` and their Reset |
+| [survey-results.ts](src/storage/survey-results.ts) | Lead and work-order records, `/starter` submissions, and Reset demo data |
+| [documents.ts](src/storage/documents.ts) | The uploaded original a work order was read from |
+| [backend/sqlite.ts](src/storage/backend/sqlite.ts) | One SQLite file through Node's built-in `node:sqlite`, at `DATABASE_PATH` |
+
+`src/storage/backend/sqlite.ts` is a worked example of the swap below, against a real database: on the server the seams call it directly, and in the browser they reach it through `src/app/api/storage/`. The shipped definitions and seed records live in it under a reserved template visitor, rewritten at every start; a visitor's first write copies them under their own id. A browser that blocks cookies gets a read-only demo: the Creator opens read-only and says why. The caps are 1 MB per form or record, 8 MB per document and 50 MB per visitor.
+
+Every function in the seams is `async`, so pointing them at your API changes no call site.
 
 ### Moving to your own server and database
 
-1. **Tables:** `survey_schemas (id, json, updated_at)` plus one per record type — `leads`, `work_orders`. Seed them from `src/schemas/`.
-2. **Route handlers** under `src/app/api/`: `GET`/`PUT`/`DELETE /api/schemas/[id]`, `GET`/`POST /api/leads`, `PUT`/`DELETE /api/leads/[id]`, and the same for work orders. Validate the incoming JSON and authorize the caller here — the Creator is an admin surface, and it is only safe unauthenticated today because nothing leaves the browser.
-3. **Replace the bodies in [survey-json.ts](src/storage/survey-json.ts)** — `loadSurveyJson`, `saveSurveyJson`, `resetSurveyJson`. In the Creator that means `saveSurveyFunc` posts to your endpoint instead of writing to `localStorage`.
-4. **Replace the bodies in [survey-results.ts](src/storage/survey-results.ts)** — `listResults`, `saveResult`, `deleteResult`, `submitResult`. The dashboard then reads real responses instead of generated ones.
-5. **Mind the server-side reader.** `listResults()` is called from a server component, so a relative `fetch("/api/leads")` does not resolve there. Query the database directly in that branch, or use an absolute URL.
+1. **Tables:** `survey_schemas (id, json, updated_at)` plus one per record type — `leads`, `work_orders`. Seed them from `src/schemas/`. [sqlite.ts](src/storage/backend/sqlite.ts) has the same shape, keyed by visitor instead of by tenant.
+2. **Route handlers** under `src/app/api/`: `GET`/`PUT`/`DELETE /api/schemas/[id]`, `GET`/`POST /api/leads`, `PUT`/`DELETE /api/leads/[id]`, and the same for work orders. Validate the incoming JSON and authorize the caller here — the Creator is an admin surface, and it is only safe unauthenticated in this demo because each visitor edits nothing but their own sandbox. The demo's routes under [src/app/api/storage/](src/app/api/storage/) are a starting point; unlike yours, they do not lint a definition, because the Creator autosaves half-typed expressions.
+3. **Replace the bodies in [survey-json.ts](src/storage/survey-json.ts)** — `loadSurveyJson`, `saveSurveyJson`, `resetSurveyJson`. In the Creator that means `saveSurveyFunc` posts to your endpoint.
+4. **Replace the bodies in [survey-results.ts](src/storage/survey-results.ts)** — `listResults`, `getResult`, `saveResult`, `deleteResult`, `submitResult` — and `keepSourceDocument` in [documents.ts](src/storage/documents.ts). The dashboard then reads real responses instead of generated ones.
+5. **Mind the server-side reader.** `listResults()` and `loadSurveyJson()` run in server components, so a relative `fetch("/api/leads")` does not resolve there. Query the database directly in that branch, as the demo does, or use an absolute URL.
 
 [Server integration](https://surveyjs.io/backend-integration/examples) shows the same endpoints for Node.js, ASP.NET Core, PHP and Python, including running validation, linting, PDF generation and extraction on the server.
 
@@ -80,12 +84,18 @@ Every function in both files is `async`, so replacing the bodies with calls to y
 
 | | |
 | --- | --- |
-| The form definitions | **Move to the database** — one row each in `survey_schemas`. Keep the files as the seed and as the fallback `loadSurveyJson` returns when a row is missing. |
+| The form definitions | **Move to the database** — one row each in `survey_schemas`. Keep the files as the seed and as the fallback the pages use when a row is missing. |
 | `data/*-seed.ts` records | **Move to the database** for the record types; the rest is demo data behind "Prefill demo data" — delete it. |
 | `clinic-info.ts`, `patient-record.ts` | The demo clinic's directory, plans and chart — not survey definitions. Delete them with the demos or replace them with your own catalogue. |
 | `types.ts`, `createSurveyModel.ts` | **Stay as they are.** |
 | `index.ts` | Stays, smaller. `getSchemaDefinition` becomes the fallback rather than the source of truth. |
 | `navigation.ts` | **Stays** if your set of forms is fixed. If users create forms at runtime, this moves to the database too and the routes become a single dynamic `/[formId]`. |
+
+### Deployment
+
+The demo is deployed as a docker container, on Node 24.16 or later. Its database sits in the container's writable layer with no volume over it, deliberately: **restarting the container keeps every sandbox; a new container, whether from a new image or the same one, starts empty**. A release therefore resets the demo, and the template rows are rewritten from the shipped schemas at every start regardless. Mount a volume on the database's directory to keep data across containers, and bump `SCHEMA_VERSION` in `sqlite.ts` whenever the tables change, since a database at another version is dropped and recreated. Serverless hosts are not a target.
+
+Shared rooms, several visitors on one form, are a later step, and nothing in the code anticipates them beyond keeping the door open: `sqlite.ts` imports nothing from Next.js, so a socket server on the same host can open the same file (WAL lets two processes share it), and `demo_uid` is a plain cookie any server on the host can read.
 
 ## Project structure
 
@@ -99,6 +109,7 @@ src/
     embedded/                   The embedded demos — no admin chrome
       feedback/  encounter-note/  appointment/
     api/extract/                Document → answers
+    api/storage/                The storage routes the browser calls
   schemas/                      Definitions, seed data, navigation, model factory
   components/
     SurveyForm.tsx              Renders a model with survey-react-ui
@@ -116,7 +127,7 @@ src/
     pdf-export.ts               One call into PDF Generator               ← Full only
     work-order-pdf.ts           A record printed onto the company's sheet
     surveyjs-license.ts         Applies the licence key                   ← Full only
-  storage/                      The only two files that touch stored data
+  storage/                      The seams, the handshake and backend/sqlite.ts
   styles/                       App-local overrides on top of the adapter
 ```
 
@@ -131,8 +142,12 @@ Copy [.env.example](.env.example) to `.env` — it is git-ignored, so your keys 
 | `ANTHROPIC_API_KEY` | Enables `/api/extract` through Anthropic. Used when no OpenAI key is set. |
 | `EXTRACTOR_MODEL` | Overrides the model (defaults: `gpt-4o`, `claude-sonnet-5`). |
 | `NEXT_PUBLIC_SITE_URL` | Base URL used for canonical and Open Graph tags. |
+| `DATABASE_PATH` | The SQLite file. Defaults to `.data/demo.db`; `:memory:` keeps nothing past a restart. |
+| `STORAGE_TTL_DAYS` | Idle days before a visitor's sandbox is removed, 14 by default. `npm run storage:gc` runs the cleanup by hand. |
 
 Extraction needs one provider key, not both; if both are set, OpenAI is used. With no key the endpoint answers 501 and the buttons say so. Keys are read on the server only and never reach the browser.
+
+`demo_uid` is a functional random id, not tracking, so there is no consent banner.
 
 ## Tests
 
