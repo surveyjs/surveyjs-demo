@@ -19,6 +19,8 @@ const allRoutes = [
   "/work-orders/WO-2026-0118",
   "/work-orders/from-document",
   "/definition",
+  // A page with no form on it, and the full edition's alone.
+  ...(features.edition === "full" ? ["/mysurveys"] : []),
   // The one editor, on a plain form and on a personalized one.
   "/configure",
   "/configure?form=clinic-visit",

@@ -9,6 +9,7 @@ export type NavId =
   | "workOrders"
   | "fillTogether"
   | "editTogether"
+  | "mySurveys"
   | "starter"
   | "definition";
 
@@ -127,6 +128,23 @@ const allNavGroups: readonly NavGroup[] = [
         label: "Edit together",
         href: EXTERNAL_URLS.editTogether,
         description: "A team in Survey Creator on one definition.",
+        edition: "full",
+      },
+    ],
+  },
+  {
+    id: "yourUsersForms",
+    label: "Your users' forms",
+    items: [
+      {
+        // A page about an application built with Survey Creator and Dashboard:
+        // the full edition's story, so the MIT edition has neither the row nor
+        // the route. It renders no form, hence no `schemaId`.
+        id: "mySurveys",
+        label: "MySurveys",
+        path: "/mysurveys",
+        description: "A form management app built with SurveyJS: list, build, run, results.",
+        layout: "shell",
         edition: "full",
       },
     ],

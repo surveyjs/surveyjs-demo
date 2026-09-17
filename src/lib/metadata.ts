@@ -102,6 +102,11 @@ const PAGE_COPY: Partial<Record<NavId, PageCopy>> = {
     description:
       "A clinic request form whose answers update the visit summary, copay and referral notice beside it. One definition, English and Spanish.",
   },
+  mySurveys: {
+    title: "MySurveys — built with SurveyJS",
+    description:
+      "A form management application built from the same libraries as this demo: your users create forms, run them and see the results.",
+  },
   starter: {
     title: "Starter — the smallest page",
     description:

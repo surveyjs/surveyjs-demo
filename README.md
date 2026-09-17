@@ -36,6 +36,7 @@ Practical consequence: if you are looking for the app itself, either repository 
 | `/appointment` | A mock clinic site whose appointment request arrives filled in from the patient's chart, derives the copay from the plan and the visit type, flags an HMO referral, and updates the summary beside it as the patient answers. English and Spanish from one definition. |
 | `/starter` | A multi-step checkout form and nothing else. The smallest page here, and the place to start reading. |
 | `/definition` | The form as a JSON document: a Monaco editor with survey-core's linter under it on the left, the form it produces on the right. |
+| `/mysurveys` | MySurveys, the hosted form-management application built with SurveyJS (list, build, run, results), shown before anyone is sent to its login: four screenshots and three ways in — the hosted app, Survey Creator with no account, and the server-integration examples to build it yourself. This edition only. |
 | `/<form>/customize` | Survey Creator, opened on one form: designer, JSON editor, logic overview, live preview and theme editor. |
 | `/<form>/analytics` | SurveyJS Dashboard for that form, on responses generated from its own definition. |
 | `/api/extract` | POST a document and a `formId`; answers come back keyed by question name. Needs an LLM key — see [Environment](#environment). |

@@ -18,6 +18,9 @@ const EXPECTED_GROUPS = [
   { label: "Documents", items: ["Work orders"] },
   // Edit together is Survey Creator: the full edition only.
   { label: "Together", items: ["Fill together", ...(FULL ? ["Edit together"] : [])] },
+  // MySurveys is an application built with Creator and Dashboard: the full edition
+  // only, and the MIT edition drops the group with its one row.
+  ...(FULL ? [{ label: "Your users' forms", items: ["MySurveys"] }] : []),
   { label: "For developers", items: ["Starter", "Definition & checks"] },
 ];
 

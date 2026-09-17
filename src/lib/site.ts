@@ -19,10 +19,17 @@ export const SITE_LINKS = [
   { id: "docs", label: "Documentation", href: "https://surveyjs.io/backend-integration" },
 ] as const;
 
-/** The demos that live on their own hosts, linked from the sidebar and opened in a new tab. */
+/**
+ * The demos that live on their own hosts, linked from the sidebar, and the two
+ * places the MySurveys page sends people. All opened in a new tab.
+ */
 export const EXTERNAL_URLS = {
   fillTogether: "https://collaborative-form-filling.demos.surveyjs.io",
   editTogether: "https://collaborative-form-editing.demos.surveyjs.io",
+  // The hosted application; it asks for a surveyjs.io account first.
+  mySurveys: "https://surveyjs.io/Service/MySurveys",
+  // Survey Creator on its own, with nothing to sign up for.
+  createFreeSurvey: "https://surveyjs.io/create-free-survey",
 } as const;
 
 /** Shared with the embedded demo dock later, so the two never word these differently. */

@@ -8,6 +8,7 @@ import {
   ClipboardListIcon,
   ContactIcon,
   HeartPulseIcon,
+  LayoutListIcon,
   MessageSquareIcon,
   PencilRulerIcon,
   ShoppingCartIcon,
@@ -34,6 +35,7 @@ const ICONS: Record<NavId, LucideIcon> = {
   workOrders: ClipboardListIcon,
   fillTogether: UsersRoundIcon,
   editTogether: PencilRulerIcon,
+  mySurveys: LayoutListIcon,
   starter: ShoppingCartIcon,
   definition: BracesIcon,
 };
