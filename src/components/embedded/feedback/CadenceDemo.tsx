@@ -17,7 +17,6 @@ import { DemoDock } from "../shared/DemoDock";
 import { EmbeddedSurvey, SurveyCard } from "../shared/EmbeddedSurvey";
 import { DemoUserDialog } from "../shared/DemoUserDialog";
 import { useDemo } from "../shared/useDemo";
-import { CADENCE_ROSTER, CADENCE_USER } from "../shared/demo-accounts";
 import type { DemoSurvey } from "../shared/demo-controls";
 
 const ANCHOR = "feedback";
@@ -34,17 +33,15 @@ export const CADENCE_BRAND = "indigo";
  * and the form greets them by name, works out how long they have been a customer,
  * asks a paying customer about plan fit and a three-week-old account about
  * onboarding, and never asks for an email it already has. All of that is in the
- * JSON, reading `{user.…}` — see `demo-accounts.ts`.
+ * JSON, reading `{user_…}` — see `src/schemas/variables/cadence.ts`.
  */
 export function CadenceDemo({ survey }: { survey: DemoSurvey }) {
   const demo = useDemo({
     survey,
-    user: CADENCE_USER,
     anchorId: ANCHOR,
     brandId: CADENCE_BRAND,
-    // Three accounts ship with the demo, so the toolbar can sign in as any of
-    // them — the same definition, a different customer.
-    roster: CADENCE_ROSTER,
+    // The form's three variable presets are the accounts the toolbar can sign in
+    // as — the same definition, a different customer.
   });
 
   return (

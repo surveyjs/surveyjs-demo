@@ -16,10 +16,10 @@ import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { EmbeddedSurvey, SurveyCard } from "@/components/embedded/shared/EmbeddedSurvey";
 import { StaticAnalysisBar, type LintMarker } from "@/components/lint/StaticAnalysisBar";
 import type { JsonEditorApi } from "@/components/JsonEditor";
-import { accountName, usedVariableKeys } from "@/components/embedded/shared/demo-accounts";
+import { usedVariableNames } from "@/components/embedded/shared/demo-accounts";
 import { loadSurveyJson, resetSurveyJson, saveSurveyJson } from "@/storage/survey-json";
 import { useStorageAccess } from "@/components/StorageAccess";
-import type { SurveyJSON } from "@/schemas";
+import { getVariableNames, getVariablePresets, type SurveyJSON } from "@/schemas";
 import { FORMS, type FormEntry, getFormEntry } from "./forms";
 
 const JsonEditor = dynamic(() => import("@/components/JsonEditor"), {
@@ -33,15 +33,8 @@ const JsonEditor = dynamic(() => import("@/components/JsonEditor"), {
 
 const PREVIEW_DEBOUNCE_MS = 400;
 
-/**
- * The one variable the personalized forms are rendered for.
- *
- * The linter reads the JSON and nothing else, so `{user.firstName}` looks like a
- * reference to a question that does not exist — dozens of findings on a form that
- * works exactly as designed. Naming it here is the same declaration the demo
- * makes at runtime with `setVariable("user", account)`.
- */
-const RUNTIME_VARIABLES = ["user"] as const;
+/** The preset selector's value for "render with no variables at all". */
+const NO_PRESET = "";
 
 function parse(source: string): { json?: SurveyJSON; error?: string } {
   try {
@@ -72,10 +65,11 @@ function parse(source: string): { json?: SurveyJSON; error?: string } {
  * `survey-json.ts`), so the URL is safe to hand around: what a visitor breaks is
  * theirs alone, and everybody else keeps getting the definition that ships.
  *
- * The users a personalized form is rendered for are not edited here. They belong
- * to the demo — its toolbar signs in as any of the preset ones and opens the
- * account in a popup — and this page only borrows the first of them, because a
- * form that reads `{user.firstName}` has to be rendered for somebody.
+ * A personalized form reads `{user_…}` variables, and what those are is declared
+ * in the form's variable presets (`getVariablePresets`). The linter gets that
+ * object, so a reference to a declared variable is known and a misspelled one is
+ * reported with a suggestion; and the preview renders for whichever preset the
+ * selector names, the first one to begin with, or for nobody.
  */
 export function JsonWorkbench({
   inShell = false,
@@ -175,18 +169,21 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
     [markers, selectedPath],
   );
 
-  // The demo's first preset user. A personalized definition has to be rendered
-  // for somebody; switching between them belongs in the demo, not here.
-  const account = useMemo(
-    () => (form.user ? form.user.toAccount(form.user.defaults) : null),
-    [form.user],
-  );
-  const variables = useMemo(() => (account ? { user: account } : undefined), [account]);
+  // What the host injects into this form, found by its id like its definition.
+  // The preview opens on the first preset: a personalized form rendered for
+  // nobody greets "Hi {user_firstName}". "None" is one click away.
+  const variablePresets = useMemo(() => getVariablePresets(form.id), [form.id]);
+  const presets = variablePresets?.presets ?? [];
+  const [presetName, setPresetName] = useState(presets[0]?.name ?? NO_PRESET);
+  const activePreset = presets.find((preset) => preset.name === presetName);
+  const variables = activePreset?.variables;
 
-  const wiredKeys = useMemo(
+  const wiredNames = useMemo(
     () =>
-      account && parsedPreview.json ? usedVariableKeys(parsedPreview.json, account) : [],
-    [account, parsedPreview.json],
+      parsedPreview.json
+        ? usedVariableNames(parsedPreview.json, getVariableNames(variablePresets))
+        : [],
+    [parsedPreview.json, variablePresets],
   );
 
   const applyJson = useCallback((json: Record<string, unknown>) => {
@@ -238,8 +235,8 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
     router.push(form.href);
   }, [form.href, form.id, router, source]);
 
-  const shown = wiredKeys.slice(0, 8);
-  const rest = wiredKeys.length - shown.length;
+  const shown = wiredNames.slice(0, 8);
+  const rest = wiredNames.length - shown.length;
   // Inside the shell the page header holds the h1.
   const Title = inShell ? "h2" : "h1";
 
@@ -351,37 +348,59 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
             onApplyJson={applyJson}
             selectedPath={selectedPath}
             onSelectPath={setSelectedPath}
-            knownVariables={form.user ? RUNTIME_VARIABLES : undefined}
+            variablePresets={variablePresets}
           />
         </div>
 
         <div className="flex min-h-0 min-w-0 flex-col gap-2">
-          {account && (
-            <p className="text-muted-foreground rounded-lg border px-3 py-2 text-xs leading-relaxed">
-              Rendered for{" "}
-              <span className="text-foreground font-medium">{accountName(account)}</span>
-              , the first of this demo&apos;s preset users
-              {wiredKeys.length > 0 ? (
-                <>
-                  . The definition reads{" "}
-                  <span className="text-foreground font-medium">{shown.join(", ")}</span>
-                  {rest > 0 ? ` and ${rest} more` : ""} off them — as{" "}
-                  <code className="text-[11px]">{"{user.name}"}</code> in titles, in{" "}
-                  <code className="text-[11px]">visibleIf</code> and in{" "}
-                  <code className="text-[11px]">defaultValueExpression</code>. Sign in as
-                  somebody else in the demo itself.
-                </>
-              ) : (
-                ". It does not read anything off them yet."
-              )}
-            </p>
+          {variablePresets && (
+            <div className="text-muted-foreground rounded-lg border px-3 py-2 text-xs leading-relaxed">
+              <div className="flex flex-wrap items-center gap-2">
+                <label htmlFor="variable-preset" className="text-foreground font-medium">
+                  Variable preset
+                </label>
+                <select
+                  id="variable-preset"
+                  className="border-input bg-background text-foreground focus-visible:ring-ring/50 h-7 rounded-md border px-2 text-xs outline-none focus-visible:ring-[3px]"
+                  value={presetName}
+                  onChange={(event) => setPresetName(event.target.value)}
+                >
+                  <option value={NO_PRESET}>None</option>
+                  {presets.map((preset) => (
+                    <option key={preset.name} value={preset.name}>
+                      {preset.name}
+                    </option>
+                  ))}
+                </select>
+                <span data-testid="preset-description">
+                  {activePreset
+                    ? activePreset.description
+                    : "No variables: the form as a visitor the host knows nothing about gets it."}
+                </span>
+              </div>
+              <p className="mt-1.5">
+                {wiredNames.length > 0 ? (
+                  <>
+                    The definition reads{" "}
+                    <span className="text-foreground font-medium">{shown.join(", ")}</span>
+                    {rest > 0 ? ` and ${rest} more` : ""} — as{" "}
+                    <code className="text-[11px]">{"{user_name}"}</code> in titles, in{" "}
+                    <code className="text-[11px]">visibleIf</code> and in{" "}
+                    <code className="text-[11px]">defaultValueExpression</code>.
+                  </>
+                ) : (
+                  "The definition does not read any of its variables yet."
+                )}
+              </p>
+            </div>
           )}
 
           <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
             {mounted && parsedPreview.json ? (
               <SurveyCard>
                 <EmbeddedSurvey
-                  key={preview}
+                  // A change of preset rebuilds the model, like a change of JSON.
+                  key={`${presetName}\n${preview}`}
                   json={parsedPreview.json}
                   variables={variables}
                 />

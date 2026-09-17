@@ -48,9 +48,9 @@ export function UserSwitcher({
         <DropdownMenuLabel>Sign in as</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup value={active.id} onValueChange={onSelect}>
-          {users.map((user) => (
-            <DropdownMenuRadioItem key={user.id} value={user.id}>
-              {user.name}
+          {users.map((option) => (
+            <DropdownMenuRadioItem key={option.id} value={option.id}>
+              {option.name}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>

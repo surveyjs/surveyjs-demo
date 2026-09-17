@@ -18,8 +18,6 @@ import {
   VisitSummaryPanel,
 } from "./RidgelineSite";
 import { useDemo } from "../shared/useDemo";
-import { RIDGELINE_USER } from "../shared/demo-accounts";
-import { CLINIC_PATIENTS } from "@/schemas";
 import type { DemoSurvey } from "../shared/demo-controls";
 
 const ANCHOR = "request";
@@ -49,12 +47,10 @@ export const RIDGELINE_BRAND = "emerald";
 export function RidgelineDemo({ survey }: { survey: DemoSurvey }) {
   const demo = useDemo({
     survey,
-    user: RIDGELINE_USER,
     anchorId: ANCHOR,
     brandId: RIDGELINE_BRAND,
-    // Three patients ship with the demo, so the toolbar can sign in as any of
-    // them — the same definition, a different chart.
-    roster: CLINIC_PATIENTS,
+    // The form's three variable presets are the patients the toolbar can sign in
+    // as — the same definition, a different chart.
   });
 
   const { trackAnswers } = demo;

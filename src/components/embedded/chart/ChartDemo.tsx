@@ -1,13 +1,12 @@
 "use client";
 
 import { StethoscopeIcon } from "lucide-react";
-import { CLINIC_PATIENTS } from "@/schemas";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { DemoDock } from "../shared/DemoDock";
 import { DemoUserDialog } from "../shared/DemoUserDialog";
 import { EmbeddedSurvey, SurveyCard } from "../shared/EmbeddedSurvey";
 import { SignedInChip } from "../shared/SignedInChip";
-import { RIDGELINE_USER, accountText } from "../shared/demo-accounts";
+import { accountText } from "../shared/demo-accounts";
 import { useDemo } from "../shared/useDemo";
 import type { DemoSurvey } from "../shared/demo-controls";
 
@@ -39,10 +38,8 @@ export const CHART_BRAND = "violet";
 export function ChartDemo({ survey }: { survey: DemoSurvey }) {
   const demo = useDemo({
     survey,
-    user: RIDGELINE_USER,
     anchorId: ANCHOR,
     brandId: CHART_BRAND,
-    roster: CLINIC_PATIENTS,
   });
 
   const mrn = accountText(demo.account, "mrn");

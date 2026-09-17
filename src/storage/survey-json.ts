@@ -23,13 +23,15 @@ import { beforeWrite, storageError } from "./access";
  * A real `saveSurveyJson` lints before it stores. `/api/lint` runs the same
  * `survey-core/linter` rules the editor shows while somebody types, so a
  * definition the editor flagged is refused here too — including one that never
- * went through the editor:
+ * went through the editor. The form's variable presets go with it, so a
+ * personalized definition's `{user_…}` references are known there as they are in
+ * the editor:
  *
  *   export async function saveSurveyJson(schemaId: string, json: SurveyJSON) {
  *     const lint = await fetch("/api/lint", {
  *       method: "POST",
  *       headers: { "Content-Type": "application/json" },
- *       body: JSON.stringify({ json }),
+ *       body: JSON.stringify({ json, variablePresets: getVariablePresets(schemaId) }),
  *     }).then((res) => res.json());
  *     if (!lint.ok) {
  *       throw new Error(`Not saved: ${lint.findings.length} static analysis finding(s).`);

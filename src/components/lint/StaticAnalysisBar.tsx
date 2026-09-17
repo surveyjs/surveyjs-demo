@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { getRules } from "survey-core/linter";
 import type { ILintFinding } from "survey-core/linter";
+import type { ISurveyVariablePresets } from "survey-core";
 import { Button } from "@/components/ui/button";
 import { lintSurveyJson, type SurveyLintVerdict } from "@/lib/lint/lint-survey";
 import { buildPathIndex, locatePath } from "@/lib/lint/monaco-adapter";
@@ -98,7 +99,7 @@ export function StaticAnalysisBar({
   onApplyJson,
   selectedPath,
   onSelectPath,
-  knownVariables,
+  variablePresets,
 }: {
   /** The JSON source as typed, used to turn a finding's path into a line number. */
   text: string;
@@ -110,11 +111,12 @@ export function StaticAnalysisBar({
   selectedPath: string | null;
   onSelectPath: (path: string | null) => void;
   /**
-   * Variables the host sets at runtime with `setVariable`, so the linter does not
-   * report them as unknown references. The personalized forms are rendered for
-   * one variable, `user`, which no amount of reading the JSON could reveal.
+   * What the host sets at runtime with `setVariable`, which no amount of reading
+   * the JSON could reveal: the form's variable presets. The linter resolves
+   * `{user_…}` references against the definition, and checks every preset's values
+   * against it too (rule `variable/preset`).
    */
-  knownVariables?: readonly string[];
+  variablePresets?: ISurveyVariablePresets;
 }) {
   const [analysis, setAnalysis] = useState<Analysis>({ kind: "waiting" });
   const [expanded, setExpanded] = useState(false);
@@ -132,7 +134,7 @@ export function StaticAnalysisBar({
       // The same call /api/lint makes, so the editor and the server share one verdict.
       const result = lintSurveyJson(
         json,
-        knownVariables ? { knownVariables: [...knownVariables] } : undefined,
+        variablePresets ? { variablePresets } : undefined,
       );
       const durationMs = performance.now() - startedAt;
       const index = buildPathIndex(text);
@@ -148,7 +150,7 @@ export function StaticAnalysisBar({
       });
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [json, knownVariables, text]);
+  }, [json, variablePresets, text]);
 
   const markers = useMemo<readonly LintMarker[]>(() => {
     if (analysis.kind !== "done") return [];

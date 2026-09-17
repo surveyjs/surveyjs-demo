@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { features } from "../src/features";
+import { getVariablePresets } from "../src/schemas/variables";
 
 test.skip(features.edition !== "mit", "the JSON workbench is the MIT edition's editor");
 
@@ -44,17 +45,40 @@ test("the editor opens on one form, with no chrome around it", async ({ page }) 
   });
 });
 
-test("a personalized form is previewed for the demo's first preset user", async ({
-  page,
-}) => {
+test("a personalized form is previewed for its first variable preset", async ({ page }) => {
   test.slow();
   await page.goto(CLINIC);
   await waitForEditor(page);
 
-  await expect(page.getByText("Rendered for Maria Delgado")).toBeVisible();
+  await expect(page.getByLabel("Variable preset")).toHaveValue("Maria Delgado");
   await expect(page.getByText("Welcome back, Maria").first()).toBeVisible({
     timeout: 15_000,
   });
+});
+
+test("the preset selector re-renders the preview, and None renders it for nobody", async ({
+  page,
+}) => {
+  test.slow();
+  await page.goto("/configure?form=customer-satisfaction");
+  await waitForEditor(page);
+
+  const selector = page.getByLabel("Variable preset");
+  const presets = getVariablePresets("customer-satisfaction")!.presets!;
+  await expect(selector).toHaveValue(presets[0].name);
+  await expect(page.getByTestId("preset-description")).toHaveText(presets[0].description!);
+  await expect(page.getByText("Hi Alex, how are we doing?").first()).toBeVisible({
+    timeout: 15_000,
+  });
+
+  await selector.selectOption(presets[1].name);
+  await expect(page.getByText("Hi Priya, how are we doing?").first()).toBeVisible();
+
+  await selector.selectOption({ label: "None" });
+  await expect(page.getByText(/^Hi .*, how are we doing\?$/).first()).toBeVisible();
+  for (const preset of presets) {
+    await expect(page.getByText(`Hi ${preset.variables.user_firstName},`)).toHaveCount(0);
+  }
 });
 
 test("a definition saved here is what the embedded site renders", async ({ page }) => {
@@ -65,7 +89,7 @@ test("a definition saved here is what the embedded site renders", async ({ page 
   await setDefinition(page, {
     title: "Saved from the editor",
     elements: [
-      { type: "text", name: "q1", title: "Renamed for {user.preferredName}" },
+      { type: "text", name: "q1", title: "Renamed for {user_preferredName}" },
     ],
   });
   await expect(page.getByText("Renamed for Maria").first()).toBeVisible({
@@ -95,9 +119,10 @@ test("a definition saved here is what the embedded site renders", async ({ page 
 });
 
 /**
- * Every definition that ships is clean, and the linter is told about the one
- * variable the demos set at runtime — otherwise the personalized forms would
- * report dozens of unknown references and look broken to a reviewer.
+ * Every definition that ships is clean, and the linter is given the form's
+ * variable presets — otherwise the personalized forms would report dozens of
+ * unknown references and look broken to a reviewer. The presets themselves are
+ * checked by the same run (rule `variable/preset`).
  */
 for (const id of [
   "checkout",

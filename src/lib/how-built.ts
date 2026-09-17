@@ -2,9 +2,10 @@
  * What the "How this page is built" panel says about each page.
  *
  * Content only, and no React, so `e2e/` can import it and assert the panel says
- * exactly this. The list of variable references is not written here: the panel
- * derives it from the definition with `findVariableReferences`, so it cannot
- * drift from the JSON.
+ * exactly this. Neither the variables nor the references to them are written
+ * here: the panel takes the names from the form's variable presets
+ * (`getVariablePresets`) and derives the references from the definition with
+ * `findVariableReferences`, so it cannot drift from either.
  */
 import type { Edition } from "@/features";
 import type { NavId } from "@/schemas/navigation";
@@ -32,8 +33,6 @@ export interface HowBuiltContent {
   readonly listNote?: string;
   readonly dataIn: readonly HowBuiltItem[];
   readonly dataOut: readonly HowBuiltItem[];
-  /** Variable names whose references the panel lists, e.g. ["user"]. Empty: the section says the form reads none. */
-  readonly variables: readonly string[];
   readonly features: readonly HowBuiltFeature[];
 }
 
@@ -71,9 +70,9 @@ export const HOW_BUILT: Partial<Record<NavId, HowBuiltContent>> = {
         source: "src/storage/survey-results.ts",
       },
       {
-        label: "variables.user",
-        detail: "listSessionUsers(\"leads\") returns who the page is rendered for: name, role and currency. In your app, getSession(). Budget amount is shown to managers only; a discount above 20% needs a manager to save.",
-        source: "src/storage/session.ts",
+        label: "The user_… variables",
+        detail: "user_id, user_name, user_role and user_currency, declared as SurveyJS variable presets; the two presets are the users you can sign in as here. The values come from listSessionUsers(\"leads\"): in your app, getSession(). Budget amount is shown to managers only; a discount above 20% needs a manager to save.",
+        source: "src/schemas/variables/leads.ts",
       },
       {
         label: "New-lead defaults",
@@ -93,9 +92,9 @@ export const HOW_BUILT: Partial<Record<NavId, HowBuiltContent>> = {
         source: "src/schemas/collections/leads.ts",
       },
     ],
-    variables: ["user"],
     features: [
       { label: "Variables from the server", status: "shown" },
+      { label: "Variable presets", status: "shown" },
       { label: "Expressions over a dynamic panel and matrices", status: "shown" },
       { label: "Mapped columns plus the document", status: "shown" },
       { label: "Choices from your API", status: "coming" },
@@ -150,7 +149,6 @@ export const HOW_BUILT: Partial<Record<NavId, HowBuiltContent>> = {
         edition: "full",
       },
     ],
-    variables: [],
     features: [
       { label: "AI extraction from a PDF, scan or photo", status: "shown" },
       { label: "Job sheet PDF", status: "shown", edition: "full" },
@@ -194,16 +192,17 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Every string property in a definition that references `{<name>.…}` or `{<name>}`
- * for one of `names`, with the element it sits on. A JSON walk: no model, no DOM.
+ * Every string property in a definition that references `{<name>}` for one of
+ * `names`, whole names as the form's variable presets declare them, with the
+ * element it sits on. A JSON walk: no model, no DOM.
  */
 export function findVariableReferences(
   json: unknown,
   names: readonly string[],
 ): VariableReference[] {
   if (names.length === 0) return [];
-  // `{user}`, `{user.role}`, `{user[0]}` — never `{userName}`.
-  const pattern = new RegExp(`\\{\\s*(?:${names.map(escapeRegExp).join("|")})(?:[.\\[][^}]*)?\\s*\\}`);
+  // `{user_role}` — never `{user_roles}`, and never `{user}`.
+  const pattern = new RegExp(`\\{\\s*(?:${names.map(escapeRegExp).join("|")})\\s*\\}`);
   const found: VariableReference[] = [];
 
   const check = (element: string, property: string, value: unknown) => {

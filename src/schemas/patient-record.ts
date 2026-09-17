@@ -14,7 +14,7 @@ import type { SurveyData, SurveyJSON } from "./types";
  * which. `clinic-visit.ts` is the **public appointment form** — the survey a
  * patient fills in on the clinic's website. This one is the **record behind it**:
  * what the practice already knows, edited by staff in the admin, and handed to
- * the appointment form as one variable named `user`.
+ * the appointment form as `user_…` variables, one per field (`variables/patient.ts`).
  *
  * So the same library renders both sides of the story, and the admin needed no
  * bespoke form code: the screen where a nurse corrects a phone number is a
@@ -22,7 +22,7 @@ import type { SurveyData, SurveyJSON } from "./types";
  * template — personal details, contact, emergency contact, insurance — with the
  * part that template leaves out and a scheduler actually needs: the history.
  *
- * Every name here is a key the appointment form may read as `{user.something}`,
+ * Every name here is a key the appointment form may read as `{user_something}`,
  * which is why they are camelCase rather than the template's kebab-case, and why
  * renaming one changes what that form can personalise.
  */
@@ -58,7 +58,7 @@ export const PATIENT_LANGUAGES = LANGUAGES;
 export const patientRecordJson: SurveyJSON = {
   title: "Patient record",
   description:
-    "What the practice already knows. The appointment form on the website reads this as {user.…}, so what is filled in here is what a patient never has to type.",
+    "What the practice already knows. The appointment form on the website reads this as {user_…}, so what is filled in here is what a patient never has to type.",
   showQuestionNumbers: "off",
   widthMode: "responsive",
   questionErrorLocation: "bottom",

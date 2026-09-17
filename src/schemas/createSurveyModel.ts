@@ -16,10 +16,10 @@ export interface CreateSurveyModelOptions {
    * decides what to do with it. Set before `data`, because
    * `defaultValueExpression` is evaluated as the questions are created.
    *
-   * Any number of names is allowed; today every caller passes exactly one,
-   * `user`, holding the whole signed-in account — one variable rather than one
-   * per field, because a path (`{user.email}`) can never be mistaken for a
-   * question of the same name.
+   * One variable per field of the signed-in account, each prefixed `user_`
+   * (`{user_email}`), so a variable can never be mistaken for a question of the
+   * same name. A variable per field, not one object read by path, because that
+   * is what SurveyJS variable presets declare: see `variables/index.ts`.
    */
   variables?: Readonly<Record<string, unknown>>;
   /** `edit` (default) for an interactive form, `display` for read-only. */

@@ -2,10 +2,13 @@ import {
   CHART_CONDITIONS,
   CHART_MEDICATIONS,
   CLINIC_LOCATIONS,
+  HEALTH_PLANS,
   PROVIDERS,
   VISIT_REASONS,
 } from "./clinic-info";
+import { PATIENT_LANGUAGES } from "./patient-record";
 import type { SchemaDefinition, SurveyJSON } from "./types";
+import { labelExpression } from "./variables/labels";
 
 /**
  * "Encounter note" — the form a clinician fills in with the patient in the room.
@@ -36,7 +39,7 @@ import type { SchemaDefinition, SurveyJSON } from "./types";
  *    attestation.
  *
  * And it is still rendered *for a person*: the chart is published to the survey
- * as `{user.…}` (see `demo-accounts.ts`), so the banner, the age, the site, the
+ * as `{user_…}` (see `demo-accounts.ts`), so the banner, the age, the site, the
  * clinician, the problem list, the medication list, the allergies, the tobacco
  * counselling prompt and the whole new-patient page come out of the record of
  * whichever patient is open. Switch patients in the toolbar and the note is a
@@ -76,13 +79,13 @@ const conditionChoices = CHART_CONDITIONS.map((condition) => ({
 const chartConditionChoices = CHART_CONDITIONS.map((condition) => ({
   value: condition.id,
   text: condition.label,
-  visibleIf: `{user.conditions} contains '${condition.id}'`,
+  visibleIf: `{user_conditions} contains '${condition.id}'`,
 }));
 
 const chartMedicationChoices = CHART_MEDICATIONS.map((medication) => ({
   value: medication.id,
   text: medication.label,
-  visibleIf: `{user.medications} contains '${medication.id}'`,
+  visibleIf: `{user_medications} contains '${medication.id}'`,
 }));
 
 const drugChoices = [
@@ -130,8 +133,8 @@ const IMMUNIZATIONS = [
 ];
 
 export const encounterNoteJson: SurveyJSON = {
-  title: "Encounter note — {user.lastName}, {user.firstName}",
-  description: "MRN {user.mrn} · last seen {user.lastVisit}",
+  title: "Encounter note — {user_lastName}, {user_firstName}",
+  description: "MRN {user_mrn} · last seen {user_lastVisit}",
   widthMode: "responsive",
   showQuestionNumbers: "off",
   questionErrorLocation: "bottom",
@@ -150,7 +153,7 @@ export const encounterNoteJson: SurveyJSON = {
   previewText: "Review the note",
   completeText: "Sign and file",
   completedHtml:
-    "<h4>Note filed for {user.firstName} {user.lastName}</h4><p>Assessment recorded, orders queued and the visit summary is on its way to the portal. Follow-up in {followUpWeeks} weeks.</p>",
+    "<h4>Note filed for {user_firstName} {user_lastName}</h4><p>Assessment recorded, orders queued and the visit summary is on its way to the portal. Follow-up in {followUpWeeks} weeks.</p>",
 
   /**
    * Values the note carries but nobody types.
@@ -160,6 +163,22 @@ export const encounterNoteJson: SurveyJSON = {
    * addressed — arrive with the note instead of being recomputed from it.
    */
   calculatedValues: [
+    // The chart carries values; the text the banner shows is worked out here,
+    // and stays out of the note.
+    {
+      name: "languageLabel",
+      expression: labelExpression("user_preferredLanguage", PATIENT_LANGUAGES, "English"),
+      includeIntoResult: false,
+    },
+    {
+      name: "healthPlanLabel",
+      expression: labelExpression(
+        "user_healthPlanOnFile",
+        HEALTH_PLANS.map((plan) => ({ value: plan.id, text: plan.name })),
+        "none on file",
+      ),
+      includeIntoResult: false,
+    },
     {
       name: "chartProblemCount",
       expression: "count({chartProblems})",
@@ -214,14 +233,14 @@ export const encounterNoteJson: SurveyJSON = {
         {
           type: "html",
           name: "patientBanner",
-          html: "<div class=\"demo-note-banner\"><strong>{user.firstName} {user.lastName}</strong> · MRN {user.mrn} · born {user.dateOfBirth}<br>Plan on file: {user.healthPlanLabel} · preferred language: {user.languageLabel}</div>",
+          html: "<div class=\"demo-note-banner\"><strong>{user_firstName} {user_lastName}</strong> · MRN {user_mrn} · born {user_dateOfBirth}<br>Plan on file: {healthPlanLabel} · preferred language: {languageLabel}</div>",
         },
         {
           type: "expression",
           name: "patientAge",
           title: "Age",
           titleLocation: "left",
-          expression: "age({user.dateOfBirth})",
+          expression: "age({user_dateOfBirth})",
         },
         {
           type: "dropdown",
@@ -253,7 +272,7 @@ export const encounterNoteJson: SurveyJSON = {
           isRequired: true,
           choices: providerChoices,
           // The chart's own clinician, already chosen.
-          defaultValueExpression: "{user.primaryProvider}",
+          defaultValueExpression: "{user_primaryProvider}",
         },
         {
           type: "dropdown",
@@ -261,16 +280,16 @@ export const encounterNoteJson: SurveyJSON = {
           title: "Location",
           startWithNewLine: false,
           choices: siteChoices,
-          defaultValueExpression: "{user.homeLocation}",
+          defaultValueExpression: "{user_homeLocation}",
         },
         {
           type: "boolean",
           name: "interpreterPresent",
           title: "Interpreter present for this visit",
           description:
-            "The chart records {user.languageLabel} as {user.firstName}'s preferred language.",
+            "The chart records {languageLabel} as {user_firstName}'s preferred language.",
           // The question does not exist for a patient who does not need one.
-          visibleIf: "{user.needsInterpreter} = true",
+          visibleIf: "{user_needsInterpreter} = true",
           defaultValueExpression: "true",
         },
         {
@@ -539,7 +558,7 @@ export const encounterNoteJson: SurveyJSON = {
           name: "tobaccoCounseling",
           title: "Tobacco cessation counselling given",
           description: "The chart records tobacco use, so the prompt is here.",
-          visibleIf: "{user.smoking} anyof ['current', 'former']",
+          visibleIf: "{user_smoking} anyof ['current', 'former']",
         },
       ],
     },
@@ -564,7 +583,7 @@ export const encounterNoteJson: SurveyJSON = {
           description: "Comes from this patient's record, not from the definition.",
           colCount: 2,
           choices: chartConditionChoices,
-          defaultValueExpression: "{user.conditions}",
+          defaultValueExpression: "{user_conditions}",
           enableIf: "{reconcileChart} = true",
         },
         {
@@ -665,13 +684,13 @@ export const encounterNoteJson: SurveyJSON = {
           title: "Active medications on file",
           colCount: 2,
           choices: chartMedicationChoices,
-          defaultValueExpression: "{user.medications}",
+          defaultValueExpression: "{user_medications}",
         },
         {
           type: "boolean",
           name: "refillsRequested",
           title: "Refills requested at this visit",
-          defaultValueExpression: "{user.openRefills}",
+          defaultValueExpression: "{user_openRefills}",
         },
         {
           type: "tagbox",
@@ -844,7 +863,7 @@ export const encounterNoteJson: SurveyJSON = {
           name: "allergyList",
           title: "Allergies",
           description: "Prefilled from the chart; edit it in front of the patient.",
-          defaultValueExpression: "{user.allergies}",
+          defaultValueExpression: "{user_allergies}",
         },
         {
           type: "paneldynamic",
@@ -933,7 +952,7 @@ export const encounterNoteJson: SurveyJSON = {
           type: "radiogroup",
           name: "tobaccoStatus",
           title: "Tobacco",
-          defaultValueExpression: "{user.smoking}",
+          defaultValueExpression: "{user_smoking}",
           choices: [
             { value: "never", text: "Never" },
             { value: "former", text: "Former" },
@@ -1207,12 +1226,12 @@ export const encounterNoteJson: SurveyJSON = {
       title: "New-patient baseline",
       navigationDescription: "First visit only",
       // The page does not exist for an established patient.
-      visibleIf: "{user.isNewPatient} = true",
+      visibleIf: "{user_isNewPatient} = true",
       elements: [
         {
           type: "html",
           name: "baselineIntro",
-          html: "<div class=\"demo-note-note\">{user.firstName} has no history with this practice, so this page exists. Switch to an established patient in the toolbar and it leaves the table of contents entirely.</div>",
+          html: "<div class=\"demo-note-note\">{user_firstName} has no history with this practice, so this page exists. Switch to an established patient in the toolbar and it leaves the table of contents entirely.</div>",
         },
         {
           type: "matrixdropdown",

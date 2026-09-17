@@ -96,6 +96,17 @@ export const schemaRegistry: Record<string, SchemaDefinition> = {
   [workOrderSchema.id]: workOrderSchema,
 };
 
+export {
+  CADENCE_PLANS,
+  LEADS_USERS,
+  USER_PREFIX,
+  fromVariables,
+  getVariableNames,
+  getVariablePresets,
+  toVariableDefinition,
+  toVariables,
+} from "./variables";
+
 export function getSchemaDefinition(id: string): SchemaDefinition {
   const schema = schemaRegistry[id];
   if (!schema) throw new Error(`Unknown schema id: ${id}`);

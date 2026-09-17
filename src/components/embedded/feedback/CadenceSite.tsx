@@ -18,6 +18,12 @@ import { Button } from "@/components/ui/button";
 import { SignedInChip } from "../shared/SignedInChip";
 import { accountText } from "../shared/demo-accounts";
 import { mergeTailwindClasses } from "@/lib/utils";
+import { CADENCE_PLANS } from "@/schemas";
+
+/** The host's own header shows the plan's name; the account carries its value. */
+function planName(account: Record<string, unknown>): string {
+  return CADENCE_PLANS.find((plan) => plan.value === account.plan)?.text ?? "Free";
+}
 
 /**
  * A mock marketing site for a fictional product, "Cadence".
@@ -94,7 +100,7 @@ export function SiteHeader({
           </Button>
           <SignedInChip
             account={account}
-            meta={`${accountText(account, "planLabel", "Free")} plan · ${accountText(
+            meta={`${planName(account)} plan · ${accountText(
               account,
               "company",
             )}`}

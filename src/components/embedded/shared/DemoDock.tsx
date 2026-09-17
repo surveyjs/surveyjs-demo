@@ -92,7 +92,7 @@ export function DemoDock({
   /** The dashboard for this form's responses. No link renders without it. */
   analyticsHref?: string;
   /** The users the admin keeps for this demo. One is the shipped default. */
-  users: readonly { id: string; name: string }[];
+  users: readonly { id: string; name: string; description?: string }[];
   activeUserId: string;
   onSelectUser: (id: string) => void;
   /** The account has been changed in this window — worth a dot on the button. */
@@ -230,7 +230,7 @@ export function DemoDock({
             </Button>
           </DropdownMenuTrigger>
           {/* Above the toolbar itself (z-70), which is fixed over the page. */}
-          <DropdownMenuContent align="center" className="z-[80] w-56">
+          <DropdownMenuContent align="center" className="z-[80] w-72">
             <DropdownMenuLabel>{usersLabel}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuRadioGroup
@@ -239,7 +239,12 @@ export function DemoDock({
             >
               {users.map((option) => (
                 <DropdownMenuRadioItem key={option.id} value={option.id}>
-                  {option.name}
+                  <span className="flex flex-col">
+                    <span>{option.name}</span>
+                    {option.description && (
+                      <span className="text-muted-foreground text-xs">{option.description}</span>
+                    )}
+                  </span>
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>

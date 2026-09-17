@@ -1,4 +1,6 @@
 import type { SchemaDefinition, SurveyJSON } from "./types";
+import { CADENCE_PLANS } from "./variables/cadence";
+import { labelExpression } from "./variables/labels";
 
 /**
  * Customer-satisfaction survey used by the embedded demo, where it is hosted by
@@ -10,11 +12,13 @@ import type { SchemaDefinition, SurveyJSON } from "./types";
  *
  * It is also the simplest of the three demos to read for **personalisation**.
  * Nothing below knows who Alex is; it reads the account the host app passed in as
- * survey variables (see `demo-accounts.ts`) and arranges itself accordingly:
+ * survey variables (declared in `variables/cadence.ts`) and arranges itself accordingly:
  *
- *  - `{user.firstName}`, `{user.company}`, `{user.planLabel}` are piped into text;
- *  - `usagePeriod` arrives answered, worked out from `{user.monthsActive}`;
- *  - the whole `onboarding` page exists only while `{user.monthsActive} < 3`, so the
+ *  - `{user_firstName}` and `{user_company}` are piped into text, and so is
+ *    `{planLabel}`, a calculated value that reads `{user_plan}`: the account
+ *    carries the plan's value, and the form works out the text it shows;
+ *  - `usagePeriod` arrives answered, worked out from `{user_monthsActive}`;
+ *  - the whole `onboarding` page exists only while `{user_monthsActive} < 3`, so the
  *    progress bar itself is shorter for a three-week-old account;
  *  - `planFit` is for paying customers, `upgradeBlocker` for free ones;
  *  - `csmRating` names the customer's own CSM, and only appears if they have one;
@@ -22,7 +26,7 @@ import type { SchemaDefinition, SurveyJSON } from "./types";
  *  - the email field is skipped entirely when the account already has one.
  */
 export const customerSatisfactionJson: SurveyJSON = {
-  title: "Hi {user.firstName}, how are we doing?",
+  title: "Hi {user_firstName}, how are we doing?",
   description:
     "Three short steps, about two minutes. Your answers go straight to the team building Cadence.",
   showQuestionNumbers: "off",
@@ -35,6 +39,13 @@ export const customerSatisfactionJson: SurveyJSON = {
   progressBarShowPageNumbers: true,
   progressBarNavigationTextLocation: "bottom",
   completeText: "Send feedback",
+  calculatedValues: [
+    {
+      name: "planLabel",
+      expression: labelExpression("user_plan", CADENCE_PLANS, "current"),
+      includeIntoResult: false,
+    },
+  ],
   pages: [
     {
       name: "experience",
@@ -43,8 +54,8 @@ export const customerSatisfactionJson: SurveyJSON = {
         {
           type: "html",
           name: "accountNote",
-          visibleIf: "{user.company} notempty",
-          html: "<p>Answering as <strong>{user.firstName} {user.lastName}</strong> — {user.role} at {user.company} · {user.planLabel} plan · {user.seats} seats.</p>",
+          visibleIf: "{user_company} notempty",
+          html: "<p>Answering as <strong>{user_firstName} {user_lastName}</strong> — {user_role} at {user_company} · {planLabel} plan · {user_seats} seats.</p>",
         },
         {
           type: "rating",
@@ -83,7 +94,7 @@ export const customerSatisfactionJson: SurveyJSON = {
           title: "How long have you been using Cadence?",
           description: "Taken from your account — change it if we have it wrong.",
           defaultValueExpression:
-            "iif({user.monthsActive} < 1, 'Less than a month', iif({user.monthsActive} < 6, 'One to six months', iif({user.monthsActive} < 12, 'Six months to a year', 'More than a year')))",
+            "iif({user_monthsActive} < 1, 'Less than a month', iif({user_monthsActive} < 6, 'One to six months', iif({user_monthsActive} < 12, 'Six months to a year', 'More than a year')))",
           choices: [
             "Less than a month",
             "One to six months",
@@ -96,9 +107,9 @@ export const customerSatisfactionJson: SurveyJSON = {
     {
       name: "onboarding",
       title: "Getting started",
-      visibleIf: "{user.monthsActive} < 3",
+      visibleIf: "{user_monthsActive} < 3",
       description:
-        "{user.company} is new here, so these questions are about the start rather than the long run.",
+        "{user_company} is new here, so these questions are about the start rather than the long run.",
       elements: [
         {
           type: "radiogroup",
@@ -163,8 +174,8 @@ export const customerSatisfactionJson: SurveyJSON = {
         {
           type: "radiogroup",
           name: "planFit",
-          visibleIf: "{user.plan} <> 'free'",
-          title: "Is the {user.planLabel} plan the right size for {user.seats} seats?",
+          visibleIf: "{user_plan} <> 'free'",
+          title: "Is the {planLabel} plan the right size for {user_seats} seats?",
           choices: [
             { value: "small", text: "We have outgrown it" },
             { value: "right", text: "About right" },
@@ -174,7 +185,7 @@ export const customerSatisfactionJson: SurveyJSON = {
         {
           type: "comment",
           name: "upgradeBlocker",
-          visibleIf: "{user.plan} = 'free'",
+          visibleIf: "{user_plan} = 'free'",
           title: "What would a paid plan have to do for you to be worth it?",
           rows: 2,
         },
@@ -190,13 +201,13 @@ export const customerSatisfactionJson: SurveyJSON = {
     {
       name: "relationship",
       title: "Support",
-      visibleIf: "{user.openTicket} = true or {user.csmName} notempty",
+      visibleIf: "{user_openTicket} = true or {user_csmName} notempty",
       elements: [
         {
           type: "rating",
           name: "supportFollowUp",
-          visibleIf: "{user.openTicket} = true",
-          title: "Your ticket about “{user.lastTicketSubject}” is still open. How is it going?",
+          visibleIf: "{user_openTicket} = true",
+          title: "Your ticket about “{user_lastTicketSubject}” is still open. How is it going?",
           rateCount: 5,
           rateMin: 1,
           rateMax: 5,
@@ -214,8 +225,8 @@ export const customerSatisfactionJson: SurveyJSON = {
         {
           type: "rating",
           name: "csmRating",
-          visibleIf: "{user.csmName} notempty",
-          title: "How is working with {user.csmName}?",
+          visibleIf: "{user_csmName} notempty",
+          title: "How is working with {user_csmName}?",
           rateCount: 5,
           rateMin: 1,
           rateMax: 5,
@@ -226,8 +237,8 @@ export const customerSatisfactionJson: SurveyJSON = {
         {
           type: "radiogroup",
           name: "renewalIntent",
-          visibleIf: "{user.csmName} notempty",
-          title: "{user.company} renews next quarter. Where does that stand?",
+          visibleIf: "{user_csmName} notempty",
+          title: "{user_company} renews next quarter. Where does that stand?",
           choices: [
             { value: "certain", text: "We will renew" },
             { value: "likely", text: "Likely, with a few things to sort out" },
@@ -267,8 +278,8 @@ export const customerSatisfactionJson: SurveyJSON = {
         {
           type: "html",
           name: "emailOnFile",
-          visibleIf: "{allowFollowUp} = true and {user.email} notempty",
-          html: "<p>We will write to <strong>{user.email}</strong> — the address on your account. No need to type it again.</p>",
+          visibleIf: "{allowFollowUp} = true and {user_email} notempty",
+          html: "<p>We will write to <strong>{user_email}</strong> — the address on your account. No need to type it again.</p>",
         },
         {
           type: "text",
@@ -277,15 +288,15 @@ export const customerSatisfactionJson: SurveyJSON = {
           inputType: "email",
           placeholder: "you@company.com",
           autocomplete: "email",
-          visibleIf: "{allowFollowUp} = true and {user.email} empty",
-          requiredIf: "{allowFollowUp} = true and {user.email} empty",
+          visibleIf: "{allowFollowUp} = true and {user_email} empty",
+          requiredIf: "{allowFollowUp} = true and {user_email} empty",
           validators: [{ type: "email" }],
         },
       ],
     },
   ],
   completedHtml:
-    "<h4>Thank you, {user.firstName} — your feedback is on its way to the team.</h4><p>Every response is read; the ones with a follow-up address get an answer.</p>",
+    "<h4>Thank you, {user_firstName} — your feedback is on its way to the team.</h4><p>Every response is read; the ones with a follow-up address get an answer.</p>",
 };
 
 export const customerSatisfactionSchema: SchemaDefinition = {

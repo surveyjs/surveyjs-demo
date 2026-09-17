@@ -35,7 +35,7 @@ const MONEY = {
  *  - `clearInvisibleValues: "none"`, so hiding a question (by role, by stage)
  *    never deletes its answer, and the hidden ids survive a save.
  *
- * The signed-in user arrives as the `user` variable: `{user.role}` gates the
+ * The signed-in user arrives as the `user` variable: `{user_role}` gates the
  * budget amount and the discount rule.
  */
 export const leadsJson: SurveyJSON = {
@@ -283,7 +283,7 @@ export const leadsJson: SurveyJSON = {
               validators: [
                 {
                   type: "expression",
-                  expression: "{row.discountPct} <= 20 or {user.role} = 'manager'",
+                  expression: "{row.discountPct} <= 20 or {user_role} = 'manager'",
                   text: "Discounts above 20% need a manager.",
                 },
               ],
@@ -413,7 +413,7 @@ export const leadsJson: SurveyJSON = {
               inputType: "number",
               min: 0,
               startWithNewLine: false,
-              visibleIf: "{budgetConfirmed} = true and {user.role} = 'manager'",
+              visibleIf: "{budgetConfirmed} = true and {user_role} = 'manager'",
             },
             {
               type: "boolean",

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { getVariablePresets } from "../src/schemas/variables";
 
 /**
  * `/configure` is the designer every form opens in: Survey Creator, full page,
@@ -26,16 +27,63 @@ test("the designer opens on one form, with no chrome around it", async ({ page }
   await expect(page.getByText("Checkout — form designer")).toBeVisible();
 });
 
-test("a personalized form names the user its preview is rendered for", async ({
+test("Preview opens on the form's first variable preset, and the selector lists them all", async ({
   page,
 }) => {
   test.slow();
+  const presets = getVariablePresets("clinic-visit")!.presets!;
   await page.goto("/configure?form=clinic-visit");
   await waitForCreator(page);
+  await expect(page.getByText(`Previewing as ${presets[0].name}`)).toBeVisible();
 
-  await expect(page.getByText(/Previewed for Maria Delgado/)).toBeVisible();
-  // Straight back out to the site the form lives in.
-  await expect(page.getByRole("button", { name: "View Result" })).toBeVisible();
+  await page.locator(".svc-tabbed-menu-item", { hasText: "Preview" }).first().click();
+  const selector = page.locator(".svc-variable-preset-selector");
+  // The title only: the action also holds its (hidden) popup list.
+  const selected = selector.locator(".sd-action__title");
+  await expect(selected).toHaveText(`Variables: ${presets[0].name}`);
+  await expect(page.getByText("Welcome back, Maria").first()).toBeVisible();
+
+  await selector.getByRole("button").first().click();
+  const items = page.getByRole("menuitemradio");
+  await expect(items).toHaveText(presets.map((preset) => preset.name));
+  await expect(items.first()).toHaveAttribute("aria-checked", "true");
+  await items.nth(1).click();
+  await expect(selected).toHaveText(`Variables: ${presets[1].name}`);
+  // The header follows the Creator's own event.
+  await expect(page.getByText(`Previewing as ${presets[1].name}`)).toBeVisible();
+
+  // The built-in preset editor opens; what it does is the Creator's own suite.
+  await page.locator(".svc-variable-presets-view").getByRole("button").click();
+  await expect(page.getByText("Variable presets").first()).toBeVisible();
+});
+
+test("the condition editor offers a declared variable with its own value editor", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize({ width: 1600, height: 1100 });
+  await page.goto("/configure?form=leads");
+  await waitForCreator(page);
+  await page.locator(".svc-tabbed-menu-item", { hasText: "Logic" }).first().click();
+
+  // budgetAmount: visibleIf "{budgetConfirmed} = true and {user_role} = 'manager'".
+  const rule = page.getByText("make question 'budgetAmount' visible").first().locator("xpath=ancestor::tr[1]");
+  await rule.getByTitle("Show Details").click();
+  const names = page.locator('[data-name="questionName"]');
+  await expect(names.nth(1)).toContainText("user_role");
+
+  // The definition's own question, titled "Role", with its choices: a dropdown,
+  // not a free-text box.
+  const value = page.locator('[data-name="questionValue"]').nth(1);
+  await expect(value.getByRole("combobox", { name: "Role" })).toBeAttached();
+  await value.getByRole("button", { name: "Select" }).click();
+  await expect(page.getByRole("option")).toHaveText(["sales", "manager"]);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("option")).toHaveCount(0);
+
+  // And every declared variable is in the list of what a condition can read.
+  await names.nth(1).getByRole("combobox").click();
+  for (const variable of ["user_id", "user_name", "user_role", "user_currency"]) {
+    await expect(page.getByRole("option", { name: variable, exact: true })).toBeVisible();
+  }
 });
 
 test("the primary button lands on the page the form lives in", async ({ page }) => {

@@ -10,19 +10,18 @@ import {
   SquareArrowOutUpRightIcon,
 } from "lucide-react";
 import { SurveyCreator, SurveyCreatorComponent } from "survey-creator-react";
-import type { ICreatorOptions } from "survey-creator-core";
+import type { ICreatorOptions, TabTestPlugin } from "survey-creator-core";
 import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { accountName } from "@/components/embedded/shared/demo-accounts";
 import { loadSurveyJson, resetSurveyJson, saveSurveyJson } from "@/storage/survey-json";
 import { useStorageAccess } from "@/components/StorageAccess";
-import type { SurveyJSON } from "@/schemas";
+import { getVariablePresets, type SurveyJSON } from "@/schemas";
 import type { FormEntry } from "./forms";
 
 import "@/lib/surveyjs-license";
 // Registers `aiHint` before the Creator is built, so the property grid edits it
-// under Description and a saved definition keeps it. The `@/schemas` import
-// above is types only and is stripped at build time, so it registers nothing.
+// under Description and a saved definition keeps it. `@/schemas` above happens
+// to load it too; this import says so rather than relying on that.
 import "@/schemas/custom-properties";
 import "survey-core/survey-core.css";
 import "survey-creator-core/survey-creator-core.css";
@@ -65,10 +64,13 @@ const CREATOR_OPTIONS: ICreatorOptions = {
  * expression would fail every one of them. In a browser that blocks the storage
  * cookie nothing can be saved, so the designer is read-only there and says why.
  *
- * The users a personalized form is rendered for are not edited here. They belong
- * to the demo — its toolbar signs in as any of the preset ones and opens the
- * account in a popup — and this page only borrows the first of them, so that
- * `{user.firstName}` resolves to somebody in the Preview tab.
+ * A personalized form reads `{user_…}` variables that nothing in its JSON
+ * declares. The Creator gets the form's variable presets (`getVariablePresets`)
+ * as its `variablePresets` option, the same object the linter and the MIT
+ * edition's preview read: the condition editor lists the variables with a value
+ * editor for each, and the Preview tab has a preset selector and a structured
+ * preset editor. Presets edited there live for this Creator session only; they
+ * are not stored.
  */
 export default function CreatorPane({ form }: { form: FormEntry }) {
   const router = useRouter();
@@ -80,7 +82,12 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
   // editor, and rebuilding it on a prop change would throw away the tab, the
   // selection and the undo history.
   const creator = useMemo(() => {
-    const instance = new SurveyCreator(CREATOR_OPTIONS);
+    // Cloned: the Creator's preset editor writes the edited list into this object
+    // in place, and the registry's object is a module singleton every page shares.
+    const presets = getVariablePresets(form.id);
+    const instance = new SurveyCreator(
+      presets ? { ...CREATOR_OPTIONS, variablePresets: structuredClone(presets) } : CREATOR_OPTIONS,
+    );
     instance.autoSaveDelay = 1000;
     instance.JSON = form.json;
 
@@ -118,15 +125,13 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
       panel.addElement(hint, panel.elements.indexOf(description) + 1);
     });
 
-    // A personalized definition has to be rendered for somebody: the demo's
-    // first preset user, published as the one variable the JSON reads. The event
-    // fires for every survey the Creator builds — the designer's and the
-    // Preview tab's alike — because it rebuilds them as tabs are switched.
-    if (form.user) {
-      const account = form.user.toAccount(form.user.defaults);
-      instance.onSurveyInstanceCreated.add((_, options) => {
-        options.survey.setVariable("user", account);
-      });
+    // The Creator's own default is no preset, and a form that works with no
+    // variables is worth testing. A reviewer arriving here should not meet "Hi
+    // {user_firstName}", though, so Preview opens on the first preset; "No
+    // variables" is one click away in its selector.
+    const first = presets?.presets?.[0]?.name;
+    if (first) {
+      instance.getPlugin<TabTestPlugin>("preview").variablePresets.active = first;
     }
 
     return instance;
@@ -193,9 +198,17 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
     router.push(form.href);
   }, [creator, form.href, form.id, router]);
 
-  const previewUser = form.user
-    ? accountName(form.user.toAccount(form.user.defaults))
-    : null;
+  // Which preset the Preview tab runs with, kept honest by the Creator's own
+  // event: the selector there and the preset editor both change it.
+  const [previewPreset, setPreviewPreset] = useState<string>(
+    () => creator.getPlugin<TabTestPlugin>("preview").variablePresets.active,
+  );
+  useEffect(() => {
+    const onChanged = (_: unknown, options: { active: string }) => setPreviewPreset(options.active);
+    creator.onVariablePresetsChanged.add(onChanged);
+    return () => creator.onVariablePresetsChanged.remove(onChanged);
+  }, [creator]);
+  const hasPresets = Boolean(getVariablePresets(form.id));
 
   return (
     <div className="bg-background text-foreground flex h-svh min-h-svh flex-col">
@@ -206,7 +219,12 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
           </h1>
           <p className="text-muted-foreground truncate text-xs">
             Saved as you edit, to your own sandbox on this server
-            {previewUser ? `. Previewed for ${previewUser}, this demo's first preset user` : ""}.
+            {hasPresets
+              ? previewPreset
+                ? `. Previewing as ${previewPreset}`
+                : ". Previewing with no variables"
+              : ""}
+            .
           </p>
         </div>
 

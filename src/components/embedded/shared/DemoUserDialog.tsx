@@ -33,17 +33,16 @@ function stayOpen(event: Event) {
  * Two deliberate choices:
  *
  *  - **the editor is a survey.** No bespoke form code exists for it — the JSON is
- *    in `demo-accounts.ts` and it goes through the same `EmbeddedSurvey` and the
- *    same shadcn adapter as the demo itself. It even uses the features it is
- *    demonstrating: the clinic's chart panel is `visibleIf`-gated on the "first
- *    visit" switch.
+ *    the **definition** of the form's variable presets (`src/schemas/variables/`),
+ *    and it goes through the same `EmbeddedSurvey` and the same shadcn adapter as
+ *    the demo itself. It is the same JSON the full edition's Survey Creator
+ *    renders in its preset editor.
  *  - **the popup is not modal.** Radix keeps the page behind live and clickable,
  *    so the survey re-rendering as you type is visible rather than something you
  *    have to close a dialog to discover — and nothing outside it dismisses it.
  *
- * Beside it, the object actually handed to survey-core — answers in, context
- * out — so the translation is visible while it happens rather than after
- * scrolling. It is read-only on purpose: the form on the left is the way to
+ * Beside it, the variables actually handed to survey-core, which are the
+ * editor's answers and nothing else. It is read-only on purpose: the form on the left is the way to
  * change it.
  */
 export function DemoUserDialog({
@@ -53,7 +52,7 @@ export function DemoUserDialog({
   defaults,
   formKey,
   onDataChange,
-  account,
+  variables,
   edited,
   onRevert,
   configureHref,
@@ -67,8 +66,8 @@ export function DemoUserDialog({
   /** Changes on Revert, so the editor remounts on the restored answers. */
   formKey: string;
   onDataChange: (data: SurveyData) => void;
-  /** The object the demo's survey receives as `user`. */
-  account: Record<string, unknown>;
+  /** What the demo's survey receives, one `setVariable` per key. */
+  variables: Record<string, unknown>;
   edited: boolean;
   onRevert: () => void;
   /** This form's JSON, for the reader who wants to see what reads these keys. */
@@ -84,7 +83,9 @@ export function DemoUserDialog({
           <DialogTitle className="text-sm">The signed-in user</DialogTitle>
           <DialogDescription className="text-xs leading-relaxed">
             What the host application knows about this visitor. This editor is itself a
-            SurveyJS form — change a field and the survey on the page behind re-renders.
+            SurveyJS form, the definition of this form&apos;s variable presets — the same
+            JSON Survey Creator renders in its preset editor. Change a field and the
+            survey on the page behind re-renders.
           </DialogDescription>
         </DialogHeader>
 
@@ -103,12 +104,11 @@ export function DemoUserDialog({
             className="bg-muted/30 flex min-h-0 flex-col border-t p-4 lg:border-t-0 lg:border-l"
           >
             <p className="text-muted-foreground text-xs">
-              Handed to survey-core as one variable,{" "}
-              <code className="text-foreground text-[11px]">user</code> — the definition
-              reads it as <code className="text-foreground text-[11px]">{"{user.…}"}</code>.
+              Handed to survey-core as variables, one per field — the definition reads
+              them as <code className="text-foreground text-[11px]">{"{user_…}"}</code>.
             </p>
             <pre className="bg-background mt-2 min-h-0 flex-1 overflow-auto rounded-lg border p-3 text-[11px] leading-relaxed">
-              {JSON.stringify(account, null, 2)}
+              {JSON.stringify(variables, null, 2)}
             </pre>
           </section>
         </div>

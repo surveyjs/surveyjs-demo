@@ -32,23 +32,25 @@ test.describe("helpers", () => {
         {
           name: "p1",
           elements: [
-            { type: "text", name: "budget", visibleIf: "{user.role} = 'manager'" },
+            { type: "text", name: "budget", visibleIf: "{user_role} = 'manager'" },
             {
               type: "matrixdynamic",
               name: "m",
-              columns: [{ name: "c", cellType: "number", enableIf: "{user.canEdit}" }],
+              columns: [{ name: "c", cellType: "number", enableIf: "{user_canEdit}" }],
             },
-            { type: "text", name: "owner", defaultValueExpression: "{user}" },
-            { type: "text", name: "other", visibleIf: "{userName} notempty" },
+            { type: "text", name: "owner", defaultValueExpression: "{ user_name }" },
+            // Whole names only: neither a longer name nor the bare prefix is a reference.
+            { type: "text", name: "other", visibleIf: "{user_roles} notempty" },
+            { type: "text", name: "another", visibleIf: "{user} notempty" },
           ],
         },
       ],
     };
-    const found = findVariableReferences(json, ["user"]);
+    const found = findVariableReferences(json, ["user_role", "user_canEdit", "user_name"]);
     expect(found).toEqual([
-      { element: "budget", property: "visibleIf", expression: "{user.role} = 'manager'" },
-      { element: "m › c", property: "enableIf", expression: "{user.canEdit}" },
-      { element: "owner", property: "defaultValueExpression", expression: "{user}" },
+      { element: "budget", property: "visibleIf", expression: "{user_role} = 'manager'" },
+      { element: "m › c", property: "enableIf", expression: "{user_canEdit}" },
+      { element: "owner", property: "defaultValueExpression", expression: "{ user_name }" },
     ]);
   });
 

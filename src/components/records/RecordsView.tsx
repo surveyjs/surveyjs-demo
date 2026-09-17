@@ -9,6 +9,7 @@ import {
   isActiveRoute,
   recordTitle,
   sortRows,
+  toVariables,
   type RecordRow,
   type SessionUser,
   type SourceDocument,
@@ -233,7 +234,8 @@ export function RecordsView({
   }, []);
 
   const activeUser = users.find((user) => user.id === activeUserId) ?? users[0];
-  const variables = useMemo(() => (activeUser ? { user: activeUser } : undefined), [activeUser]);
+  // A session user is a plain account: it becomes `user_…` variables here, once.
+  const variables = useMemo(() => (activeUser ? toVariables(activeUser) : undefined), [activeUser]);
 
   /* ── the URL ─────────────────────────────────────────────────────────────── */
 

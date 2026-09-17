@@ -251,11 +251,11 @@ test("/embedded/feedback renders the same definition differently per user", asyn
   await expect(card).not.toContainText("Getting started");
 
   const dialog = await openUserDialog(page);
-  await typeInEditor(dialog, "firstName", "John");
-  await typeInEditor(dialog, "monthsActive", "1");
+  await typeInEditor(dialog, "user_firstName", "John");
+  await typeInEditor(dialog, "user_monthsActive", "1");
 
   // The popup shows the object the survey is actually handed.
-  await expect(dialog.locator("pre")).toContainText('"firstName": "John"');
+  await expect(dialog.locator("pre")).toContainText('"user_firstName": "John"');
 
   // Same JSON definition, a different user: a new greeting, a re-derived tenure,
   // and a step that did not exist before.
@@ -370,8 +370,8 @@ test("/embedded/clinic fills the request from the patient's chart", async ({ pag
   // survey receives shown underneath it.
   const dialog = await openUserDialog(page);
   await expect(dialog).toContainText("The signed-in user");
-  await expect(dialog.locator("pre")).toContainText('"isNewPatient": true');
-  await typeInEditor(dialog, "preferredName", "Pri");
+  await expect(dialog.locator("pre")).toContainText('"user_isNewPatient": true');
+  await typeInEditor(dialog, "user_preferredName", "Pri");
   await expect(card).toContainText("You are new to Ridgeline");
-  await expect(dialog.locator("pre")).toContainText('"preferredName": "Pri"');
+  await expect(dialog.locator("pre")).toContainText('"user_preferredName": "Pri"');
 });

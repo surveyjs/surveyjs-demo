@@ -29,8 +29,14 @@ import { recordCollections, schemaRegistry, type SurveyData, type SurveyJSON } f
 /** The visitor the shipped definitions and seed records are stored under. Never a cookie. */
 export const TEMPLATE_UID = "00000000-0000-0000-0000-000000000000";
 
-/** Bump when the tables change: a database at another version is dropped and recreated. */
-export const SCHEMA_VERSION = 1;
+/**
+ * Bump when the tables change: a database at another version is dropped and recreated.
+ *
+ * 2: the tables are the same, the stored definitions are not. The user became one
+ * variable per field (`{user_firstName}`) where it was one object read by path,
+ * and a personalized definition edited before that would render blanks.
+ */
+export const SCHEMA_VERSION = 2;
 
 /** One JSON value: a definition or a record, measured in UTF-8 bytes. */
 export const MAX_VALUE_BYTES = 1_048_576;

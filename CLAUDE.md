@@ -28,10 +28,19 @@ The files the full edition implements still live at their historical paths, not 
 
 ## Validation
 
-- The lint UI here is Survey Creator's built-in one, running the same `survey-core/linter` rules as the MIT edition's status bar.
+- This edition lints through the shared `/api/lint` route today. Survey Creator 3.1 has no lint UI; it gets the same `survey-core/linter` rules inside Creator when that release ships, and will need the form's variable presets and `templateSuppressions` handed to it. Until then `e2e/lint-api.spec.ts`, which posts every form in `FORMS` with its presets, is this edition's only proof that every shipped definition is clean.
 - Creator edits `aiHint`, the per-question note for the document extractor, as "AI extraction hint" in the property grid, under Description, for the survey and every question (not for matrix columns). It is registered in the shared `src/schemas/custom-properties.ts`; `src/components/configure/CreatorPane.tsx` imports that module for its side effect before building the Creator, so a saved definition keeps every hint. CreatorPane also moves the row under Description itself, because Survey Creator 3.0.4 ignores `nextToProperty` when the anchor is in the same tab.
 - `/api/lint` (`src/app/api/lint/route.ts`, `src/lib/lint/lint-survey.ts`) is the shared server route. It is not edited here, and `e2e/lint-api.spec.ts` runs in both editions.
 - The Monaco front end (`JsonWorkbench`, `StaticAnalysisBar`, `monaco-adapter.ts`) is copied here and used on one route: `/definition`, the shared shell page that shows any form as JSON with the linter. `/configure` is still Survey Creator.
+
+## Variable presets in Survey Creator
+
+The personalized forms read `{user_…}` variables, declared per form in the shared `src/schemas/variables/` (see the MIT edition's `CLAUDE.md`, **Variable presets**). `CreatorPane.tsx` hands them to the Creator:
+
+- **The option.** The Creator is built per form with `{ ...CREATOR_OPTIONS, variablePresets: structuredClone(getVariablePresets(form.id)) }`. The condition editor then lists the variables, each with the value editor its definition question implies (`user_role` is a dropdown of `sales` and `manager`); the Preview tab gets a preset selector and, because there is a definition, a structured preset editor.
+- **The clone.** The preset editor writes the edited list into the host's object in place (`VariablePresetsManager.setPresets`), and the registry's object is a module singleton every page and route shares. Never pass it uncloned.
+- **The first preset is active on open.** The Creator's own default is none. `CreatorPane` sets `instance.getPlugin<TabTestPlugin>("preview").variablePresets.active` to the first preset's name, so a reviewer does not meet "Welcome back, !"; "No variables" is one click away in the selector. The header says which preset Preview runs with, kept current by `onVariablePresetsChanged` (whose payload field is `active` in 3.1.0).
+- **Edits are session-only.** Presets edited in the Creator live until the page is left, and are not stored. Persisting them would be a storage seam beside `survey-json.ts`.
 
 ## Page metadata
 

@@ -1,13 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { SurveyData, SurveyJSON } from "@/schemas";
+import {
+  fromVariables,
+  getVariablePresets,
+  type SurveyData,
+  type SurveyJSON,
+} from "@/schemas";
 import { configureHref } from "@/lib/routes";
 import { stableJson } from "@/lib/utils";
 import { features } from "@/features";
 import { useSurveyOutline } from "@/components/survey-outline/SurveyOutline";
 import { DEFAULT_BRAND_ID, applyBrand, getBrand, type DemoSurvey } from "./demo-controls";
-import { accountName, type DemoRosterEntry, type DemoUser } from "./demo-accounts";
+import { accountName } from "./demo-accounts";
 
 /**
  * Everything the embedded demos have in common, minus the page itself.
@@ -22,7 +27,7 @@ import { accountName, type DemoRosterEntry, type DemoUser } from "./demo-account
  *  2. **it is rendered for a person** — the toolbar's user popup, whose editor is
  *     itself a SurveyJS form, and the dropdown next to it when the admin holds
  *     more than one user. Changing the user moves values *and* structure, because
- *     the definition reads it as `{user.something}`.
+ *     the definition reads it as `{user_something}`.
  *
  * Prefill and Reset are there so the pair can be demonstrated on a full form
  * without typing twelve answers first. The outline around the survey is not a
@@ -38,12 +43,13 @@ export interface Demo {
   /**
    * What the host app knows about the visitor, ready for `setVariable`.
    *
-   * One variable, `user`, holding the whole account — so the definition reads
-   * `{user.firstName}` and can never collide with a question of the same name
-   * (the clinic form has questions called `firstName` and `email`).
+   * One variable per field, prefixed `user_` — so the definition reads
+   * `{user_firstName}` and can never collide with a question of the same name
+   * (the clinic form has questions called `firstName` and `email`). These are
+   * the active preset's `variables`, published as they are.
    */
   readonly variables: Record<string, unknown>;
-  /** The same object, for the host page's own header and copy. */
+  /** The same values as a plain account, for the host page's own header and copy. */
   readonly account: Record<string, unknown>;
   /** Changes whenever the survey has to be rebuilt from scratch. */
   readonly runKey: string;
@@ -74,7 +80,7 @@ export interface Demo {
     /** The dashboard for this form's responses, in editions that ship one. */
     analyticsHref?: string;
     /** The users the admin keeps for this demo, by display name. */
-    users: readonly { id: string; name: string }[];
+    users: readonly { id: string; name: string; description?: string }[];
     activeUserId: string;
     onSelectUser: (id: string) => void;
     /** The account has been changed in this window — worth a dot. */
@@ -88,36 +94,42 @@ export interface Demo {
     defaults: SurveyData;
     formKey: string;
     onDataChange: (data: SurveyData) => void;
-    account: Record<string, unknown>;
+    variables: Record<string, unknown>;
     edited: boolean;
     onRevert: () => void;
     configureHref: string;
   };
 }
 
+/** One preset, as the toolbar's picker lists it and the popup edits it. */
+interface RosterEntry {
+  readonly id: string;
+  readonly description?: string;
+  readonly data: SurveyData;
+}
+
 const DEBOUNCE_MS = 400;
 
 export function useDemo({
   survey,
-  user,
   /** Element the form lives in, so the demo can scroll back to it. */
   anchorId,
   brandId = DEFAULT_BRAND_ID,
-  roster,
 }: {
   survey: DemoSurvey;
-  /** The visitor, plus the survey used to edit them. */
-  user: DemoUser;
   anchorId: string;
   /** Palette the demo runs in, so no two host sites look alike. */
   brandId?: string;
-  /**
-   * The people this demo ships with, when it ships with more than one — the
-   * clinic has a roster of patients, and the toolbar lets a reviewer sign in as
-   * any of them.
-   */
-  roster?: readonly DemoRosterEntry[];
 }): Demo {
+  // The form's variable presets, found by its id like its definition. The
+  // presets are the people the toolbar lets a reviewer sign in as, and the
+  // definition is the survey the "Edit the user" popup renders.
+  const presets = useMemo(() => {
+    const found = getVariablePresets(survey.id);
+    if (!found?.presets?.length) throw new Error(`No variable presets for ${survey.id}`);
+    return found;
+  }, [survey.id]);
+
   // A fresh seed object remounts the survey model, which is what Prefill and
   // Reset want; `runCount` covers resetting when there was nothing to clear.
   const [seed, setSeed] = useState<SurveyData | undefined>(undefined);
@@ -144,9 +156,15 @@ export function useDemo({
 
   // The preset users this demo ships with, and what this window has since done
   // to them: the popup edits a copy, so Revert has something to go back to.
-  const defaults = useMemo<readonly DemoRosterEntry[]>(
-    () => roster ?? [{ id: "default", data: user.defaults }],
-    [roster, user.defaults],
+  // Keyed by preset name; `data` is the preset's variables, prefixed already.
+  const defaults = useMemo<readonly RosterEntry[]>(
+    () =>
+      (presets.presets ?? []).map((preset) => ({
+        id: preset.name,
+        description: preset.description,
+        data: preset.variables,
+      })),
+    [presets],
   );
   const [users, setUsers] = useState(defaults);
   const [activeUserId, setActiveUserId] = useState(defaults[0].id);
@@ -177,8 +195,8 @@ export function useDemo({
     return () => clearTimeout(timer);
   }, [activeRecord.data, appliedForm]);
 
-  const account = useMemo(() => user.toAccount(appliedForm), [user, appliedForm]);
-  const variables = useMemo(() => ({ user: account }), [account]);
+  const variables = appliedForm;
+  const account = useMemo(() => fromVariables(appliedForm), [appliedForm]);
 
   const accountEdited = useMemo(
     () =>
@@ -191,9 +209,10 @@ export function useDemo({
     () =>
       users.map((record) => ({
         id: record.id,
-        name: accountName(user.toAccount(record.data)) || "Unnamed user",
+        name: accountName(fromVariables(record.data)) || "Unnamed user",
+        description: record.description,
       })),
-    [users, user],
+    [users],
   );
 
   /* ── actions ─────────────────────────────────────────────────────────────── */
@@ -302,11 +321,11 @@ export function useDemo({
     userDialogProps: {
       open: userOpen,
       onOpenChange: setUserOpen,
-      json: user.json,
+      json: presets.definition as SurveyJSON,
       defaults: editorSeed.current,
       formKey: `user-${activeRecord.id}-${editorRun}`,
       onDataChange: changeUserData,
-      account,
+      variables,
       edited: accountEdited,
       onRevert: revertAccount,
       configureHref: href,

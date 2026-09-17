@@ -8,7 +8,9 @@ import {
   PROVIDERS,
   VISIT_REASONS,
 } from "./clinic-info";
+import { PATIENT_LANGUAGES } from "./patient-record";
 import type { SchemaDefinition, SurveyJSON } from "./types";
+import { labelExpression } from "./variables/labels";
 
 /**
  * "Request an appointment" — the form on Ridgeline Family Health's home page.
@@ -25,7 +27,7 @@ import type { SchemaDefinition, SurveyJSON } from "./types";
  *
  * And it is the strongest of the three demos for **personalisation**, because a
  * patient portal knows more about you than any other login you have. Everything
- * below reads the chart the host app passed in (`{user.…}`, see
+ * below reads the chart the host app passed in (`{user_…}`, see
  * `demo-accounts.ts`):
  *
  *  - the office, the clinician, the plan, the name, the date of birth and the
@@ -67,17 +69,17 @@ const providerChoices = [
 const chartConditionChoices = CHART_CONDITIONS.map((condition) => ({
   value: condition.id,
   text: condition.label,
-  visibleIf: `{user.conditions} contains '${condition.id}'`,
+  visibleIf: `{user_conditions} contains '${condition.id}'`,
 }));
 
 const chartMedicationChoices = CHART_MEDICATIONS.map((medication) => ({
   value: medication.id,
   text: medication.label,
-  visibleIf: `{user.medications} contains '${medication.id}'`,
+  visibleIf: `{user_medications} contains '${medication.id}'`,
 }));
 
 /** Locked while the record on file is confirmed as correct. */
-const IDENTITY_UNLOCKED = "{user.isNewPatient} = true or {identityCorrect} = false";
+const IDENTITY_UNLOCKED = "{user_isNewPatient} = true or {identityCorrect} = false";
 
 export const clinicVisitJson: SurveyJSON = {
   title: "Request an appointment",
@@ -95,6 +97,23 @@ export const clinicVisitJson: SurveyJSON = {
   showPreviewBeforeComplete: true,
   previewMode: "answeredQuestions",
   completeText: "Request appointment",
+  // The record carries values; the text a patient reads is worked out here.
+  calculatedValues: [
+    {
+      name: "languageLabel",
+      expression: labelExpression("user_preferredLanguage", PATIENT_LANGUAGES, "English"),
+      includeIntoResult: false,
+    },
+    {
+      name: "healthPlanLabel",
+      expression: labelExpression(
+        "user_healthPlanOnFile",
+        HEALTH_PLANS.map((plan) => ({ value: plan.id, text: plan.name })),
+        "health plan",
+      ),
+      includeIntoResult: false,
+    },
+  ],
   pages: [
     {
       name: "visit",
@@ -103,13 +122,13 @@ export const clinicVisitJson: SurveyJSON = {
         {
           type: "html",
           name: "returningGreeting",
-          visibleIf: "{user.isNewPatient} = false",
-          html: "<p>Welcome back, <strong>{user.preferredName}</strong>. We have you as {user.firstName} {user.lastName} · MRN {user.mrn} · last seen {user.lastVisit}, so most of this is already filled in.</p>",
+          visibleIf: "{user_isNewPatient} = false",
+          html: "<p>Welcome back, <strong>{user_preferredName}</strong>. We have you as {user_firstName} {user_lastName} · MRN {user_mrn} · last seen {user_lastVisit}, so most of this is already filled in.</p>",
         },
         {
           type: "html",
           name: "newGreeting",
-          visibleIf: "{user.isNewPatient} = true",
+          visibleIf: "{user_isNewPatient} = true",
           html: "<p>You are new to Ridgeline, so there are a few more questions than usual — about five minutes. Everything you enter is used only to book the visit.</p>",
         },
         {
@@ -131,7 +150,7 @@ export const clinicVisitJson: SurveyJSON = {
         {
           type: "boolean",
           name: "relatedToChart",
-          visibleIf: "{user.conditions} notempty",
+          visibleIf: "{user_conditions} notempty",
           title: "Is this about something we already treat you for?",
           labelTrue: "Yes",
           labelFalse: "No, something else",
@@ -157,7 +176,7 @@ export const clinicVisitJson: SurveyJSON = {
         {
           type: "boolean",
           name: "refillNeeded",
-          visibleIf: "{user.openRefills} = true",
+          visibleIf: "{user_openRefills} = true",
           title: "Do you need a prescription refilled while we are at it?",
           description: "You have refills available.",
           labelTrue: "Yes, please",
@@ -199,7 +218,7 @@ export const clinicVisitJson: SurveyJSON = {
           name: "location",
           title: "Which of our offices?",
           isRequired: true,
-          defaultValueExpression: "{user.homeLocation}",
+          defaultValueExpression: "{user_homeLocation}",
           choices: CLINIC_LOCATIONS.map((location) => ({
             value: location.id,
             text: `${location.name} — ${location.address1}, ${location.city}`,
@@ -210,7 +229,7 @@ export const clinicVisitJson: SurveyJSON = {
           name: "provider",
           title: "Anyone in particular?",
           description: "The list narrows to the clinicians who work at the office you picked.",
-          defaultValueExpression: "iif({user.primaryProvider} empty, 'any', {user.primaryProvider})",
+          defaultValueExpression: "iif({user_primaryProvider} empty, 'any', {user_primaryProvider})",
           choices: providerChoices,
         },
         {
@@ -246,7 +265,7 @@ export const clinicVisitJson: SurveyJSON = {
         {
           type: "boolean",
           name: "identityCorrect",
-          visibleIf: "{user.isNewPatient} = false",
+          visibleIf: "{user_isNewPatient} = false",
           title: "Are your details below still correct?",
           description: "Answer no and they unlock for editing.",
           defaultValue: true,
@@ -259,7 +278,7 @@ export const clinicVisitJson: SurveyJSON = {
           title: "Legal first name",
           isRequired: true,
           autocomplete: "given-name",
-          defaultValueExpression: "{user.firstName}",
+          defaultValueExpression: "{user_firstName}",
           enableIf: IDENTITY_UNLOCKED,
         },
         {
@@ -269,7 +288,7 @@ export const clinicVisitJson: SurveyJSON = {
           isRequired: true,
           startWithNewLine: false,
           autocomplete: "family-name",
-          defaultValueExpression: "{user.lastName}",
+          defaultValueExpression: "{user_lastName}",
           enableIf: IDENTITY_UNLOCKED,
         },
         {
@@ -277,7 +296,7 @@ export const clinicVisitJson: SurveyJSON = {
           name: "preferredName",
           title: "Preferred name",
           description: "What we should call you, if it differs.",
-          defaultValueExpression: "{user.preferredName}",
+          defaultValueExpression: "{user_preferredName}",
           enableIf: IDENTITY_UNLOCKED,
         },
         {
@@ -288,7 +307,7 @@ export const clinicVisitJson: SurveyJSON = {
           isRequired: true,
           startWithNewLine: false,
           autocomplete: "bday",
-          defaultValueExpression: "{user.dateOfBirth}",
+          defaultValueExpression: "{user_dateOfBirth}",
           enableIf: IDENTITY_UNLOCKED,
         },
         {
@@ -301,7 +320,7 @@ export const clinicVisitJson: SurveyJSON = {
           maskSettings: { pattern: "(999) 999-9999" },
           placeholder: "(___) ___-____",
           autocomplete: "tel",
-          defaultValueExpression: "{user.phone}",
+          defaultValueExpression: "{user_phone}",
           enableIf: IDENTITY_UNLOCKED,
         },
         {
@@ -312,14 +331,14 @@ export const clinicVisitJson: SurveyJSON = {
           startWithNewLine: false,
           validators: [{ type: "email" }],
           autocomplete: "email",
-          defaultValueExpression: "{user.email}",
+          defaultValueExpression: "{user_email}",
           enableIf: IDENTITY_UNLOCKED,
         },
         {
           type: "boolean",
           name: "newPatient",
           title: "Is this your first visit to Ridgeline?",
-          defaultValueExpression: "{user.isNewPatient}",
+          defaultValueExpression: "{user_isNewPatient}",
           labelTrue: "Yes, I am a new patient",
           labelFalse: "No, I have been seen here before",
         },
@@ -327,7 +346,7 @@ export const clinicVisitJson: SurveyJSON = {
           type: "boolean",
           name: "needsInterpreter",
           title: "Do you need an interpreter?",
-          defaultValueExpression: "{user.needsInterpreter}",
+          defaultValueExpression: "{user_needsInterpreter}",
           labelTrue: "Yes",
           labelFalse: "No",
         },
@@ -338,7 +357,8 @@ export const clinicVisitJson: SurveyJSON = {
           visibleIf: "{needsInterpreter} = true",
           isRequired: true,
           requiredIf: "{needsInterpreter} = true",
-          defaultValueExpression: "{user.languageLabel}",
+          // English is not a language anybody interprets into here.
+          defaultValueExpression: "iif({user_preferredLanguage} = 'en', '', {languageLabel})",
           choices: [
             "Spanish",
             "Vietnamese",
@@ -355,7 +375,7 @@ export const clinicVisitJson: SurveyJSON = {
     {
       name: "newHere",
       title: "New here",
-      visibleIf: "{user.isNewPatient} = true",
+      visibleIf: "{user_isNewPatient} = true",
       description:
         "This page exists because you are new to us. Established patients never see it.",
       elements: [
@@ -391,7 +411,7 @@ export const clinicVisitJson: SurveyJSON = {
           name: "emergencyContactName",
           title: "Emergency contact",
           isRequired: true,
-          requiredIf: "{user.isNewPatient} = true",
+          requiredIf: "{user_isNewPatient} = true",
         },
         {
           type: "text",
@@ -416,7 +436,7 @@ export const clinicVisitJson: SurveyJSON = {
           name: "coverage",
           title: "How will this visit be paid for?",
           isRequired: true,
-          defaultValueExpression: "iif({user.healthPlanOnFile} notempty, 'insurance', '')",
+          defaultValueExpression: "iif({user_healthPlanOnFile} notempty, 'insurance', '')",
           choices: [
             { value: "insurance", text: "Through my health plan" },
             { value: "selfPay", text: "Self-pay — I will pay at check-in" },
@@ -435,7 +455,7 @@ export const clinicVisitJson: SurveyJSON = {
               description: "We are in network with all of these.",
               isRequired: true,
               requiredIf: "{coverage} = 'insurance'",
-              defaultValueExpression: "{user.healthPlanOnFile}",
+              defaultValueExpression: "{user_healthPlanOnFile}",
               choices: HEALTH_PLANS.map((plan) => ({ value: plan.id, text: plan.name })),
               showOtherItem: true,
               otherText: "Something else — please check for me",
@@ -443,13 +463,13 @@ export const clinicVisitJson: SurveyJSON = {
             {
               type: "html",
               name: "cardOnFileNote",
-              visibleIf: "{user.memberIdOnFile} notempty",
-              html: "<p>We have your <strong>{user.healthPlanLabel}</strong> card on file — member ID {user.memberIdOnFile}, group {user.groupNumberOnFile}. Nothing to type unless it has changed.</p>",
+              visibleIf: "{user_memberIdOnFile} notempty",
+              html: "<p>We have your <strong>{healthPlanLabel}</strong> card on file — member ID {user_memberIdOnFile}, group {user_groupNumberOnFile}. Nothing to type unless it has changed.</p>",
             },
             {
               type: "boolean",
               name: "coverageChanged",
-              visibleIf: "{user.memberIdOnFile} notempty",
+              visibleIf: "{user_memberIdOnFile} notempty",
               title: "Has your coverage changed since your last visit?",
               defaultValue: false,
               labelTrue: "Yes, it has",
@@ -460,20 +480,20 @@ export const clinicVisitJson: SurveyJSON = {
               name: "memberId",
               title: "Member ID",
               description: "As printed on the front of the card.",
-              visibleIf: "{user.memberIdOnFile} empty or {coverageChanged} = true",
+              visibleIf: "{user_memberIdOnFile} empty or {coverageChanged} = true",
             },
             {
               type: "text",
               name: "groupNumber",
               title: "Group number",
               startWithNewLine: false,
-              visibleIf: "{user.memberIdOnFile} empty or {coverageChanged} = true",
+              visibleIf: "{user_memberIdOnFile} empty or {coverageChanged} = true",
             },
             {
               type: "boolean",
               name: "cardOnFile",
               title: "Have we scanned your card before?",
-              visibleIf: "{user.memberIdOnFile} empty",
+              visibleIf: "{user_memberIdOnFile} empty",
               labelTrue: "Yes, it should be on file",
               labelFalse: "No, I will bring it",
             },

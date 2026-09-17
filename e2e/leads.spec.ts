@@ -10,6 +10,7 @@ import type { SurveyData } from "../src/schemas/types";
 import { getResult, listResults } from "../src/storage/survey-results";
 import { startSession } from "./session";
 import { LEADS_USERS } from "../src/storage/session";
+import { toVariables } from "../src/schemas/variables";
 
 /**
  * `/leads`: a CRM opportunity on the shared records page. Totals over the line
@@ -50,7 +51,7 @@ test.describe("helpers", () => {
     );
 
     // The same model the page builds: the hidden id has to survive it.
-    const model = createSurveyModel(leadsJson, { data: stored.data, variables: { user: manager } });
+    const model = createSurveyModel(leadsJson, { data: stored.data, variables: toVariables(manager) });
     const lineItems = model.getQuestionByName("lineItems") as QuestionMatrixDynamicModel;
     const contacts = model.getQuestionByName("contacts") as QuestionPanelDynamicModel;
     const activities = model.getQuestionByName("activities") as QuestionMatrixDynamicModel;

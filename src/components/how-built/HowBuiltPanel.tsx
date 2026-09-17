@@ -6,7 +6,13 @@ import { XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { features } from "@/features";
-import { getSchemaDefinition, isActiveRoute, navPages } from "@/schemas";
+import {
+  getSchemaDefinition,
+  getVariableNames,
+  getVariablePresets,
+  isActiveRoute,
+  navPages,
+} from "@/schemas";
 import { PAGE_ACTIONS } from "@/lib/site";
 import {
   HOW_BUILT,
@@ -97,7 +103,10 @@ export function HowBuiltPanel() {
   const references = useMemo(
     () =>
       content && schemaId
-        ? findVariableReferences(getSchemaDefinition(schemaId).json, content.variables)
+        ? findVariableReferences(
+            getSchemaDefinition(schemaId).json,
+            getVariableNames(getVariablePresets(schemaId)),
+          )
         : [],
     [content, schemaId],
   );

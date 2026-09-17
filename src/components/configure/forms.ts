@@ -7,12 +7,6 @@ import {
   type SurveyData,
   type SurveyJSON,
 } from "@/schemas";
-import {
-  CADENCE_USER,
-  RIDGELINE_USER,
-  type DemoUser,
-} from "@/components/embedded/shared/demo-accounts";
-import { LEADS_USERS } from "@/storage/session";
 import { features } from "@/features";
 
 /**
@@ -23,11 +17,10 @@ import { features } from "@/features";
  * editor the edition ships, and it is a URL worth sharing for any form in the
  * template: `/configure?form=<id>`.
  *
- * `user` is what separates the two halves of the list. The two template forms
- * are plain: one definition, one form. The three embedded ones are rendered *for
- * somebody* — their JSON reads `{user.something}` — so the preview needs an
- * account to render for, and it uses the first of the demo's preset users. The
- * users themselves are edited in the demo, in the toolbar's popup.
+ * Some of them are rendered *for somebody*: their JSON reads `{user_…}`
+ * variables, so the preview needs somebody to render for. An entry says nothing
+ * about that. Whoever needs it asks `getVariablePresets(id)`, the way the
+ * definition itself is found by id.
  */
 export interface FormEntry {
   /** The schema id, and the `?form=` value that makes the URL shareable. */
@@ -37,12 +30,6 @@ export interface FormEntry {
   readonly json: SurveyJSON;
   /** Answers behind the preview's Prefill, where the form has a sample. */
   readonly prefill?: SurveyData;
-  /**
-   * Set when the form is rendered per user. Only the two members that turn it
-   * into the `user` variable are required, so a records page's session user
-   * — a plain object, with no editor form — fits as well as a demo account.
-   */
-  readonly user?: Pick<DemoUser, "defaults" | "toAccount">;
   /** Where the form itself lives, and what the primary button opens. */
   readonly href: string;
   /** The primary button's label: the honest verb for where it lands. */
@@ -88,8 +75,6 @@ export const FORMS: readonly FormEntry[] = [
   form("leads", "leads.ts", {
     label: "Lead record",
     hint: "The CRM opportunity behind every row on the Leads page, rendered for its first session user.",
-    // A session user is already the object the form reads, so it passes as is.
-    user: { defaults: { ...LEADS_USERS[0] }, toAccount: (data) => ({ ...data }) },
     href: "/leads",
     previewLabel: "Save and quit",
     embedded: false,
@@ -98,7 +83,6 @@ export const FORMS: readonly FormEntry[] = [
     label: "Satisfaction survey",
     hint: "Embedded in a product site, addressed to the signed-in account.",
     prefill: customerSatisfactionSample,
-    user: CADENCE_USER,
     href: "/embedded/feedback",
     previewLabel: "View Result",
     embedded: true,
@@ -107,7 +91,6 @@ export const FORMS: readonly FormEntry[] = [
     label: "Encounter note",
     hint: "The clinician's own note — eight pages, matrices with totals, calculated scores.",
     prefill: encounterNoteSample,
-    user: RIDGELINE_USER,
     href: "/embedded/chart",
     previewLabel: "View Result",
     embedded: true,
@@ -116,7 +99,6 @@ export const FORMS: readonly FormEntry[] = [
     label: "Appointment request",
     hint: "Embedded in a clinic site, filled in from the patient's chart.",
     prefill: clinicVisitSample,
-    user: RIDGELINE_USER,
     href: "/embedded/clinic",
     previewLabel: "View Result",
     embedded: true,
