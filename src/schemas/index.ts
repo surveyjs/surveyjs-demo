@@ -12,6 +12,13 @@ export { checkoutJson, checkoutSchema } from "./checkout";
 export { clinicVisitJson, clinicVisitSchema } from "./clinic-visit";
 export * from "./clinic-info";
 export {
+  CLINIC_LOCALES,
+  chartLocale,
+  textFor,
+  type ClinicLocale,
+  type LocalizedText,
+} from "./clinic-locale";
+export {
   customerSatisfactionJson,
   customerSatisfactionSchema,
 } from "./customer-satisfaction";

@@ -1,4 +1,11 @@
 import { Model, QuestionMatrixDropdownModelBase } from "survey-core";
+// survey-core’s own Spanish: "Siguiente", "Anterior", "Respuesta requerida.", the
+// progress text. A definition can carry its own translations, but not these —
+// they live in the library, one file per language, and nothing registers a
+// language until something imports it. This is the one place a model is built,
+// so this is the one place the pack has to be. It is a subpath of survey-core
+// itself, so the MIT edition stays MIT.
+import "survey-core/i18n/spanish";
 import type { SchemaDefinition, SurveyData, SurveyJSON, SurveyMode } from "./types";
 // Registers `aiHint` before any model is built, so `model.toJSON()` keeps it.
 import "./custom-properties";

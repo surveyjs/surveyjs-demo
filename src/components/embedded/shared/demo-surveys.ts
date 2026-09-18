@@ -31,7 +31,7 @@ export const DEMO_SURVEYS: Record<string, DemoSurvey> = {
   clinicVisit: {
     id: "clinic-visit",
     label: "Appointment request",
-    hint: "Arrives filled in from the patient's chart, and asks less because of it.",
+    hint: "Arrives filled in from the patient's chart — in the language the chart asks for.",
     json: getSchemaDefinition("clinic-visit").json,
     prefill: clinicVisitSample,
   },

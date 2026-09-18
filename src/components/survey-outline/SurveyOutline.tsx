@@ -49,6 +49,9 @@ export function SurveyOutlineLabel() {
     <button
       type="button"
       data-survey-outline-label=""
+      // The demo talking about the page, like the dock — English in every
+      // locale, including inside a host site rendered in Spanish.
+      lang="en"
       title="Hide the outline and look at the page as a visitor would"
       onClick={hideSurveyOutline}
     >

@@ -126,6 +126,9 @@ export function DemoDock({
     // off the screen.
     <div
       data-demo-dock=""
+      // The reviewer’s toolbar, not the host site: it stays English on a page
+      // rendered in another language, and says so to a screen reader.
+      lang="en"
       className="demo-dock bg-background/85 pointer-events-auto fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-[70] flex max-w-[calc(100svw-2rem)] -translate-x-1/2 flex-nowrap items-center gap-1 rounded-full border px-2 py-1.5 shadow-lg backdrop-blur"
       role="toolbar"
       aria-label="Embedded demo tools"

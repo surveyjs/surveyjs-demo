@@ -6,6 +6,10 @@ import {
   PROVIDERS,
   VISIT_REASONS,
 } from "./clinic-info";
+// This note is the clinician’s workspace, not the patient’s form. The shared
+// lists carry both languages now, and every label read here is resolved to
+// English, so the back office never meets a translation nobody asked for.
+import { textFor } from "./clinic-locale";
 import { PATIENT_LANGUAGES } from "./patient-record";
 import type { SchemaDefinition, SurveyJSON } from "./types";
 import { labelExpression } from "./variables/labels";
@@ -51,7 +55,7 @@ import { labelExpression } from "./variables/labels";
 
 const providerChoices = PROVIDERS.map((provider) => ({
   value: provider.id,
-  text: `${provider.name}, ${provider.credential} — ${provider.specialty}`,
+  text: `${provider.name}, ${provider.credential} — ${textFor(provider.specialty, "en")}`,
 }));
 
 const siteChoices = CLINIC_LOCATIONS.map((location) => ({
@@ -61,12 +65,12 @@ const siteChoices = CLINIC_LOCATIONS.map((location) => ({
 
 const complaintChoices = VISIT_REASONS.map((reason) => ({
   value: reason.id,
-  text: reason.label,
+  text: textFor(reason.label, "en"),
 }));
 
 const conditionChoices = CHART_CONDITIONS.map((condition) => ({
   value: condition.id,
-  text: condition.label,
+  text: textFor(condition.label, "en"),
 }));
 
 /**
@@ -78,20 +82,20 @@ const conditionChoices = CHART_CONDITIONS.map((condition) => ({
  */
 const chartConditionChoices = CHART_CONDITIONS.map((condition) => ({
   value: condition.id,
-  text: condition.label,
+  text: textFor(condition.label, "en"),
   visibleIf: `{user_conditions} contains '${condition.id}'`,
 }));
 
 const chartMedicationChoices = CHART_MEDICATIONS.map((medication) => ({
   value: medication.id,
-  text: medication.label,
+  text: textFor(medication.label, "en"),
   visibleIf: `{user_medications} contains '${medication.id}'`,
 }));
 
 const drugChoices = [
   ...CHART_MEDICATIONS.map((medication) => ({
     value: medication.id,
-    text: medication.label,
+    text: textFor(medication.label, "en"),
   })),
   { value: "hydrocodone", text: "Hydrocodone / acetaminophen" },
   { value: "oxycodone", text: "Oxycodone" },

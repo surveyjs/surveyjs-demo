@@ -56,6 +56,7 @@ export function DemoUserDialog({
   edited,
   onRevert,
   configureHref,
+  contextNote,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -72,10 +73,18 @@ export function DemoUserDialog({
   onRevert: () => void;
   /** This form's JSON, for the reader who wants to see what reads these keys. */
   configureHref: string;
+  /**
+   * One line a demo may add under the variables, saying what its page does with
+   * them — the clinic says which locale the chart chose. The other two demos
+   * pass nothing and render as before.
+   */
+  contextNote?: React.ReactNode;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
       <DialogContent
+        // The reviewer’s popup, not the host site: English in every locale.
+        lang="en"
         className="flex max-h-[88vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl"
         onInteractOutside={stayOpen}
       >
@@ -107,6 +116,9 @@ export function DemoUserDialog({
               Handed to survey-core as variables, one per field — the definition reads
               them as <code className="text-foreground text-[11px]">{"{user_…}"}</code>.
             </p>
+            {contextNote ? (
+              <p className="text-muted-foreground mt-2 text-xs leading-relaxed">{contextNote}</p>
+            ) : null}
             <pre className="bg-background mt-2 min-h-0 flex-1 overflow-auto rounded-lg border p-3 text-[11px] leading-relaxed">
               {JSON.stringify(variables, null, 2)}
             </pre>

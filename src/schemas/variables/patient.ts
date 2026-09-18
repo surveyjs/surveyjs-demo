@@ -4,7 +4,7 @@ import { toVariableDefinition, toVariables } from "./prefix";
 
 /** One line a reviewer can pick a patient by, keyed by the stored record's id. */
 const DESCRIPTIONS: Readonly<Record<string, string>> = {
-  delgado: "Established patient, full chart, Spanish-speaking, a refill due",
+  delgado: "Established patient, full chart, a refill due; her chart says Spanish, so the page opens in Spanish",
   okafor: "Established patient on Medicare: copay and referral rules differ",
   raman: "First visit: no chart, so the same definition renders the long form",
 };

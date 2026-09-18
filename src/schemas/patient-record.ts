@@ -5,6 +5,10 @@ import {
   HEALTH_PLANS,
   PROVIDERS,
 } from "./clinic-info";
+// The shared lists are localized for the patient-facing appointment form. This
+// record is the back office’s own form and the reviewer’s popup, so every label
+// taken from them is resolved to English and stays English in every locale.
+import { textFor } from "./clinic-locale";
 import type { SurveyData, SurveyJSON } from "./types";
 
 /**
@@ -203,7 +207,11 @@ export const patientRecordJson: SurveyJSON = {
             {
               type: "text",
               name: "lastVisit",
+              // Digits, not prose: the appointment form pipes this straight into a
+              // sentence that may be Spanish. "18 April 2026" in a Spanish
+              // greeting is exactly the seam this demo must not have.
               title: "Last seen",
+              placeholder: "MM/DD/YYYY",
               startWithNewLine: false,
             },
             {
@@ -287,7 +295,7 @@ export const patientRecordJson: SurveyJSON = {
               colCount: 3,
               choices: CHART_CONDITIONS.map((condition) => ({
                 value: condition.id,
-                text: condition.label,
+                text: textFor(condition.label, "en"),
               })),
             },
             {
@@ -304,7 +312,7 @@ export const patientRecordJson: SurveyJSON = {
               colCount: 2,
               choices: CHART_MEDICATIONS.map((medication) => ({
                 value: medication.id,
-                text: medication.label,
+                text: textFor(medication.label, "en"),
               })),
             },
             {
@@ -407,7 +415,7 @@ export const CLINIC_PATIENTS: readonly { readonly id: string; readonly data: Sur
       emergencyRelationship: "spouse",
       emergencyPhone: "(503) 555-0192",
       mrn: "RFH-04812",
-      lastVisit: "18 April 2026",
+      lastVisit: "04/18/2026",
       homeLocation: "westbridge",
       primaryProvider: "navarro",
       healthPlanOnFile: "blueharbor",
@@ -446,7 +454,7 @@ export const CLINIC_PATIENTS: readonly { readonly id: string; readonly data: Sur
       emergencyRelationship: "child",
       emergencyPhone: "(503) 555-0327",
       mrn: "RFH-01197",
-      lastVisit: "3 February 2026",
+      lastVisit: "02/03/2026",
       homeLocation: "marlowe",
       primaryProvider: "weiss",
       healthPlanOnFile: "statecare",

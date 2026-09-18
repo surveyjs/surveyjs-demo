@@ -93,7 +93,7 @@ const allNavGroups: readonly NavGroup[] = [
         id: "embeddedClinic",
         label: "Appointment",
         path: "/embedded/clinic",
-        description: "A clinic form that drives the page.",
+        description: "A clinic form that updates the page around it — in English and Spanish.",
         schemaId: "clinic-visit",
         layout: "embedded",
       },

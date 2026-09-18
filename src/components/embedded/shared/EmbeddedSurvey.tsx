@@ -29,6 +29,7 @@ export function EmbeddedSurvey({
   json,
   data,
   variables,
+  locale,
   onDataChange,
   onComplete,
 }: {
@@ -41,13 +42,27 @@ export function EmbeddedSurvey({
    * `demo-accounts.ts`.
    */
   variables?: Readonly<Record<string, unknown>>;
+  /**
+   * The language the definition renders in, for a form whose strings carry
+   * translations. It goes to the factory, so the HTML the **server** sends is
+   * already in that language, and it is kept in step below without rebuilding.
+   */
+  locale?: string;
   onDataChange?: (data: SurveyData) => void;
   onComplete?: (data: SurveyData) => void;
 }) {
   const model = useMemo(
-    () => createSurveyModel(json, { data, variables }),
+    () => createSurveyModel(json, { data, variables, locale }),
+    // `locale` is deliberately not a dependency: rebuilding the model would
+    // throw the answers away, and changing language mid-form must not cost a
+    // word. The effect below moves the live model instead.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [json, data, variables],
   );
+
+  useEffect(() => {
+    if (locale && model.locale !== locale) model.locale = locale;
+  }, [model, locale]);
 
   useEffect(() => {
     if (!onDataChange) return;

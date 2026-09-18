@@ -325,36 +325,84 @@ test("the demo links home and outlines where SurveyJS draws", async ({ page }) =
   await expect(page.locator("[data-survey-root]")).toHaveCSS("outline-style", "dashed");
 });
 
-test("/embedded/clinic fills the request from the patient's chart", async ({ page }) => {
+test("/embedded/clinic opens in the chart's language and fills the request from it", async ({
+  page,
+}) => {
   test.slow();
-  await page.goto("/embedded/clinic");
+  // Maria Delgado's chart says `preferredLanguage: "es"`, so the page — the form
+  // and the site around it — is Spanish before any JavaScript runs.
+  const response = await page.goto("/embedded/clinic");
+  const serverHtml = await response!.text();
+  // Both languages travel to the browser — the definition is a prop, so the
+  // whole of it is in the payload. What proves the server *rendered* Spanish is
+  // the markup only rendering produces: the greeting, the panel's label, and
+  // survey-core's own next button.
+  expect(serverHtml).toContain("Qué gusto verle de nuevo");
+  expect(serverHtml).toContain('aria-label="Su visita"');
+  expect(serverHtml).toContain("Siguiente");
+
   const dock = page.getByRole("toolbar", { name: "Embedded demo tools" });
-  const panel = page.getByRole("complementary", { name: "Your visit" });
+  const panel = page.getByRole("complementary", { name: "Su visita" });
   const card = page.locator("#request");
+
+  await expect(card).toContainText("Qué gusto verle de nuevo");
+  await expect(card).toContainText("Maria");
+  await expect(card).not.toContainText("Welcome back");
+  // survey-core's own strings are Spanish too, from `survey-core/i18n/spanish`.
+  await expect(card.getByRole("button", { name: "Siguiente" })).toBeVisible();
+
+  // The banner says why, in both languages, the page's own first.
+  const banner = page.getByRole("note");
+  await expect(banner).toContainText(
+    "El idioma preferido de Maria es el español, por eso este formulario se abrió en español.",
+  );
+  await expect(banner).toContainText("Maria's preferred language is Spanish");
 
   // Nothing has been answered, and the summary is already populated: the office,
   // the clinician and the coverage came from the portal record.
-  await expect(panel).not.toContainText("Answer the first question");
+  await expect(panel).not.toContainText("Responda la primera pregunta");
   await expect(panel).toContainText("Westbridge");
   await expect(panel).toContainText("Alicia Navarro, MD");
-  await expect(card).toContainText("Welcome back, Maria");
 
   // Her chart has asthma and hypertension on it, so a question exists that a new
-  // patient never sees.
-  await expect(card).toContainText("Is this about something we already treat you for?");
+  // patient never sees — asked in her language.
+  await expect(card).toContainText("¿Es por algo que ya le tratamos?");
 
   await dock.getByRole("button", { name: "Prefill" }).click();
 
   // Behavioral health bills at the specialist copay, and the plan on file is the
   // HMO — so the panel shows $35 and the referral warning rather than the happy
   // path. The plan was never typed in.
-  await expect(panel).toContainText("Behavioral health");
+  await expect(panel).toContainText("Salud del comportamiento");
   await expect(panel).toContainText("$35");
-  await expect(panel).toContainText("referral");
+  await expect(panel).toContainText("exige un referido");
 
-  // The directory and the office list mark what the request names.
-  await expect(page.locator("#provider-navarro")).toContainText("Requested");
-  await expect(page.locator("#location-westbridge")).toContainText("Chosen");
+  // The switch moves every string on the page, and the form keeps the answers.
+  await page.getByRole("button", { name: "EN", exact: true }).first().click();
+
+  await expect(card).toContainText("Welcome back, Maria");
+  await expect(card).toContainText("Is this about something we already treat you for?");
+  const englishPanel = page.getByRole("complementary", { name: "Your visit" });
+  await expect(englishPanel).toContainText("Behavioral health");
+  await expect(englishPanel).toContainText("$35");
+  await expect(englishPanel).toContainText("referral");
+
+  // No host string is left behind: header, panel chrome, row labels, footer, and
+  // the banner, which now leads with English and says who overruled the chart.
+  await expect(page.locator("header").first()).toContainText("Request an appointment");
+  await expect(englishPanel).toContainText("Your visit");
+  await expect(englishPanel).toContainText("Reason");
+  await expect(englishPanel).toContainText("Clinician");
+  await expect(englishPanel).toContainText("What to bring");
+  await expect(page.locator("footer")).toContainText("fictional clinic");
+  await expect(banner.locator("p").first()).toContainText(
+    "Maria's preferred language is Spanish — you switched this form to English.",
+  );
+  // Nothing Spanish is left outside the banner, which keeps both languages.
+  const chrome = (await page.locator("header, #request, footer").allInnerTexts()).join(" ");
+  for (const spanish of ["Su visita", "Qué gusto verle", "Solicitar una cita", "Qué llevar"]) {
+    expect(chrome).not.toContain(spanish);
+  }
 
   // Sign in as the patient who has no chart. Same definition, and the form is
   // the long one: identity to fill in, insurance card fields, an extra page.
@@ -364,9 +412,11 @@ test("/embedded/clinic fills the request from the patient's chart", async ({ pag
   await expect(card).toContainText("You are new to Ridgeline");
   await expect(card).toContainText("New here");
   await expect(card).not.toContainText("Is this about something we already treat you for?");
-  await expect(panel).toContainText("New to Ridgeline");
+  await expect(englishPanel).toContainText("New to Ridgeline");
+  // Her chart says English, so there is nothing to explain.
+  await expect(page.getByRole("note")).toHaveCount(0);
   // No plan on file, so there is nothing to estimate.
-  await expect(panel).not.toContainText("$35");
+  await expect(englishPanel).not.toContainText("$35");
 
   // And the popup is where that patient's record is edited, with the object the
   // survey receives shown underneath it.

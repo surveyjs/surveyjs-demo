@@ -15,11 +15,18 @@ import { mergeTailwindClasses } from "@/lib/utils";
 export function SignedInChip({
   account,
   meta,
+  signInLabel = "Sign in",
   className,
 }: {
   account: Record<string, unknown>;
   /** The one line worth showing under the name — plan, company, MRN. */
   meta?: string;
+  /**
+   * What the fallback button says. It is the host site’s own word, so a site
+   * that speaks another language passes its own; the default is what every
+   * demo but the clinic uses.
+   */
+  signInLabel?: string;
   className?: string;
 }) {
   const name = accountName(account);
@@ -27,7 +34,7 @@ export function SignedInChip({
   if (!name) {
     return (
       <Button variant="outline" size="sm" className={className}>
-        Sign in
+        {signInLabel}
       </Button>
     );
   }
