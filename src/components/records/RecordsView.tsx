@@ -745,7 +745,9 @@ export function RecordsView({
           its place. At 1280px that leaves the form 676px, above the theme's
           640px `--sd-mobile-width`, so matrices keep their columns. */}
       <div className="grid items-start gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
-        <div className="hidden min-w-0 overflow-x-hidden xl:sticky xl:top-0 xl:block xl:max-h-[calc(100svh-8rem)] xl:overflow-y-auto">
+        {/* `top-14` clears the shell's top bar: the page is one scroller, so
+            this sticks to the viewport and `top-0` would slide under it. */}
+        <div className="hidden min-w-0 overflow-x-hidden xl:sticky xl:top-14 xl:block xl:max-h-[calc(100svh-8rem)] xl:overflow-y-auto">
           <RecordRail
             collection={collection}
             title={title}
@@ -760,7 +762,9 @@ export function RecordsView({
           />
         </div>
 
-        <div ref={formColumn} className="min-w-0">
+        {/* `scroll-mt-14`: the `scrollIntoView` above scrolls the page, whose
+            top is behind the shell's sticky top bar. */}
+        <div ref={formColumn} className="min-w-0 scroll-mt-14">
           <RecordPicker
             collection={collection}
             rows={rows}

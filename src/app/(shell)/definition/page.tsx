@@ -15,7 +15,10 @@ export const metadata = pageMetadata(nav.id);
  */
 export default function DefinitionPage() {
   return (
-    <div className="flex h-full flex-col">
+    // The one page here that wants the whole screen. The shell scrolls as a
+    // single page, so there is no `h-full` to inherit: 100svh less the top bar
+    // (3.5rem) and `main`'s `lg:py-8` (4rem) is the room it has.
+    <div className="flex min-h-[calc(100svh-7.5rem)] flex-col">
       <PageHeader title={nav.label} description={nav.description} />
       <div className="min-h-0 flex-1">
         <Suspense fallback={null}>

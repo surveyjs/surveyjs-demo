@@ -55,20 +55,34 @@ export function AdminShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="bg-background text-foreground flex h-svh min-h-svh flex-col">
+    <div className="bg-background text-foreground flex min-h-svh flex-col">
       <TopBar mobileNav={mobileNav} />
       <StorageReadOnlyBanner />
 
-      <div className="flex min-h-0 flex-1" style={{ height: 0 }}>
+      {/*
+        One scroller, the page's. The sidebar and the content share it: neither
+        is a scroll container, so the sidebar never grows a scrollbar of its own
+        however many rows an edition adds. The flex default `align-items:
+        stretch` runs the sidebar's background and border the whole height of
+        whatever the page turns out to be.
+
+        Two things follow for a page rendered in here, and both are load-bearing:
+        anything `sticky` sticks to the viewport rather than to this row, so it
+        has to clear the top bar itself with `top-14`; and `h-full` no longer
+        resolves, because no ancestor has a definite height any more — a page
+        that wants to fill the screen asks for `100svh` less this shell's
+        `3.5rem` bar and `main`'s padding below.
+      */}
+      <div className="flex flex-1">
         <aside
-          className="bg-sidebar text-sidebar-foreground hidden h-full shrink-0 overflow-y-auto border-r lg:block"
+          className="bg-sidebar text-sidebar-foreground hidden shrink-0 border-r lg:block"
           style={{ width: SIDEBAR_WIDTH }}
         >
           <Sidebar />
         </aside>
 
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-          <div className="mx-auto h-full w-full max-w-[96rem] px-4 py-6 sm:px-6 lg:py-8">
+        <main className="min-w-0 flex-1">
+          <div className="mx-auto w-full max-w-[96rem] px-4 py-6 sm:px-6 lg:py-8">
             {children}
           </div>
         </main>
