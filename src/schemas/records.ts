@@ -81,6 +81,15 @@ export interface RecordCollection {
    */
   readonly rowIdContainers?: readonly string[];
   /**
+   * Is this record one the collection calls a draft? A draft may be incomplete —
+   * a record read off a document is one until somebody reviews it — so the write
+   * route checks its shape and skips completeness. Malformed is still refused.
+   *
+   * The client controls the status, and that is fine: marking your own record a
+   * draft gets you a draft, in your own sandbox.
+   */
+  readonly isDraft?: (data: SurveyData) => boolean;
+  /**
    * How `createFrom` turns answers read from a document into a record. Without
    * it, `newId` names the record and `newRecord` wins over every answer.
    */

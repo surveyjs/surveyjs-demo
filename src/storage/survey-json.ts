@@ -20,36 +20,13 @@ import { beforeWrite, storageError } from "./access";
  *     return res.json();
  *   }
  *
- * A real `saveSurveyJson` lints before it stores. `/api/lint` runs the same
- * `survey-core/linter` rules the editor shows while somebody types, so a
- * definition the editor flagged is refused here too — including one that never
- * went through the editor. The form's variable presets go with it, so a
- * personalized definition's `{user_…}` references are known there as they are in
- * the editor:
- *
- *   export async function saveSurveyJson(schemaId: string, json: SurveyJSON) {
- *     const lint = await fetch("/api/lint", {
- *       method: "POST",
- *       headers: { "Content-Type": "application/json" },
- *       body: JSON.stringify({ json, variablePresets: getVariablePresets(schemaId) }),
- *     }).then((res) => res.json());
- *     if (!lint.ok) {
- *       throw new Error(`Not saved: ${lint.findings.length} static analysis finding(s).`);
- *     }
- *     const res = await fetch(`/api/schemas/${schemaId}`, {
- *       method: "PUT",
- *       headers: { "Content-Type": "application/json" },
- *       body: JSON.stringify(json),
- *     });
- *     if (!res.ok) throw new Error(`PUT /api/schemas/${schemaId}: ${res.status}`);
- *   }
- *
- * Your own `PUT /api/schemas/:id` handler should call `lintSurveyJson` from
- * `src/lib/lint/lint-survey.ts` again before it writes: the browser is not the
- * place a rule is enforced, only the place it is first shown. This demo's route
- * does not lint: Survey Creator autosaves in the full edition, a half-typed
- * expression would fail every one of those saves, and the sandbox is the
- * visitor's own.
+ * **The route enforces.** `PUT /api/storage/definitions/:id` lints the definition
+ * and runs the form's own test suite before it stores anything, and answers 422
+ * with the first thing wrong (`src/lib/checks/check-definition.ts`). There is no
+ * order of calls a client can get wrong, because the check lives in the handler
+ * that writes. `/api/lint` remains for a client that wants the findings without
+ * saving — the editor's status bar is one — and it stays advisory: its `ok` means
+ * "no finding at all", while what blocks a save is an `error`.
  *
  * Every visitor has their own copy of every definition, and the pages render
  * it on the server, so a reload shows the edit with no loading state. A visitor

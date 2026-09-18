@@ -88,13 +88,20 @@ export async function getResult(
 }
 
 /**
- * Create or update. The server assigns row ids and stores the document; the
- * columns are derived from what it stored. Returns the record as stored.
+ * Create or update. The server assigns row ids, checks the answers against the
+ * definition and stores the document; the columns are derived from what it
+ * stored. Returns the record as stored.
+ *
+ * `userId` is who the page is rendered for, and it is an **id, not values**: the
+ * form reads `{user_role}`, and what is required can depend on it, so the server
+ * looks the user up for itself. In your app there is no such parameter at all —
+ * the route calls `getSession()` and the body carries nothing about who is asking.
  */
 export async function saveResult(
   collectionId: string,
   id: string,
   data: SurveyData,
+  userId?: string,
 ): Promise<StoredRecord> {
   if (typeof window === "undefined") {
     throw new Error("Records are written from the browser, through /api/storage");
@@ -104,7 +111,7 @@ export async function saveResult(
   const res = await fetch(resultsRoute(collectionId, id), {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data }),
+    body: JSON.stringify(userId ? { data, userId } : { data }),
   });
   if (!res.ok) throw await storageError(res, `PUT ${resultsRoute(collectionId, id)}`);
   return withColumns(collection, await res.json());

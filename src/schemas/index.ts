@@ -103,6 +103,8 @@ export const schemaRegistry: Record<string, SchemaDefinition> = {
   [workOrderSchema.id]: workOrderSchema,
 };
 
+export { getSurveyTests, getTestedSchemaIds } from "./tests";
+
 export {
   CADENCE_PLANS,
   LEADS_USERS,

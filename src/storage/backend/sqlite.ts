@@ -90,6 +90,19 @@ function now(): string {
   return new Date().toISOString().replace("T", " ").slice(0, 23);
 }
 
+/**
+ * Refuse a value over `MAX_VALUE_BYTES`, counted in bytes, not characters.
+ *
+ * A write route calls this **before** it checks anything else: building a survey
+ * model out of forty megabytes of answers to find out they are too large is the
+ * wrong order, and an oversized body is a 413 that no check ever ran on.
+ * `serialize()` below still measures for itself — it is the guard no caller can
+ * forget — so the two agree by measuring the same way.
+ */
+export function assertWithinValueLimit(value: unknown): void {
+  if (Buffer.byteLength(JSON.stringify(value)) > MAX_VALUE_BYTES) throw new StorageLimitError();
+}
+
 /** Refuse a value over `MAX_VALUE_BYTES`, counted in bytes, not characters. */
 function serialize(value: unknown): string {
   const json = JSON.stringify(value);

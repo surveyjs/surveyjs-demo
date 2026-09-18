@@ -560,3 +560,32 @@ test.describe("the import panel", () => {
     await expect(addFromDocument(page)).toHaveCount(0);
   });
 });
+
+/**
+ * The server is the one that decides whether a record may be stored, and the
+ * page has to survive its saying no. The request is edited on the way out —
+ * exactly as a client that skipped the form would send it — so this is the real
+ * route refusing, not a stub.
+ */
+test("a record the server refuses shows the reason and keeps the answers", async ({ page }) => {
+  test.slow();
+  await startSession(page.request);
+  await page.route("**/api/storage/results/workOrders/*", async (route) => {
+    if (route.request().method() !== "PUT") return route.continue();
+    const body = JSON.parse(route.request().postData() ?? "{}");
+    await route.continue({
+      postData: JSON.stringify({ ...body, data: { ...body.data, notAQuestion: "smuggled" } }),
+    });
+  });
+
+  await page.goto("/work-orders");
+  await openForEdit(page, "WO-2026-0119");
+  await chooseStatus(page, statusLabels.completed);
+  await page.getByRole("button", { name: "Save changes" }).first().click();
+
+  await expect(page.locator('p[role="alert"]')).toContainText("Not stored:");
+  await expect(page.locator('p[role="alert"]')).toContainText("notAQuestion");
+  // The form is still open, still in edit mode, with the answer that was not saved.
+  await expect(formHeading(page)).toHaveText("Edit WO-2026-0119");
+  await expect(page.locator('[data-name="status"]')).toContainText(statusLabels.completed);
+});

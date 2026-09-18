@@ -109,7 +109,12 @@ export const planFinderJson: SurveyJSON = {
       ],
     },
     {
-      name: "modules",
+      // Not `modules`: the matrix below is called that, and an element name must
+      // be unique across pages, panels and questions alike — the linter reports
+      // the clash as `name/duplicate`, and the write route refuses the save. The
+      // matrix keeps the name, because that is the key every answer is stored
+      // under and every expression on this page reads.
+      name: "modulesPage",
       title: "Modules",
       elements: [
         {

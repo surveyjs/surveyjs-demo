@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
+import { getSchemaDefinition, type SurveyJSON } from "@/schemas";
 import { READ_ONLY_MESSAGE } from "../access";
 import { getDatabase, StorageLimitError, TEMPLATE_UID, type DemoStore } from "./sqlite";
 
@@ -96,6 +97,21 @@ export async function writeAsVisitor<T>(write: (store: DemoStore, uid: string) =
   const uid = await requireVisitor();
   const store = getDatabase();
   return store.write(uid, () => write(store, uid));
+}
+
+/**
+ * The definition a request is about: this visitor's own, or the one that ships.
+ *
+ * Every server-side reader of a definition goes through here — the record route,
+ * the submissions route and `/api/extract` — so extraction and storage can never
+ * disagree about a choice list. A visitor who added a choice has a page that
+ * offers it, a document read against a definition that knows it, and a write
+ * route that accepts it; reading `schemaRegistry` directly in one of the three
+ * would break exactly that.
+ */
+export async function definitionFor(schemaId: string): Promise<SurveyJSON> {
+  const stored = await readAsVisitor((store, uid) => store.getDefinition(uid, schemaId));
+  return stored ?? getSchemaDefinition(schemaId).json;
 }
 
 /** The two refusals a visitor is shown, as responses; anything else is a real failure. */

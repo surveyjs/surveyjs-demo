@@ -514,7 +514,10 @@ export function RecordsView({
       if (!current) return;
       let saved: StoredRecord;
       try {
-        saved = await saveResult(collectionId, current.record.id, data);
+        // The active user travels as an id, not as values: the server looks them
+        // up and builds the variables the form reads, so a client cannot answer its
+        // way past a rule that reads {user_role}.
+        saved = await saveResult(collectionId, current.record.id, data, activeUser?.id);
       } catch (failure) {
         // The form already completed, so it is rebuilt with the answers that were
         // not saved, on the page it was on, still unsaved as far as the guard is
@@ -529,7 +532,7 @@ export function RecordsView({
       if (current.mode === "new") writeRoute(recordHref(basePath, saved.id), "push");
       show("view", saved);
     },
-    [basePath, collectionId, show, upsertRow, writeRoute],
+    [basePath, collectionId, show, upsertRow, writeRoute, activeUser],
   );
 
   // The header's Save checks every page, not only the one on screen:
@@ -560,7 +563,7 @@ export function RecordsView({
         : { ...answers, ...collection.newRecord(id, activeUser) };
       let saved: StoredRecord;
       try {
-        saved = await saveResult(collectionId, id, document);
+        saved = await saveResult(collectionId, id, document, activeUser?.id);
       } catch (failure) {
         // The panel reports it, where the visitor is looking, and keeps the
         // reading unspent.

@@ -17,6 +17,7 @@ import { EmbeddedSurvey, SurveyCard } from "@/components/embedded/shared/Embedde
 import { StaticAnalysisBar, type LintMarker } from "@/components/lint/StaticAnalysisBar";
 import type { JsonEditorApi } from "@/components/JsonEditor";
 import { usedVariableNames } from "@/components/embedded/shared/demo-accounts";
+import { StorageRefusal } from "@/storage/access";
 import { loadSurveyJson, resetSurveyJson, saveSurveyJson } from "@/storage/survey-json";
 import { useStorageAccess } from "@/components/StorageAccess";
 import { getVariableNames, getVariablePresets, type SurveyJSON } from "@/schemas";
@@ -229,6 +230,13 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
       await saveSurveyJson(form.id, json);
     } catch (failure) {
       setStorageError((failure as Error).message);
+      // A save the linter refused carries the finding's path, so the status bar
+      // below selects it and the line and the list point at the same place. The
+      // path comes from the error object, not from the sentence: parsing a JSON
+      // path back out of English works until somebody rewrites the English.
+      if (failure instanceof StorageRefusal && failure.check === "lint") {
+        setSelectedPath(failure.first?.path ?? null);
+      }
       return;
     }
     setStorageError(null);

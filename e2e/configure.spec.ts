@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { features } from "../src/features";
 import { getVariablePresets } from "../src/schemas/variables";
+import { checkoutJson } from "../src/schemas/checkout";
+import { startSession } from "./session";
 
 test.skip(features.edition !== "mit", "the JSON workbench is the MIT edition's editor");
 
@@ -144,3 +146,37 @@ for (const id of [
     ).toBeVisible({ timeout: 20_000 });
   });
 }
+
+/**
+ * "Try breaking it" and then Save is the demo of the whole claim: the rules that
+ * flag a broken expression while somebody types are the rules that refuse it at
+ * the API. The editor keeps the author's work and says why, and the definition
+ * on the server is still the last good one.
+ */
+test("a definition the linter refuses is not saved, and the editor says so", async ({ page }) => {
+  test.slow();
+  await page.goto("/configure?form=checkout");
+  await waitForEditor(page);
+  await startSession(page.request);
+
+  const broken = structuredClone(checkoutJson) as Record<string, unknown>;
+  ((broken.pages as { elements: Record<string, unknown>[] }[])[0].elements[0]).visibleIf =
+    "{noSuchQuestion} = 1";
+  await setDefinition(page, broken);
+
+  await page.getByRole("button", { name: "Save and quit" }).click();
+  const line = page.getByText(/^Not saved:/);
+  await expect(line).toBeVisible({ timeout: 15_000 });
+  // The sentence names the rule and the element, so the author knows what to fix
+  // without reading the JSON back.
+  await expect(line).toContainText("noSuchQuestion");
+  // Still here: a refused save does not navigate.
+  await expect(page).toHaveURL(/\/configure\?form=checkout$/);
+
+  // And nothing was stored: a reload opens on the definition that ships.
+  const stored = await page.request.get("/api/storage/definitions/checkout");
+  expect((await stored.json()).json).toEqual(checkoutJson);
+  await page.reload();
+  await waitForEditor(page);
+  await expect(page.getByText(/^Not saved:/)).toHaveCount(0);
+});

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { features } from "../src/features";
 import { checkoutJson } from "../src/schemas/checkout";
+import { SHORT_CHECKOUT } from "./short-checkout";
 import { startSession } from "./session";
 
 const surveyRoutes = [
@@ -129,13 +130,16 @@ test("a saved definition is what the server renders, for that visitor only", asy
   // editor the edition ships (configure.spec.ts drives the JSON one).
   // `page.request` shares the browser's cookies, so this is the page's visitor.
   await startSession(page.request);
+  // A whole definition, not a fragment: the route runs the form's own linter and
+  // its suite before it stores anything, so a fixture has to be valid for the
+  // form it claims to be. This is the short checkout with one question added.
+  const edited = structuredClone(SHORT_CHECKOUT) as typeof SHORT_CHECKOUT & {
+    pages: { elements: unknown[] }[];
+  };
+  edited.title = "Edited by the e2e test";
+  edited.pages[0].elements.unshift({ type: "text", name: "q1", title: "A brand new question" });
   const saved = await page.request.put("/api/storage/definitions/checkout", {
-    data: {
-      json: {
-        title: "Edited by the e2e test",
-        elements: [{ type: "text", name: "q1", title: "A brand new question" }],
-      },
-    },
+    data: { json: edited },
   });
   expect(saved.status()).toBe(204);
 

@@ -61,6 +61,16 @@ test.describe("helpers", () => {
     contacts.addPanel();
     activities.addRow();
 
+    // The new rows are filled in, as the page requires before its Save completes
+    // the form and as the record route now requires before it stores anything:
+    // a row somebody started and left blank is an incomplete record, not a saved
+    // one. Only the answers the form insists on, so the ids are still what this
+    // test is about.
+    const added = lineItems.visibleRows[lineItems.visibleRows.length - 1];
+    added.getQuestionByName("product").value = "platform";
+    added.getQuestionByName("unitPrice").value = 1200;
+    contacts.panels[contacts.panels.length - 1].getQuestionByName("fullName").value = "Nadia Okoro";
+
     // Row ids are assigned by the record route, on write, so the save goes
     // through it, as a visitor of its own.
     await startSession(request);

@@ -356,7 +356,10 @@ export function StaticAnalysisBar({
             </h3>
             <p className="text-muted-foreground mt-1 text-xs">
               Demo actions. Each one edits the JSON in the editor to introduce a
-              single fault; Reset restores the original definition.
+              single fault; Reset restores the original definition. Press one and
+              then Save: the server runs these same rules before it stores
+              anything, so the save is refused and the line above names the
+              finding. That is the whole claim, in two clicks.
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {lintMutations.map((mutation) => (

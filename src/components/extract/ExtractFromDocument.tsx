@@ -47,6 +47,13 @@ function parseUsed(stored: string | null): string[] {
 interface Outcome {
   readonly tone: "ok" | "error";
   readonly message: string;
+  /**
+   * What the reading offered and the form cannot hold, by path. The route drops
+   * those values rather than letting the record's own `PUT` refuse the whole
+   * reading over one field, and says which — so a visitor knows what to fill in
+   * by hand instead of wondering why a box is empty.
+   */
+  readonly rejected?: readonly { path: string; message: string }[];
 }
 
 /** "a job sheet", "an invoice". */
@@ -166,6 +173,7 @@ export function ExtractFromDocument({
         const response = await fetch("/api/extract", { method: "POST", body });
         const payload = (await response.json()) as {
           data?: SurveyData;
+          rejected?: readonly { path: string; message: string }[];
           readAt?: string;
           error?: string;
         };
@@ -198,6 +206,7 @@ export function ExtractFromDocument({
         setOutcome({
           tone: "ok",
           message: `New draft ${noun}: ${filled} field${filled === 1 ? "" : "s"} filled from ${label}. Check them against the document.`,
+          rejected: payload.rejected,
         });
       } catch (failure) {
         setOutcome({ tone: "error", message: (failure as Error).message });
@@ -372,15 +381,23 @@ export function ExtractFromDocument({
       )}
 
       {outcome && (
-        <p
-          className={
-            outcome.tone === "ok"
-              ? "text-muted-foreground text-xs"
-              : "text-destructive text-xs"
-          }
-        >
-          {outcome.message}
-        </p>
+        <div className="space-y-1">
+          <p
+            className={
+              outcome.tone === "ok"
+                ? "text-muted-foreground text-xs"
+                : "text-destructive text-xs"
+            }
+          >
+            {outcome.message}
+          </p>
+          {outcome.rejected && outcome.rejected.length > 0 && (
+            <p className="text-muted-foreground text-xs" data-slot="extract-rejected">
+              Not taken from the document:{" "}
+              {outcome.rejected.map((dropped) => dropped.path).join(", ")}.
+            </p>
+          )}
+        </div>
       )}
 
       {/* The thumbnail is too small to read the boxes in, and reading them is

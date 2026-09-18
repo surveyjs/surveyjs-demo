@@ -88,6 +88,10 @@ export const workOrdersCollection: RecordCollection = {
   }),
   newId: nextWorkOrderId,
   newRecord: (id) => ({ jobNumber: id, status: "draft", laborRate: 85 }),
+  // A sheet that has only been read off paper is a draft until a technician has
+  // been through it, so the write route checks its shape and not its
+  // completeness. Every other status is a record somebody signed off.
+  isDraft: (data) => data.status === "draft",
   // A sheet read from paper keeps what is printed on it, its own job number and
   // labor rate included. The app forces only what a document must not decide:
   // the draft status and where the record came from.

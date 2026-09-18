@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { test, expect, type APIRequest, type APIRequestContext, type BrowserContext, type Page } from "@playwright/test";
 import { checkoutJson } from "../src/schemas/checkout";
+import { workOrderJson } from "../src/schemas/work-order";
+import { SHORT_CHECKOUT } from "./short-checkout";
 import { getFormNavItem } from "../src/schemas/navigation";
 import { getRecordCollection, recordTitle } from "../src/schemas/records";
 import { schemaRegistry } from "../src/schemas";
@@ -147,10 +149,19 @@ test.describe("what the server renders", () => {
     await waitForEditor(page);
     // The editor reads the stored definition after mount; edit only after it has.
     await loaded;
-    await setEditorText(page, {
-      title: "Stored by the storage spec",
-      elements: [{ type: "text", name: "q1", title: "A question stored on the server" }],
+    // A whole definition: the route lints it and runs the checkout suite before
+    // it stores anything, so a fixture has to be valid for the form it claims to
+    // be. The short checkout with one question added is (see e2e/short-checkout.ts).
+    const edited = structuredClone(SHORT_CHECKOUT) as typeof SHORT_CHECKOUT & {
+      pages: { elements: unknown[] }[];
+    };
+    edited.title = "Stored by the storage spec";
+    edited.pages[0].elements.unshift({
+      type: "text",
+      name: "q1",
+      title: "A question stored on the server",
     });
+    await setEditorText(page, edited);
     await page.getByRole("button", { name: "Save and quit" }).click();
     await expect(page).toHaveURL(/\/starter$/);
 
@@ -224,8 +235,10 @@ test.describe("resets", () => {
     await startSession(page.request);
     const lead = leads.seed[0];
     const edits = [
-      page.request.put("/api/storage/definitions/checkout", { data: { json: { title: "Edited checkout" } } }),
-      page.request.put("/api/storage/definitions/work-order", { data: { json: { title: "Edited work order" } } }),
+      // Whole definitions, retitled: the route checks what it is asked to store,
+      // so "the title only" is no longer a definition anybody may save.
+      page.request.put("/api/storage/definitions/checkout", { data: { json: { ...checkoutJson, title: "Edited checkout" } } }),
+      page.request.put("/api/storage/definitions/work-order", { data: { json: { ...workOrderJson, title: "Edited work order" } } }),
       page.request.put(`/api/storage/results/leads/${lead.id}`, { data: { data: { ...lead.data, accountName: "Edited lead" } } }),
     ];
     for (const edit of edits) expect((await edit).ok()).toBe(true);
@@ -478,19 +491,31 @@ test.describe("a browser that blocks cookies", () => {
 });
 
 test.describe("failures the page survives", () => {
-  /** A one-question definition for this visitor, so `/starter` completes in one click. */
+  /**
+   * A short definition for this visitor, so `/starter` completes quickly. It is
+   * a real checkout rather than one question: the route runs the form's own suite
+   * before it stores a definition, so a spec's fixture has to be valid for the
+   * form it claims to be. See `e2e/short-checkout.ts`.
+   */
   async function shortCheckout(page: Page) {
     await startSession(page.request);
     const stored = await page.request.put("/api/storage/definitions/checkout", {
-      data: { json: { elements: [{ type: "text", name: "note", title: "Anything else?" }] } },
+      data: { json: SHORT_CHECKOUT },
     });
     expect(stored.status()).toBe(204);
+  }
+
+  /** Page through the short checkout to the last page, where Complete lives. */
+  async function toTheLastPage(page: Page) {
+    await page.getByRole("button", { name: "Next" }).click();
+    await expect(page.locator('[data-name="note"] input')).toBeVisible();
   }
 
   test("a completed /starter is stored under its schema id", async ({ page, context }) => {
     await shortCheckout(page);
     await page.goto("/starter");
     const submitted = page.waitForResponse("**/api/storage/submissions/checkout");
+    await toTheLastPage(page);
     await page.locator('[data-name="note"] input').fill("From the storage spec");
     await page.getByRole("button", { name: "Complete" }).click();
     expect((await submitted).status()).toBe(201);
@@ -500,7 +525,9 @@ test.describe("failures the page survives", () => {
     const rows = withDatabase((store) => store.listRecords(uid, "checkout"));
     expect(rows).toHaveLength(1);
     expect(rows[0].id).toMatch(UUID);
-    expect(rows[0].data).toEqual({ note: "From the storage spec" });
+    // The defaults of the two conditional blocks travel with the answer, as they
+    // would from any checkout: the note is what this spec put there.
+    expect(rows[0].data).toMatchObject({ note: "From the storage spec" });
   });
 
   test("a failed submission still thanks the visitor, and logs why", async ({ page }) => {
@@ -511,6 +538,7 @@ test.describe("failures the page survives", () => {
       (message) => message.type() === "error" && message.text().includes("was not submitted"),
     );
     await page.goto("/starter");
+    await toTheLastPage(page);
     await page.getByRole("button", { name: "Complete" }).click();
     await expect(page.getByText("Thank you. Your response has been submitted.")).toBeVisible();
     expect((await logged).text()).toContain("[survey-results] checkout was not submitted");

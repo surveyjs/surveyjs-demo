@@ -91,8 +91,14 @@ export const HOW_BUILT: Partial<Record<NavId, HowBuiltContent>> = {
         detail: "toColumns derives account, owner name, stage, deal value (recomputed from the line items), next step date, currency and expected close. The list reads only these.",
         source: "src/schemas/collections/leads.ts",
       },
+      {
+        label: "Checked before it is stored",
+        detail: "The route builds the same headless survey-core model this page rendered, with the signed-in user's variables, and refuses a record the definition rejects with the first error named. The browser checked it too; the server is where the rule is enforced.",
+        source: "src/lib/checks/check-response.ts",
+      },
     ],
     features: [
+      { label: "Server-side validation", status: "shown" },
       { label: "Variables from the server", status: "shown" },
       { label: "Variable presets", status: "shown" },
       { label: "Expressions over a dynamic panel and matrices", status: "shown" },
@@ -148,8 +154,14 @@ export const HOW_BUILT: Partial<Record<NavId, HowBuiltContent>> = {
         source: "src/features/full/work-order-pdf.ts",
         edition: "full",
       },
+      {
+        label: "Checked before it is stored",
+        detail: "The route checks every answer against the definition it answers, on the server, and refuses a record that does not fit. A draft — which is what a sheet read off paper is — may still be incomplete; it may not be malformed.",
+        source: "src/lib/checks/check-response.ts",
+      },
     ],
     features: [
+      { label: "Server-side validation", status: "shown" },
       { label: "AI extraction from a PDF, scan or photo", status: "shown" },
       { label: "Job sheet PDF", status: "shown", edition: "full" },
       { label: "One JSON definition, edited from the page header", status: "shown" },
