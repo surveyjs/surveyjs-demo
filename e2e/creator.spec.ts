@@ -1,4 +1,5 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+import { checkoutJson } from "../src/schemas/checkout";
 import { getVariablePresets } from "../src/schemas/variables";
 
 /**
@@ -10,7 +11,7 @@ import { getVariablePresets } from "../src/schemas/variables";
  * Creator itself does with a definition is the Creator's own test suite.
  */
 
-async function waitForCreator(page: import("@playwright/test").Page) {
+async function waitForCreator(page: Page) {
   // A heavy client-only bundle: under parallel workers, and against `next dev`
   // where the route compiles on first request, it needs longer than the default.
   await expect(page.locator(".svc-creator").first()).toBeVisible({ timeout: 45_000 });
@@ -150,4 +151,126 @@ test("Creator edits the AI extraction hint under Description, and a save keeps e
   // so it is this visitor's own definition.
   const { json: stored } = await (await page.request.get("/api/storage/definitions/work-order")).json();
   expect(hintsOf(stored)).toEqual({ ...shipped, "(survey)": edited });
+});
+
+/**
+ * A refused save, announced through Creator's own error notification.
+ *
+ * `PUT /api/storage/definitions/:schema` lints the definition and runs the
+ * form's test suite before it stores anything, so some autosaves are refused on
+ * purpose. What this edition owes an author is the reason, once, and a header
+ * that does not claim the work was saved.
+ *
+ * The request is rewritten on the way out rather than typed into the JSON tab:
+ * that tab is a React-controlled textarea which does not react to synthetic
+ * input, and what is under test here is how a refusal is announced, not how a
+ * definition is typed. The refusal itself is the real route's — the real
+ * linter, the real suite, the real sentence from `messages.ts`.
+ */
+test.describe("a save the server refuses", () => {
+  /** Lints clean, and fails two of the four checkout tests: the card panel never shows. */
+  const failsItsSuite = () => {
+    const json = structuredClone(checkoutJson) as Record<string, unknown>;
+    const walk = (node: unknown, visit: (element: Record<string, unknown>) => void) => {
+      if (Array.isArray(node)) return node.forEach((item) => walk(item, visit));
+      if (!node || typeof node !== "object") return;
+      visit(node as Record<string, unknown>);
+      Object.values(node).forEach((value) => walk(value, visit));
+    };
+    walk(json, (element) => {
+      if (element.name === "cardPanel") element.visibleIf = "{paymentMethod} = 'neither'";
+    });
+    return json;
+  };
+
+  /** Every PUT of a definition leaves with `json` instead of what the Creator holds. */
+  async function sendInstead(page: Page, json: unknown) {
+    await page.route("**/api/storage/definitions/checkout", async (route) => {
+      if (route.request().method() !== "PUT") return route.continue();
+      await route.continue({ postData: JSON.stringify({ json }) });
+    });
+  }
+
+  /** One edit in the property grid, which the Creator autosaves about a second later. */
+  async function editTheTitle(page: Page, text: string) {
+    await page
+      .locator('[data-sv-drop-target-survey-element="email"] .svc-question__content')
+      .first()
+      .click({ position: { x: 60, y: 8 } });
+    const title = page
+      .locator('.svc-side-bar [data-name="title"] textarea, .svc-side-bar [data-name="title"] input')
+      .first();
+    await title.click();
+    await page.keyboard.type(text);
+  }
+
+  const errorToast = (page: Page) => page.locator(".svc-notifier--error.svc-notifier--shown");
+  /** The persistent line under the header: the same sentence, still there once the toast has gone. */
+  const hostLine = (page: Page) => page.locator("header + p");
+
+  test("a definition the linter refuses is announced once, and is not stored", async ({ page }) => {
+    test.slow();
+    await sendInstead(page, {
+      pages: [{ name: "p", elements: [{ type: "text", name: "a", visibleIf: "{" }] }],
+    });
+    await page.goto("/configure?form=checkout");
+    await waitForCreator(page);
+
+    await editTheTitle(page, "A");
+    // Creator's own toast, carrying the server's sentence rather than its
+    // generic "Editor content is not saved".
+    await expect(errorToast(page)).toBeVisible({ timeout: 30_000 });
+    await expect(errorToast(page)).toContainText("Not saved:");
+    await expect(errorToast(page)).toContainText("cannot be parsed");
+
+    // The persistent line under the header says the same thing, and the header
+    // does not claim the work was saved.
+    await expect(hostLine(page)).toHaveText(/^Not saved: /);
+    await expect(page.locator("header p").first()).toContainText("Not saved");
+
+    // One toast per error, not one per autosave: the next refused save carries
+    // the same sentence and is not announced again.
+    await expect(errorToast(page)).toBeHidden({ timeout: 15_000 });
+    await editTheTitle(page, "B");
+    await expect(errorToast(page)).toBeHidden({ timeout: 6_000 });
+    // The line is still there, which is what keeps the refusal on screen.
+    await expect(hostLine(page)).toHaveText(/^Not saved: /);
+
+    // Nothing was stored: the definition is still the one that ships.
+    await page.unroute("**/api/storage/definitions/checkout");
+    const stored = await page.request.get("/api/storage/definitions/checkout");
+    expect((await stored.json()).json).toEqual(checkoutJson);
+  });
+
+  test("a definition that fails its suite is announced with the test's name", async ({ page }) => {
+    test.slow();
+    await sendInstead(page, failsItsSuite());
+    await page.goto("/configure?form=checkout");
+    await waitForCreator(page);
+
+    await editTheTitle(page, "A");
+    await expect(errorToast(page)).toBeVisible({ timeout: 30_000 });
+    await expect(errorToast(page)).toContainText("Card details show for a card");
+  });
+
+  test("once a save goes through, the line clears and the definition is stored", async ({ page }) => {
+    test.slow();
+    await sendInstead(page, {
+      pages: [{ name: "p", elements: [{ type: "text", name: "a", visibleIf: "{" }] }],
+    });
+    await page.goto("/configure?form=checkout");
+    await waitForCreator(page);
+    await editTheTitle(page, "A");
+    await expect(hostLine(page)).toHaveText(/^Not saved: /, { timeout: 30_000 });
+
+    // The author fixes it: from here the Creator's own definition goes out.
+    await page.unroute("**/api/storage/definitions/checkout");
+    await editTheTitle(page, "B");
+    await expect(hostLine(page)).toHaveCount(0, { timeout: 15_000 });
+    await expect(page.locator("header p").first()).toContainText("Saved as you edit");
+
+    const stored = await page.request.get("/api/storage/definitions/checkout");
+    const { json } = (await stored.json()) as { json: Record<string, unknown> };
+    expect(JSON.stringify(json)).toContain("Email addressAB");
+  });
 });

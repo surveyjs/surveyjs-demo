@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
@@ -49,6 +49,22 @@ const CREATOR_OPTIONS: ICreatorOptions = {
 };
 
 /**
+ * Creator's own error toast, once per error rather than once per autosave.
+ *
+ * `notify` is the standard notification — the same call `showErrorOnFailedSave`
+ * makes, the same `.svc-notifier--error` element — so this adds no UI of its own.
+ * What it adds is the ref: autosave fires about once a second while somebody
+ * types, and an author who has broken one expression does not need to be told
+ * about it once a second. The persistent line under the header is what keeps the
+ * refusal on screen between toasts.
+ */
+function announce(creator: SurveyCreator, message: string, last: { current: string | null }) {
+  if (last.current === message) return;
+  last.current = message;
+  creator.notify(message, "error");
+}
+
+/**
  * Survey Creator, opened on one form.
  *
  * This is the commercial half of the story the whole template tells: the same
@@ -60,9 +76,22 @@ const CREATOR_OPTIONS: ICreatorOptions = {
  * Edits are saved to each visitor's own sandbox on the server (see
  * `survey-json.ts`), so the URL is safe to hand around: what a visitor changes is
  * theirs alone, every page renders it for them, and everybody else keeps getting
- * the definition that ships. The route does not lint an autosave: a half-typed
- * expression would fail every one of them. In a browser that blocks the storage
- * cookie nothing can be saved, so the designer is read-only there and says why.
+ * the definition that ships. In a browser that blocks the storage cookie nothing
+ * can be saved, so the designer is read-only there and says why.
+ *
+ * **The route checks before it stores**, so some of those autosaves are refused:
+ * it lints the definition and runs the form's test suite, and answers 422 with
+ * the first thing wrong (the MIT edition's `src/lib/checks/`). Nothing is lost
+ * by a refusal — the designer keeps the author's work, the definition on the
+ * server stays the last good one, and the next clean autosave stores it — so
+ * autosave stays on. Creator's condition editor never commits an expression it
+ * cannot parse, so in practice it is the JSON tab that produces such a save.
+ *
+ * A refusal is announced through **Creator's own error notification**,
+ * `instance.notify(message, "error")`: the same toast `showErrorOnFailedSave`
+ * raises, carrying the server's sentence instead of the generic "Editor content
+ * is not saved". That built-in one is switched off, or every refused save would
+ * show two toasts, the second saying less than the first.
  *
  * A personalized form reads `{user_…}` variables that nothing in its JSON
  * declares. The Creator gets the form's variable presets (`getVariablePresets`)
@@ -77,6 +106,8 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
   const { resolvedTheme } = useTheme();
   const [storageError, setStorageError] = useState<string | null>(null);
   const { readOnly, message: readOnlyMessage } = useStorageAccess();
+  // The last refusal announced, so the same one is not announced again.
+  const lastAnnounced = useRef<string | null>(null);
 
   // Built once per form. The Creator owns its state from here on: it is the
   // editor, and rebuilding it on a prop change would throw away the tab, the
@@ -89,7 +120,11 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
       presets ? { ...CREATOR_OPTIONS, variablePresets: structuredClone(presets) } : CREATOR_OPTIONS,
     );
     instance.autoSaveDelay = 1000;
+    // The host announces the refusal itself, with the sentence the server sent.
+    // Creator's own message would be a second toast saying less than the first.
+    instance.showErrorOnFailedSave = false;
     instance.JSON = form.json;
+    lastAnnounced.current = null;
 
     // The callback is what tells the Creator the save went through, so it waits
     // for the storage call — with a real endpoint behind it, a failed request
@@ -101,11 +136,19 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
       saveSurveyJson(form.id, instance.JSON as SurveyJSON).then(
         () => {
           setStorageError(null);
+          lastAnnounced.current = null;
           callback(saveNo, true);
         },
         (failure: Error) => {
           setStorageError(failure.message);
+          // The callback first: it puts the Creator back to "modified", and that
+          // state change writes "Modified" into the very notifier the toast uses.
+          // Announcing before it would be announcing into a message that is
+          // about to be overwritten.
           callback(saveNo, false);
+          // Every failed save is announced, a storage refusal (403, 413) as well
+          // as a check's: the author is owed the reason whatever it is.
+          announce(instance, failure.message, lastAnnounced);
         },
       );
     };
@@ -191,10 +234,14 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
     try {
       await saveSurveyJson(form.id, creator.JSON as SurveyJSON);
     } catch (failure) {
+      // Announced the same way as a refused autosave, and the page does not
+      // move: the form behind this button would not be the one on screen.
       setStorageError((failure as Error).message);
+      announce(creator, (failure as Error).message, lastAnnounced);
       return;
     }
     setStorageError(null);
+    lastAnnounced.current = null;
     router.push(form.href);
   }, [creator, form.href, form.id, router]);
 
@@ -218,7 +265,10 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
             {form.label} — form designer
           </h1>
           <p className="text-muted-foreground truncate text-xs">
-            Saved as you edit, to your own sandbox on this server
+            {/* "Saved as you edit" over a definition the server refused would be
+                a lie, and it is the one thing an author here has to be able to
+                trust. The reason is on the line below. */}
+            {storageError ? "Not saved" : "Saved as you edit, to your own sandbox on this server"}
             {hasPresets
               ? previewPreset
                 ? `. Previewing as ${previewPreset}`
