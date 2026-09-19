@@ -31,8 +31,28 @@ import "@/styles/survey-overrides-base-nova.css";
 
 /**
  * The tabs a form designer actually needs, and nothing that would need a server:
- * Designer, the JSON document itself, the logic overview, a live preview and the
- * theme editor. Translation is off — these demos ship in one language.
+ * Designer, the JSON document itself, the logic overview, a live preview, the
+ * theme editor and Translation.
+ *
+ * **Translation is on for every form, not only the bilingual one.** Appointment
+ * request already ships in two languages — every string a patient reads is a
+ * `{ default, es }` object in `src/schemas/clinic-visit.ts`, which is what
+ * survey-core stores a localized string as — so for that form the tab opens on the
+ * Spanish that is already there, beside the English, and is where those strings
+ * are edited from now on. The other forms open with English alone and a language
+ * selector: a reviewer adds a locale and the same definition carries it. Nothing
+ * here is per-form, because nothing needs to be — the tab reads the locales a
+ * definition actually uses.
+ *
+ * **`clearTranslationsOnSourceTextChange` drops the translations when the source
+ * string changes.** Edit an English title in the designer and the Spanish beside
+ * it goes, rather than staying behind as a translation of a sentence that no
+ * longer exists; the Translation tab then shows that string as untranslated, which
+ * is the work actually outstanding. Keeping it is how a bilingual form quietly
+ * starts lying in its second language, and this demo takes the same line
+ * everywhere else: `chartLocale` hands a patient the English form rather than a
+ * half-Spanish one. The rule covers a question's `name` and a choice's `value`
+ * too, where the title or the text was only ever the default.
  *
  * `isAutoSave` is what makes the Creator call `saveSurveyFunc` as edits happen,
  * so there is no Save button to forget. Each save is a request to the server, so
@@ -44,7 +64,8 @@ const CREATOR_OPTIONS: ICreatorOptions = {
   showLogicTab: true,
   showPreviewTab: true,
   showThemeTab: true,
-  showTranslationTab: false,
+  showTranslationTab: true,
+  clearTranslationsOnSourceTextChange: true,
   isAutoSave: true,
 };
 

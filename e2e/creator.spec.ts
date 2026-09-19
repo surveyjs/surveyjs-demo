@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { checkoutJson } from "../src/schemas/checkout";
+import { clinicVisitJson } from "../src/schemas/clinic-visit";
 import { getVariablePresets } from "../src/schemas/variables";
 
 /**
@@ -272,5 +273,105 @@ test.describe("a save the server refuses", () => {
     const stored = await page.request.get("/api/storage/definitions/checkout");
     const { json } = (await stored.json()) as { json: Record<string, unknown> };
     expect(JSON.stringify(json)).toContain("Email addressAB");
+  });
+});
+
+/**
+ * The Translation tab, and what happens to a translation when its source changes.
+ *
+ * The tab is on for every form (`showTranslationTab`), and Appointment request is
+ * the one that arrives with something in it: every patient-facing string in
+ * `src/schemas/clinic-visit.ts` is a `{ default, es }` object. What this edition
+ * adds on top is `clearTranslationsOnSourceTextChange`, so an English edit in the
+ * designer does not leave a Spanish translation of a sentence that is gone.
+ */
+test.describe("the Translation tab", () => {
+  /** The element of `json` named `name`, wherever it sits. */
+  function elementNamed(json: unknown, name: string): Record<string, unknown> | undefined {
+    if (Array.isArray(json)) {
+      for (const item of json) {
+        const found = elementNamed(item, name);
+        if (found) return found;
+      }
+      return undefined;
+    }
+    if (!json || typeof json !== "object") return undefined;
+    const element = json as Record<string, unknown>;
+    if (element.name === name) return element;
+    return elementNamed(Object.values(element), name);
+  }
+
+  test("opens on the Spanish the appointment request already ships", async ({ page }) => {
+    test.slow();
+    await page.setViewportSize({ width: 1600, height: 1100 });
+    await page.goto("/configure?form=clinic-visit");
+    await waitForCreator(page);
+
+    await page.locator(".svc-tabbed-menu-item", { hasText: "Translations" }).first().click();
+    const tab = page.locator(".svc-translation-tab");
+    await expect(tab).toBeVisible();
+
+    // Nothing here is configured per form: the tab offers `es` because that is the
+    // locale this definition uses, and it names it the way Creator does, in its own
+    // language. The survey's own title is there in both, before anything is selected.
+    await expect(tab).toContainText("Default (English)");
+    await expect(tab).toContainText("Español");
+    await expect(tab.getByText("Solicitar una cita").first()).toBeVisible();
+  });
+
+  test("a form with no translations offers the language selector and nothing else", async ({ page }) => {
+    test.slow();
+    await page.setViewportSize({ width: 1600, height: 1100 });
+    await page.goto("/configure?form=checkout");
+    await waitForCreator(page);
+
+    await page.locator(".svc-tabbed-menu-item", { hasText: "Translations" }).first().click();
+    const tab = page.locator(".svc-translation-tab");
+    await expect(tab).toBeVisible();
+    // The source column and its language, and no second language yet: the tab is on
+    // for this form so that a reviewer can add one, not because it already has one.
+    await expect(tab).toContainText("Default (English)");
+    await expect(tab).toContainText("Email address");
+    await expect(tab).not.toContainText("Español");
+  });
+
+  test("editing an English title in the designer drops that string's Spanish, and only that one", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.setViewportSize({ width: 1600, height: 1100 });
+    await page.goto("/configure?form=clinic-visit");
+    await waitForCreator(page);
+
+    // `visitReason` ships as { default, es }; so does `relatedToChart` below it and
+    // the survey title above, and neither of those is being touched.
+    const shipped = elementNamed(clinicVisitJson, "visitReason")!;
+    expect(shipped.title).toMatchObject({ es: "¿Para qué necesita que le atendamos?" });
+
+    const target = page.locator('[data-sv-drop-target-survey-element="visitReason"]');
+    await target.scrollIntoViewIfNeeded();
+    await target.locator(".svc-question__content").first().click({ position: { x: 60, y: 8 } });
+    const title = page
+      .locator('.svc-side-bar [data-name="title"] textarea, .svc-side-bar [data-name="title"] input')
+      .first();
+    // The property grid edits the default locale, which is what clears the rest.
+    await expect(title).toHaveValue("What do you need to be seen for?");
+    await title.fill("Why are you booking?");
+    await title.press("Tab");
+
+    await page.getByRole("button", { name: "View Result" }).click();
+    await expect(page).toHaveURL(/\/embedded\/clinic$/);
+    const { json: stored } = await (
+      await page.request.get("/api/storage/definitions/clinic-visit")
+    ).json();
+
+    // One locale left, so survey-core serializes the string as a plain string.
+    expect(elementNamed(stored, "visitReason")!.title).toBe("Why are you booking?");
+    // Every other translation in the definition is untouched.
+    expect(elementNamed(stored, "relatedToChart")!.title).toEqual(
+      elementNamed(clinicVisitJson, "relatedToChart")!.title,
+    );
+    expect((stored as Record<string, unknown>).title).toEqual(clinicVisitJson.title);
+    expect((stored as Record<string, unknown>).completeText).toEqual(clinicVisitJson.completeText);
   });
 });
