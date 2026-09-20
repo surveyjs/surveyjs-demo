@@ -2,8 +2,6 @@ import { test, expect, type Page } from "@playwright/test";
 import { QuestionMatrixDynamicModel, QuestionPanelDynamicModel } from "survey-core";
 import { getFormNavItem } from "../src/schemas/navigation";
 import { assignRowIds, getRecordCollection, recordTitle } from "../src/schemas/records";
-import { PAGE_ACTIONS } from "../src/lib/site";
-import { HOW_BUILT } from "../src/lib/how-built";
 import { createSurveyModel } from "../src/schemas/createSurveyModel";
 import { leadsJson } from "../src/schemas/leads";
 import type { SurveyData } from "../src/schemas/types";
@@ -189,14 +187,6 @@ test.describe("on /leads", () => {
     await expect(formHeading(page)).toHaveText(`View ${recordTitle(leads, rows[0])}`);
     await expect(rail(page).getByRole("link").first()).toHaveAttribute("aria-current", "page");
     await expect(page).toHaveURL(/\/leads$/);
-  });
-
-  test("the how-built panel describes a record's URL, and says what the list is", async ({ page }) => {
-    await page.goto("/leads/LEAD-0001");
-    await page.getByRole("banner").getByRole("button", { name: PAGE_ACTIONS.howBuilt }).click();
-    const panel = page.getByRole("complementary", { name: PAGE_ACTIONS.howBuilt });
-    await expect(panel).toContainText(HOW_BUILT.leads!.summary);
-    await expect(panel).toContainText(HOW_BUILT.leads!.listNote!);
   });
 
   test("a new line item recomputes its total and the deal; removing it leaves the form valid", async ({ page }) => {

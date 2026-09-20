@@ -36,4 +36,12 @@ export const EXTERNAL_URLS = {
 export const PAGE_ACTIONS = {
   source: "Source of this page",
   howBuilt: "How this page is built",
+  /**
+   * The index of every example's explainer, which the top bar offers **on an
+   * explainer only** — on the example itself the link above is the one worth
+   * having, and a second, vaguer one beside it would only blur it. Worded in
+   * parallel with it all the same: the only thing that differs between the two
+   * is *this page* against *every page*.
+   */
+  howIndex: "How every page is built",
 } as const;

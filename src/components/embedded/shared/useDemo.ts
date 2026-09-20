@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fromVariables,
   getVariablePresets,
+  navPages,
   type SurveyData,
   type SurveyJSON,
 } from "@/schemas";
-import { configureHref } from "@/lib/routes";
+import { configureHref, howHref } from "@/lib/routes";
 import { stableJson } from "@/lib/utils";
 import { features } from "@/features";
 import { useSurveyOutline } from "@/components/survey-outline/SurveyOutline";
@@ -77,6 +78,8 @@ export interface Demo {
     onExportPdf?: () => void;
     /** The one page this form's JSON is edited on. */
     configureHref: string;
+    /** This demo's "How this page is built" explainer, inside the admin shell. */
+    howHref?: string;
     /** The dashboard for this form's responses, in editions that ship one. */
     analyticsHref?: string;
     /** The users the admin keeps for this demo, by display name. */
@@ -294,6 +297,16 @@ export function useDemo({
   }, [activeUserId, defaults, savedRecord]);
 
   const href = configureHref(survey.id);
+  // The explainer for this demo. These pages wear no admin chrome, so there is
+  // no top bar to toggle a drawer from and no drawer over somebody else's
+  // website: the dock links the `/how` page instead, in a new tab like its
+  // other links. Found by the form it renders, which is what a demo knows.
+  const explainerHref = useMemo(() => {
+    const nav = navPages.find(
+      (item) => item.layout === "embedded" && item.schemaId === survey.id,
+    );
+    return nav ? howHref(nav.path) : undefined;
+  }, [survey.id]);
 
   return {
     survey,
@@ -311,6 +324,7 @@ export function useDemo({
       onEditUser: () => setUserOpen((open) => !open),
       onExportPdf: exportPdf,
       configureHref: href,
+      howHref: explainerHref,
       analyticsHref: features.analyticsHref?.(survey.id),
       users: userOptions,
       activeUserId: activeRecord.id,

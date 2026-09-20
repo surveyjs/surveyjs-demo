@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import {
+  BlocksIcon,
   ChartColumnIcon,
   ChevronDownIcon,
   Code2Icon,
@@ -28,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { mergeTailwindClasses } from "@/lib/utils";
+import { PAGE_ACTIONS } from "@/lib/site";
 import { features, type Features } from "@/features";
 
 /** Where the demos came from — the template's own admin shell. */
@@ -69,6 +71,7 @@ export function DemoDock({
   onEditUser,
   onExportPdf,
   configureHref,
+  howHref,
   analyticsHref,
   users,
   activeUserId,
@@ -89,6 +92,12 @@ export function DemoDock({
   onExportPdf?: () => void;
   /** The one page this form's JSON is edited on. */
   configureHref: string;
+  /**
+   * This demo's "How this page is built" explainer. A plain link, in a new tab:
+   * the drawer the admin pages open belongs to the template's own chrome, and
+   * this page is pretending to be somebody else's website.
+   */
+  howHref?: string;
   /** The dashboard for this form's responses. No link renders without it. */
   analyticsHref?: string;
   /** The users the admin keeps for this demo. One is the shipped default. */
@@ -143,6 +152,19 @@ export function DemoDock({
         <LayersIcon className="size-3.5" />
         <span className="hidden truncate lg:inline">SurveyJS demos</span>
       </a>
+
+      {howHref && (
+        <a
+          href={howHref}
+          target="_blank"
+          rel="noreferrer"
+          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex min-w-0 items-center gap-1.5 rounded-full px-1.5 py-1 text-[11px] font-medium tracking-wide uppercase transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+          title={PAGE_ACTIONS.howBuilt}
+        >
+          <BlocksIcon className="size-3.5" />
+          <span className="hidden truncate xl:inline">{PAGE_ACTIONS.howBuilt}</span>
+        </a>
+      )}
 
       {divider}
 

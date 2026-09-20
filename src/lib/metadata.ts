@@ -20,6 +20,8 @@
 import type { Metadata } from "next";
 import { features, type Edition } from "@/features";
 import { getNavItem, navPages, type NavId } from "@/schemas/navigation";
+import { getHowContent } from "@/lib/how-content";
+import { HOW_INDEX, howHref } from "@/lib/routes";
 import { DEMO_NAME } from "@/lib/site";
 
 export const SITE_NAME = DEMO_NAME;
@@ -173,6 +175,36 @@ export const rootMetadata: Metadata = buildMetadata(ROOT_COPY, "/", false);
 export function pageMetadata(id: NavId): Metadata {
   return buildMetadata(pageCopy(id), getNavItem(id).path, true);
 }
+
+/**
+ * An example's "how it's built" page, canonical to `/x/how`.
+ *
+ * The description is the `summary` in the Markdown file's front matter — the
+ * one sentence the page opens with and the index lists — so there is no second
+ * copy of it here, and renaming the sidebar row renames the page.
+ */
+export function howMetadata(id: NavId): Metadata {
+  const nav = getNavItem(id);
+  return buildMetadata(
+    {
+      title: `${nav.label} — how it's built`,
+      description: getHowContent(id).summary,
+    },
+    howHref(nav.path),
+    true,
+  );
+}
+
+/** The index of the explainers. Its own copy: it describes no single example. */
+export const howIndexMetadata: Metadata = buildMetadata(
+  {
+    title: "How it's built — every example",
+    description:
+      "One page per example in this demo: what goes into the form, what its definition does with it, what comes back out, and every file behind it.",
+  },
+  HOW_INDEX,
+  true,
+);
 
 /**
  * A tool opened on one form — `/configure?form=`, `/analytics?form=` — titled

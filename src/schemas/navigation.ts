@@ -172,6 +172,20 @@ const allNavGroups: readonly NavGroup[] = [
   },
 ];
 
+/**
+ * Every page in the template, this edition's and the other's.
+ *
+ * `navPages` below drops the rows an edition has no sidebar entry for, which is
+ * what the sidebar, the top bar and every route lookup want. The two readers
+ * that need the whole set are the "how it's built" index — which lists a
+ * Full-only example as a link to the Full host rather than as a gap — and
+ * `e2e/how-integrity.spec.ts`, which checks both editions' modules from either
+ * edition. Nothing else should use it.
+ */
+export const allNavPages: readonly NavPage[] = allNavGroups
+  .flatMap((group) => group.items)
+  .filter(isNavPage);
+
 /** The sidebar this edition shows: the rows for another edition, and a group left empty, dropped. */
 export const navGroups: readonly NavGroup[] = allNavGroups
   .map((group) => ({

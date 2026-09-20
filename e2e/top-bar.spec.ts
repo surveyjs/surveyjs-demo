@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { features } from "../src/features";
 import { navHref, navItems, navPages, opensInNewTab } from "../src/schemas/navigation";
-import { otherEditionHref, pageSourcePath } from "../src/lib/routes";
+import { HOW_INDEX, howHref, isHowRoute, otherEditionHref, pageSourcePath } from "../src/lib/routes";
 import { DEMO_NAME, PAGE_ACTIONS, SITE_LINKS } from "../src/lib/site";
 
 /**
@@ -30,6 +30,46 @@ test.describe("helpers", () => {
     expect(pageSourcePath("/work-orders/WO-2026-0118")).toBe("src/app/(shell)/work-orders/page.tsx");
     expect(pageSourcePath("/embedded/chart")).toBe("src/app/embedded/chart/page.tsx");
     expect(pageSourcePath("/configure")).toBeUndefined();
+  });
+
+  test("pageSourcePath has nothing to say about an explainer", () => {
+    // The route file is three lines around `HowPage`; what a reader of that
+    // page wants is `how/<route>.md`, which its own links already reach.
+    expect(pageSourcePath("/leads/how")).toBeUndefined();
+    expect(pageSourcePath("/work-orders/how")).toBeUndefined();
+    expect(pageSourcePath("/embedded/chart/how")).toBeUndefined();
+    expect(pageSourcePath(HOW_INDEX)).toBeUndefined();
+  });
+
+  test("isHowRoute is the index and a registered page's /how, and nothing else", () => {
+    expect(isHowRoute(HOW_INDEX)).toBe(true);
+    for (const item of navPages) expect(isHowRoute(howHref(item.path))).toBe(true);
+    expect(isHowRoute("/work-orders")).toBe(false);
+    // A record whose id looked like the segment is not an explainer.
+    expect(isHowRoute("/work-orders/WO-2026-0118/how")).toBe(false);
+    expect(isHowRoute("/configure/how")).toBe(false);
+  });
+});
+
+test.describe("on an explainer", () => {
+  test("only the link to every other explainer is left", async ({ page }) => {
+    await page.goto(howHref("/work-orders"));
+    const banner = page.getByRole("banner");
+    // This page is what the link would open, and its route file is three lines.
+    await expect(banner.getByRole("link", { name: PAGE_ACTIONS.howBuilt })).toHaveCount(0);
+    await expect(banner.getByRole("link", { name: PAGE_ACTIONS.source })).toHaveCount(0);
+    await expect(banner.getByRole("link", { name: PAGE_ACTIONS.howIndex })).toHaveAttribute(
+      "href",
+      HOW_INDEX,
+    );
+  });
+
+  test("the index does not link itself", async ({ page }) => {
+    await page.goto(HOW_INDEX);
+    const banner = page.getByRole("banner");
+    await expect(banner.getByRole("link", { name: PAGE_ACTIONS.howIndex })).toHaveCount(0);
+    await expect(banner.getByRole("link", { name: PAGE_ACTIONS.howBuilt })).toHaveCount(0);
+    await expect(banner.getByRole("link", { name: PAGE_ACTIONS.source })).toHaveCount(0);
   });
 });
 
@@ -89,10 +129,14 @@ test.describe("the top bar", () => {
       const sourceHref = await banner.getByRole("link", { name: PAGE_ACTIONS.source }).getAttribute("href");
       expect(sourceHref?.endsWith(`/blob/main/${pageSourcePath(route)}`)).toBe(true);
 
-      const howBuilt = banner.getByRole("button", { name: PAGE_ACTIONS.howBuilt });
-      await expect(howBuilt).toHaveAttribute("aria-pressed", "false");
-      await howBuilt.click();
-      await expect(howBuilt).toHaveAttribute("aria-pressed", "true");
+      // A plain link to this page's explainer, in this tab. No drawer.
+      const howBuilt = banner.getByRole("link", { name: PAGE_ACTIONS.howBuilt });
+      await expect(howBuilt).toHaveAttribute("href", howHref(route));
+      await expect(howBuilt).not.toHaveAttribute("target", /.*/);
+
+      // The index is the explainer's link, not the example's: here it would be
+      // a second, vaguer version of the one above.
+      await expect(banner.getByRole("link", { name: PAGE_ACTIONS.howIndex })).toHaveCount(0);
 
       // Per-form actions live in the page header, never here.
       await expect(banner.getByRole("link", { name: features.designer.label })).toHaveCount(0);
@@ -138,7 +182,7 @@ test.describe("the top bar at every width", () => {
       // Wait for the theme button, which renders a placeholder until mounted.
       await expect(banner.getByRole("button", { name: /Switch to/ })).toBeVisible();
       const source = banner.getByRole("link", { name: PAGE_ACTIONS.source });
-      const howBuilt = banner.getByRole("button", { name: PAGE_ACTIONS.howBuilt });
+      const howBuilt = banner.getByRole("link", { name: PAGE_ACTIONS.howBuilt });
       await expect(source).toBeVisible();
       await expect(howBuilt).toBeVisible();
 

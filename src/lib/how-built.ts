@@ -1,183 +1,33 @@
 /**
- * What the "How this page is built" panel says about each page.
+ * The little the "how it's built" pages do not read out of Markdown.
  *
- * Content only, and no React, so `e2e/` can import it and assert the panel says
- * exactly this. Neither the variables nor the references to them are written
- * here: the panel takes the names from the form's variable presets
- * (`getVariablePresets`) and derives the references from the definition with
- * `findVariableReferences`, so it cannot drift from either.
+ * Everything an explainer says about an example is in `how/<route>.md` — the
+ * words, the links, the files, the quoted definitions. What is left here is the
+ * fixed chrome wording the page, the index and the specs share, and the walk
+ * over a definition that lets `e2e/how-integrity.spec.ts` check a quoted block
+ * against the JSON that actually ships.
+ *
+ * No React, so `e2e/` can import it.
  */
-import type { Edition } from "@/features";
-import type { NavId } from "@/schemas/navigation";
+import { features } from "@/features";
 
-export interface HowBuiltItem {
-  readonly label: string;
-  readonly detail: string;
-  /** A repository path; the panel links it under `features.brand.sourceUrl`. */
-  readonly source?: string;
-  /** Set for data only one edition has. The other edition does not list it. */
-  readonly edition?: Edition;
-}
-
-export interface HowBuiltFeature {
-  readonly label: string;
-  /** "shown": this page does it now. "coming": planned, and labelled as such. */
-  readonly status: "shown" | "coming";
-  /** Set for a feature only one edition has. The other edition labels the chip with that edition's name. */
-  readonly edition?: Edition;
-}
-
-export interface HowBuiltContent {
-  readonly summary: string;
-  /** For a records page: what the list beside the form is, rendered small under `summary`. */
-  readonly listNote?: string;
-  readonly dataIn: readonly HowBuiltItem[];
-  readonly dataOut: readonly HowBuiltItem[];
-  readonly features: readonly HowBuiltFeature[];
-}
-
-/** The items this edition lists: the panel renders these, and the specs expect them. */
-export function itemsInEdition(items: readonly HowBuiltItem[], edition: Edition): HowBuiltItem[] {
-  return items.filter((item) => item.edition === undefined || item.edition === edition);
-}
-
-/** The panel's fixed wording, shared with the specs. */
+/** Wording the explainer, the index and the specs share. */
 export const HOW_BUILT_TEXT = {
-  noVariables: "This form reads no variables.",
-  notDescribed: "This page is not described yet.",
-  shippedNote: "Read from the definition that ships with the template, not from a copy saved on the editor page.",
-  coming: "coming",
+  /** The index card's way into an explainer. */
+  readHow: "Read how it's built",
+  /** Beside "Open this example" at the top of an explainer, and again at the foot. */
+  allExamples: "All examples",
+  openExample: "Open this example",
+  /** The badge the loader appends to a block only the other edition ships. */
+  otherEdition: `available in the ${features.brand.otherEdition.label}`,
 } as const;
 
-/** The same note on both records pages. */
-const RECORDS_LIST_NOTE =
-  "The list on the left is this application's own React component, not a SurveyJS one. An editable list view built on the SurveyJS matrix is planned; it is not in this demo.";
-
-export const HOW_BUILT: Partial<Record<NavId, HowBuiltContent>> = {
-  leads: {
-    summary:
-      "A CRM opportunity as one form: contacts in a dynamic panel, line items and totals in matrices, and rules that follow the signed-in user. Seven columns are derived from each record, and the list shows three of them; the form edits the whole document.",
-    listNote: RECORDS_LIST_NOTE,
-    dataIn: [
-      {
-        label: "The definition",
-        detail: "Three pages of JSON: every question, every total and every rule on this page, including the ones that read the user.",
-        source: "src/schemas/leads.ts",
-      },
-      {
-        label: "The record",
-        detail: "getResult returns the whole stored document, contacts, rows and ids included, loaded into the form as its data.",
-        source: "src/storage/survey-results.ts",
-      },
-      {
-        label: "The user_… variables",
-        detail: "user_id, user_name, user_role and user_currency, declared as SurveyJS variable presets; the two presets are the users you can sign in as here. The values come from listSessionUsers(\"leads\"): in your app, getSession(). Budget amount is shown to managers only; a discount above 20% needs a manager to save.",
-        source: "src/schemas/variables/leads.ts",
-      },
-      {
-        label: "New-lead defaults",
-        detail: "newRecord sets the owner and the currency from the signed-in user, in code, so opening an existing lead never rewrites them.",
-        source: "src/schemas/collections/leads.ts",
-      },
-    ],
-    dataOut: [
-      {
-        label: "The document",
-        detail: "saveResult stores every answer, and gives each contact and row without one a stable id.",
-        source: "src/storage/survey-results.ts",
-      },
-      {
-        label: "Seven columns",
-        detail: "toColumns derives account, owner name, stage, deal value (recomputed from the line items), next step date, currency and expected close. The list reads only these.",
-        source: "src/schemas/collections/leads.ts",
-      },
-      {
-        label: "Checked before it is stored",
-        detail: "The route builds the same headless survey-core model this page rendered, with the signed-in user's variables, and refuses a record the definition rejects with the first error named. The browser checked it too; the server is where the rule is enforced.",
-        source: "src/lib/checks/check-response.ts",
-      },
-    ],
-    features: [
-      { label: "Server-side validation", status: "shown" },
-      { label: "Variables from the server", status: "shown" },
-      { label: "Variable presets", status: "shown" },
-      { label: "Expressions over a dynamic panel and matrices", status: "shown" },
-      { label: "Mapped columns plus the document", status: "shown" },
-      { label: "Choices from your API", status: "coming" },
-      { label: "An async validator calling the server", status: "coming" },
-      { label: "Live updates with presence", status: "coming" },
-      { label: "PDF export", status: "shown", edition: "full" },
-      { label: "Dashboard (View analytics)", status: "shown", edition: "full" },
-      { label: "Survey Creator (Open in Creator)", status: "shown", edition: "full" },
-    ],
-  },
-  workOrders: {
-    summary:
-      "A field service job sheet as one form: a list of stored work orders, and one form that views, edits and adds them. A filled sheet becomes a draft record through AI extraction.",
-    listNote: RECORDS_LIST_NOTE,
-    dataIn: [
-      {
-        label: "The definition",
-        detail: "Two pages of JSON: the questions, the totals, the rules that require a signature, and an aiHint per question naming its box on the sheet.",
-        source: "src/schemas/work-order.ts",
-      },
-      {
-        label: "The record",
-        detail: "getResult returns the whole stored document, loaded into the form as its data.",
-        source: "src/storage/survey-results.ts",
-      },
-      {
-        label: "The list",
-        detail: "listResults returns the columns only: job number, customer, equipment, status and total. No documents.",
-        source: "src/storage/survey-results.ts",
-      },
-      {
-        label: "An uploaded document",
-        detail: "A PDF, scan or photo of a filled sheet, read by /api/extract against the definition, and kept by keepSourceDocument as the new record's original.",
-        source: "src/storage/documents.ts",
-      },
-    ],
-    dataOut: [
-      {
-        label: "The document",
-        detail: "saveResult stores every answer. A record read from a document also stores a link to its original and when it was read: forced by fromDocument.pinned, never taken from the model's answers.",
-        source: "src/schemas/collections/work-order.ts",
-      },
-      {
-        label: "Five columns",
-        detail: "toColumns derives job number, customer, equipment, status and the total, recomputed from the parts and labor. The list reads only these.",
-        source: "src/schemas/collections/work-order.ts",
-      },
-      {
-        label: "The job sheet PDF",
-        detail: "Save as PDF prints the record box by box onto the company's blank, adding continuation sheets for as many parts as it has.",
-        source: "src/features/full/work-order-pdf.ts",
-        edition: "full",
-      },
-      {
-        label: "Checked before it is stored",
-        detail: "The route checks every answer against the definition it answers, on the server, and refuses a record that does not fit. A draft — which is what a sheet read off paper is — may still be incomplete; it may not be malformed.",
-        source: "src/lib/checks/check-response.ts",
-      },
-    ],
-    features: [
-      { label: "Server-side validation", status: "shown" },
-      { label: "AI extraction from a PDF, scan or photo", status: "shown" },
-      { label: "Job sheet PDF", status: "shown", edition: "full" },
-      { label: "One JSON definition, edited from the page header", status: "shown" },
-      { label: "Choices from your API", status: "coming" },
-      { label: "Per-field confidence in the review", status: "coming" },
-      { label: "Survey Creator (Open in Creator)", status: "shown", edition: "full" },
-      { label: "Dashboard (View analytics)", status: "shown", edition: "full" },
-    ],
-  },
-};
-
-export interface VariableReference {
+/** One string, number or boolean written somewhere in a definition. */
+export interface DefinitionProperty {
   /** The nearest enclosing `name`: `(survey)` at the root, `lineItems › discountPct` in a matrix. */
   readonly element: string;
   readonly property: string;
-  readonly expression: string;
+  readonly value: string | number | boolean;
 }
 
 /** Arrays whose items are elements, or sit on one. */
@@ -195,31 +45,30 @@ const CHILD_ARRAYS = new Set([
 /** Children named relative to their container: a matrix column, a dynamic panel's template. */
 const NESTED_ARRAYS = new Set(["columns", "templateElements"]);
 
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
- * Every string property in a definition that references `{<name>}` for one of
- * `names`, whole names as the form's variable presets declare them, with the
- * element it sits on. A JSON walk: no model, no DOM.
+ * Every value written in a definition, with the element it sits on. A JSON walk:
+ * no model, no DOM.
+ *
+ * This is what a ```` ```json definition=budgetAmount.visibleIf ```` block in a
+ * how file is checked against. The block's text is written out in the Markdown,
+ * so the file reads whole on GitHub and in an editor; the test fails when the
+ * definition no longer says that, which is drift caught rather than a page
+ * quietly lying.
+ *
+ * An element and a property do not identify one entry: a choice carries its
+ * parent question's name, so `chartProblems.visibleIf` is nine different
+ * expressions. A quotation matches when **any** of them is the text in the file.
  */
-export function findVariableReferences(
-  json: unknown,
-  names: readonly string[],
-): VariableReference[] {
-  if (names.length === 0) return [];
-  // `{user_role}` — never `{user_roles}`, and never `{user}`.
-  const pattern = new RegExp(`\\{\\s*(?:${names.map(escapeRegExp).join("|")})\\s*\\}`);
-  const found: VariableReference[] = [];
+export function collectProperties(json: unknown): DefinitionProperty[] {
+  const found: DefinitionProperty[] = [];
 
   const check = (element: string, property: string, value: unknown) => {
-    if (typeof value === "string" && pattern.test(value)) {
-      found.push({ element, property, expression: value });
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      found.push({ element, property, value });
     }
   };
 

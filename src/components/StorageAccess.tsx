@@ -22,7 +22,7 @@ const StorageAccessContext = createContext<StorageAccessState>({
  * The handshake (`src/storage/access.ts`) runs once, after mount. Until it
  * answers, `readOnly` is `false`, so the server markup is the same for every
  * visitor and nothing flickers for the ones whose cookies work. Mounted in the
- * root layout, beside `HowBuiltProvider`, so the embedded demos and the editor
+ * root layout rather than in `AdminShell`, so the embedded demos and the editor
  * share the same answer.
  */
 export function StorageAccessProvider({ children }: { children: ReactNode }) {

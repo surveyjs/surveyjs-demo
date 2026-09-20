@@ -4,7 +4,11 @@ import { test, expect } from "@playwright/test";
 import { createSurveyModel } from "../src/schemas/createSurveyModel";
 import { workOrderJson } from "../src/schemas/work-order";
 import { workOrderSeed } from "../src/schemas/data/work-order-seed";
-import { getRecordCollection } from "../src/schemas/records";
+import {
+  RESERVED_RECORD_IDS,
+  getRecordCollection,
+  isReservedRecordId,
+} from "../src/schemas/records";
 import type { SurveyData } from "../src/schemas/types";
 
 /**
@@ -77,5 +81,31 @@ test.describe("seed and samples", () => {
   test("no sample is a seed record", () => {
     const ids = new Set(workOrderSeed.map((record) => record.id));
     for (const file of SAMPLE_FILES.slice(0, 3)) expect(ids.has(sheet(file).data.jobNumber as string)).toBe(false);
+  });
+});
+
+/**
+ * A record's id is a path segment, and two static routes already live under the
+ * page: `/work-orders/how` is the explainer and `/work-orders/from-document` the
+ * import panel. `newId` cannot produce either, and a document must not be able
+ * to either — a sheet with `how` written in its JOB NO. box would otherwise make
+ * a record that shadows a page and can never be opened at its own URL.
+ */
+test.describe("a record can never be named after a route", () => {
+  test("newId never produces a reserved segment", () => {
+    for (const reserved of RESERVED_RECORD_IDS) {
+      expect(workOrders.newId([reserved])).not.toBe(reserved);
+    }
+  });
+
+  test("fromDocument.id refuses a reserved segment, and a job number is still taken", () => {
+    const fromDocumentId = workOrders.fromDocument!.id!;
+    for (const reserved of RESERVED_RECORD_IDS) {
+      expect(fromDocumentId({ jobNumber: reserved }, [])).toBeUndefined();
+      expect(isReservedRecordId(reserved)).toBe(true);
+    }
+    // What the guard must not break: a printed number is still what names the record.
+    expect(fromDocumentId({ jobNumber: "WO-2026-0142" }, [])).toBe("WO-2026-0142");
+    expect(fromDocumentId({ jobNumber: "WO-2026-0142" }, ["WO-2026-0142"])).toBeUndefined();
   });
 });

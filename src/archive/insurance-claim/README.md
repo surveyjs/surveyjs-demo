@@ -99,4 +99,4 @@ The assets are in `public/samples/archive/cms-1500/`: the blank, a filled PDF, a
 
 6. **CSS.** Copy the rules in `service-lines.css` back into `src/styles/survey-overrides-shadcn.css`. They were written for a form beside the old table at `lg`; beside the rail, from `xl`, check whether the service-line matrix still needs them.
 
-7. **Panel.** Add `claims` to `HOW_BUILT` in `src/lib/how-built.ts`, and `insurance-claim` back to the lint-clean list in `e2e/configure.spec.ts`.
+7. **Explainer.** Write `how/claims.md` and add `src/app/(shell)/claims/how/page.tsx`, and put `insurance-claim` back in the lint-clean list in `e2e/configure.spec.ts`.

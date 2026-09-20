@@ -10,7 +10,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { HowBuiltPanel } from "@/components/how-built/HowBuiltPanel";
 import { StorageReadOnlyBanner } from "@/components/StorageAccess";
 import { Sidebar } from "./Sidebar";
 import { TopBar, TopBarBrand, TopBarLinks } from "./TopBar";
@@ -87,8 +86,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </div>
         </main>
       </div>
-
-      <HowBuiltPanel />
     </div>
   );
 }

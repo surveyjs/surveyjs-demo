@@ -1,4 +1,4 @@
-import type { RecordCollection } from "../records";
+import { isReservedRecordId, type RecordCollection } from "../records";
 import type { SurveyData } from "../types";
 import { EQUIPMENT_TYPES, WORK_ORDER_STATUSES } from "../work-order";
 import { workOrderSeed } from "../data/work-order-seed";
@@ -96,9 +96,15 @@ export const workOrdersCollection: RecordCollection = {
   // labor rate included. The app forces only what a document must not decide:
   // the draft status and where the record came from.
   fromDocument: {
+    // The job number format already excludes every static route under the page,
+    // but the check is explicit: a document must never be able to name a record
+    // `how` or `from-document` and shadow the explainer or the import panel.
     id: (data, existing) => {
       const printed = data.jobNumber;
-      return typeof printed === "string" && JOB_NUMBER.test(printed) && !existing.includes(printed)
+      return typeof printed === "string" &&
+        JOB_NUMBER.test(printed) &&
+        !isReservedRecordId(printed) &&
+        !existing.includes(printed)
         ? printed
         : undefined;
     },

@@ -7,7 +7,7 @@ import {
   type SurveyData,
   type SurveyJSON,
 } from "@/schemas";
-import { features } from "@/features";
+import { sourceHref } from "@/lib/routes";
 
 /**
  * Every form in the template, in one list, because one page edits all of them.
@@ -40,9 +40,6 @@ export interface FormEntry {
   readonly sourceHref: string;
 }
 
-/** This edition's repository, so a link to a definition opens the file it ships. */
-const SOURCE_ROOT = `${features.brand.sourceUrl}/blob/main/src/schemas`;
-
 function form(
   id: string,
   file: string,
@@ -51,7 +48,9 @@ function form(
   return {
     id,
     json: getSchemaDefinition(id).json,
-    sourceHref: `${SOURCE_ROOT}/${file}`,
+    // `sourceHref` is this edition's repository, so a link to a definition
+    // opens the file this edition actually ships.
+    sourceHref: sourceHref(`src/schemas/${file}`),
     ...rest,
   };
 }

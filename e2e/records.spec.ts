@@ -1,8 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { features } from "../src/features";
 import { configureHref } from "../src/lib/routes";
-import { PAGE_ACTIONS } from "../src/lib/site";
-import { HOW_BUILT, HOW_BUILT_TEXT, findVariableReferences, itemsInEdition } from "../src/lib/how-built";
 import { getFormNavItem } from "../src/schemas/navigation";
 import { getRecordCollection, recordTitle } from "../src/schemas/records";
 import type { SurveyData } from "../src/schemas/types";
@@ -26,34 +24,6 @@ const statusLabels = workOrders.columns.find((column) => column.key === "status"
 const TOTAL_0118 = "$1,195.25";
 
 test.describe("helpers", () => {
-  test("findVariableReferences finds references on elements, columns and defaults", () => {
-    const json = {
-      pages: [
-        {
-          name: "p1",
-          elements: [
-            { type: "text", name: "budget", visibleIf: "{user_role} = 'manager'" },
-            {
-              type: "matrixdynamic",
-              name: "m",
-              columns: [{ name: "c", cellType: "number", enableIf: "{user_canEdit}" }],
-            },
-            { type: "text", name: "owner", defaultValueExpression: "{ user_name }" },
-            // Whole names only: neither a longer name nor the bare prefix is a reference.
-            { type: "text", name: "other", visibleIf: "{user_roles} notempty" },
-            { type: "text", name: "another", visibleIf: "{user} notempty" },
-          ],
-        },
-      ],
-    };
-    const found = findVariableReferences(json, ["user_role", "user_canEdit", "user_name"]);
-    expect(found).toEqual([
-      { element: "budget", property: "visibleIf", expression: "{user_role} = 'manager'" },
-      { element: "m › c", property: "enableIf", expression: "{user_canEdit}" },
-      { element: "owner", property: "defaultValueExpression", expression: "{ user_name }" },
-    ]);
-  });
-
   test("storage returns columns from the list and the document from getResult", async ({ request }) => {
     // Outside a request the seam reads the template, which is the seed.
     const rows = await listResults("workOrders");
@@ -256,33 +226,6 @@ test.describe("on /work-orders", () => {
     await expect(listRow(page, "WO-2026-0119")).toHaveCount(0);
     await expect(formHeading(page)).toHaveText(`View ${recordTitle(workOrders, rows[0])}`);
     await expect(page).toHaveURL(new RegExp(`/work-orders/${rows[0].id}$`));
-  });
-
-  test("the how-built panel describes the page", async ({ page }) => {
-    await page.goto("/work-orders");
-    const toggle = page.getByRole("banner").getByRole("button", { name: PAGE_ACTIONS.howBuilt });
-    await toggle.click();
-
-    const panel = page.getByRole("complementary", { name: PAGE_ACTIONS.howBuilt });
-    await expect(panel).toBeVisible();
-    const { dataIn, dataOut } = HOW_BUILT.workOrders!;
-    for (const item of [...dataIn, ...dataOut]) {
-      const listed = itemsInEdition([item], features.edition).length > 0;
-      await expect(panel.getByText(item.label, { exact: true })).toHaveCount(listed ? 1 : 0);
-    }
-    await expect(panel).toContainText(HOW_BUILT_TEXT.noVariables);
-
-    await page.keyboard.press("Escape");
-    await expect(panel).toHaveCount(0);
-    await expect(toggle).toHaveAttribute("aria-pressed", "false");
-  });
-
-  test("a page with no description says so", async ({ page }) => {
-    await page.goto("/starter");
-    await page.getByRole("banner").getByRole("button", { name: PAGE_ACTIONS.howBuilt }).click();
-    await expect(
-      page.getByRole("complementary", { name: PAGE_ACTIONS.howBuilt }),
-    ).toContainText(HOW_BUILT_TEXT.notDescribed);
   });
 });
 

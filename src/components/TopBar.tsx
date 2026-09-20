@@ -2,12 +2,12 @@
 
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { BlocksIcon, FileCode2Icon, LayersIcon } from "lucide-react";
+import { BlocksIcon, FileCode2Icon, LayersIcon, LibraryBigIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useHowBuilt } from "@/components/how-built/HowBuiltProvider";
 import { features } from "@/features";
-import { otherEditionHref, pageSourcePath } from "@/lib/routes";
+import { isActiveRoute, navPages } from "@/schemas/navigation";
+import { HOW_INDEX, howHref, isHowRoute, otherEditionHref, pageSourcePath, sourceHref } from "@/lib/routes";
 import { DEMO_NAME, PAGE_ACTIONS, SITE_LINKS } from "@/lib/site";
 import { mergeTailwindClasses } from "@/lib/utils";
 import { ThemeSwitcher } from "./ThemeSwitcher";
@@ -102,11 +102,24 @@ export function TopBarLinks() {
  * name (truncating) and the switch; from `lg`, the site links (the menu trigger
  * goes, as the sidebar appears); from `xl`, the action labels. Only the name
  * shrinks, and an icon-only action keeps its label as `aria-label` and `title`.
+ *
+ * Never more than two page actions at once: an example has "Source of this page"
+ * and "How this page is built", an explainer has "How every page is built"
+ * alone, and the index has none.
  */
 export function TopBar({ mobileNav }: { mobileNav: ReactNode }) {
   const pathname = usePathname();
-  const { open, toggle } = useHowBuilt();
   const sourcePath = pageSourcePath(pathname);
+  // A record's own URL (`/leads/LEAD-0001`) is explained by its page, so the
+  // link goes to `/leads/how`. Not on an explainer — that page is what this
+  // links to — and not on a path with no sidebar row of its own.
+  const page = navPages.find((item) => isActiveRoute(pathname, item.path));
+  const onExplainer = isHowRoute(pathname);
+  const howLink = page && !onExplainer ? howHref(page.path) : undefined;
+  // The index is for somebody already reading an explainer: on the example it
+  // would be a second, vaguer version of the link above. Not on the index
+  // itself, which would then link to itself.
+  const howIndex = onExplainer && pathname !== HOW_INDEX ? HOW_INDEX : undefined;
 
   return (
     <header
@@ -130,7 +143,7 @@ export function TopBar({ mobileNav }: { mobileNav: ReactNode }) {
         {sourcePath && (
           <Button variant="ghost" size="sm" asChild>
             <a
-              href={`${features.brand.sourceUrl}/blob/main/${sourcePath}`}
+              href={sourceHref(sourcePath)}
               target="_blank"
               rel="noreferrer"
               aria-label={PAGE_ACTIONS.source}
@@ -141,20 +154,25 @@ export function TopBar({ mobileNav }: { mobileNav: ReactNode }) {
             </a>
           </Button>
         )}
-        {/* Toggles shared state only; the panel it opens is a separate task
-            (`HowBuiltPanel`). */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="aria-pressed:bg-accent aria-pressed:text-accent-foreground"
-          aria-pressed={open}
-          aria-label={PAGE_ACTIONS.howBuilt}
-          title={PAGE_ACTIONS.howBuilt}
-          onClick={toggle}
-        >
-          <BlocksIcon />
-          <span className="hidden xl:inline">{PAGE_ACTIONS.howBuilt}</span>
-        </Button>
+        {/* Straight to this page's explainer, in this tab: everything this
+            template says about the page is written there, in `how/<route>.md`. */}
+        {howLink && (
+          <Button variant="ghost" size="sm" asChild>
+            <a href={howLink} aria-label={PAGE_ACTIONS.howBuilt} title={PAGE_ACTIONS.howBuilt}>
+              <BlocksIcon />
+              <span className="hidden xl:inline">{PAGE_ACTIONS.howBuilt}</span>
+            </a>
+          </Button>
+        )}
+        {/* And, on an explainer, the way on to every other one. */}
+        {howIndex && (
+          <Button variant="ghost" size="sm" asChild>
+            <a href={howIndex} aria-label={PAGE_ACTIONS.howIndex} title={PAGE_ACTIONS.howIndex}>
+              <LibraryBigIcon />
+              <span className="hidden xl:inline">{PAGE_ACTIONS.howIndex}</span>
+            </a>
+          </Button>
+        )}
         <ThemeSwitcher />
       </div>
     </header>

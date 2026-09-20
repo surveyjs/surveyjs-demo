@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { features } from "../src/features";
 import { checkoutJson } from "../src/schemas/checkout";
+import { navPages } from "../src/schemas/navigation";
+import { HOW_INDEX, howHref } from "../src/lib/routes";
 import { SHORT_CHECKOUT } from "./short-checkout";
 import { startSession } from "./session";
 
@@ -25,6 +27,10 @@ const allRoutes = [
   // The one editor, on a plain form and on a personalized one.
   "/configure",
   "/configure?form=clinic-visit",
+  // The explainers: the index, and one per example this edition ships. They are
+  // all inside the shell, an embedded demo's included.
+  HOW_INDEX,
+  ...navPages.map((item) => howHref(item.path)),
 ];
 
 test("root redirects to the first page", async ({ page }) => {
