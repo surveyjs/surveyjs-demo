@@ -57,6 +57,8 @@ export const workOrderJson: SurveyJSON = {
   widthMode: "responsive",
   questionErrorLocation: "bottom",
   showProgressBar: true,
+  progressBarType: "pages",
+  progressBarShowPageTitles: true,
   aiHint:
     "The document is a one-page field service job sheet from Tallis Mechanical Services, sometimes with continuation sheets headed 'Job sheet (continued)' that carry more parts rows. The company's own name, address and license line are printed at the top: they are not the customer. Every box has a small printed label in its top-left corner, and each question below names the label of the box it comes from. Read a value out of that box and nowhere else. The sheet runs top to bottom in six numbered sections: 1 Job, 2 Customer and site, 3 Equipment, 4 Work, 5 Parts and labor, 6 Sign-off. Where a row of small square boxes offers choices, the answer is the choice whose square is crossed or ticked. Dates are written month first, as MM/DD/YYYY or M/D/YY: return them as YYYY-MM-DD, reading a two-digit year as 20xx. Times are written on a 24-hour clock as HH:MM: return them as HH:mm with a leading zero. Money is written in dollars with or without a $ sign and a thousands comma: return a plain number such as 1195.25. Values may be typed or handwritten; read handwriting carefully and never guess a digit into a different number. When a box is blank, return null for it, never an empty string, and never invent a value.",
   pages: [

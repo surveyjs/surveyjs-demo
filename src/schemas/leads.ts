@@ -43,6 +43,8 @@ export const leadsJson: SurveyJSON = {
   questionErrorLocation: "bottom",
   clearInvisibleValues: "none",
   showProgressBar: true,
+  progressBarType: "pages",
+  progressBarShowPageTitles: true,
   calculatedValues: [
     {
       // New 10, Qualified 25, Proposal 50, Negotiation 75, Closed won 100;
@@ -56,6 +58,8 @@ export const leadsJson: SurveyJSON = {
     {
       name: "accountPage",
       title: "Account and people",
+      // The progress bar's label; the page heading keeps the full title.
+      navigationTitle: "Account",
       elements: [
         { type: "text", name: "accountName", title: "Account", isRequired: true },
         {
@@ -399,6 +403,7 @@ export const leadsJson: SurveyJSON = {
     {
       name: "qualificationPage",
       title: "Qualification and next steps",
+      navigationTitle: "Qualification",
       elements: [
         {
           type: "panel",

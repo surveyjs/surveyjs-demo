@@ -98,6 +98,12 @@ Three pages of JSON hold every question, every total and every rule on this page
 
 [Form Library](https://surveyjs.io/form-library/documentation/overview) · [Backend integration](https://surveyjs.io/documentation/backend-integration) · [src/schemas/leads.ts](../src/schemas/leads.ts)
 
+### Page titles on the progress bar
+
+The bar names each page, and `navigationTitle` gives two of them a shorter label there — "Account", "Qualification" — while the page heading keeps the full title.
+
+[progressBarShowPageTitles](https://surveyjs.io/form-library/documentation/api-reference/survey-data-model#progressBarShowPageTitles) · [navigationTitle](https://surveyjs.io/form-library/documentation/api-reference/page-model#navigationTitle) · [src/schemas/leads.ts](../src/schemas/leads.ts)
+
 ### Expressions over a dynamic panel and matrices
 
 Line totals, discounts, the deal value and the stage-weighted value are all expressions over the current answers.
