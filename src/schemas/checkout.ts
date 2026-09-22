@@ -109,6 +109,9 @@ function addressPanel({
 export const checkoutJson: SurveyJSON = {
   title: "Checkout",
   description: "Complete your order in a few quick steps.",
+  // The basic header sits the title right above the form; the default ("advanced")
+  // gives it a block of its own with a wide empty band below.
+  headerView: "basic",
   showTOC: true,
   showQuestionNumbers: "off",
   widthMode: "responsive",
