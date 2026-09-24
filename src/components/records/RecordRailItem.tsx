@@ -80,10 +80,14 @@ export function RecordRailItem({
         event.preventDefault();
         if (!disabled) onSelect(row.id);
       }}
+      // The focus ring is inset because the rail scrolls, and its overflow would
+      // clip a ring drawn outside the row. The selection bar is its own element,
+      // not an inset shadow: a shadow follows the rounded corners and reads as a
+      // frame with three sides cut off.
       className={mergeTailwindClasses(
-        "hover:bg-muted focus-visible:ring-ring/50 block rounded-md px-3 py-2 text-sm outline-none focus-visible:ring-[3px]",
+        "hover:bg-muted/50 focus-visible:ring-ring/50 relative block rounded-md px-3 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-inset",
         selected &&
-          "bg-accent text-accent-foreground hover:bg-accent shadow-[inset_2px_0_0_0_var(--primary)]",
+          "bg-accent text-accent-foreground hover:bg-accent before:bg-primary before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
