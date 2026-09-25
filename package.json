@@ -32,12 +32,12 @@
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "survey-analytics": "latest",
-    "survey-core": "latest",
-    "survey-creator-core": "latest",
-    "survey-creator-react": "latest",
-    "survey-pdf": "latest",
-    "survey-react-ui": "latest",
+    "survey-analytics": "^3.1.1",
+    "survey-core": "^3.1.1",
+    "survey-creator-core": "^3.1.1",
+    "survey-creator-react": "^3.1.1",
+    "survey-pdf": "^3.1.1",
+    "survey-react-ui": "^3.1.1",
     "tailwind-merge": "^3.0.2"
   },
   "devDependencies": {

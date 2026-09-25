@@ -10,7 +10,7 @@ import {
   SquareArrowOutUpRightIcon,
 } from "lucide-react";
 import { SurveyCreator, SurveyCreatorComponent } from "survey-creator-react";
-import type { ICreatorOptions, TabTestPlugin } from "survey-creator-core";
+import type { ICreatorOptions, TabTestPlugin, VariablePresetsChangedEvent } from "survey-creator-core";
 import { Button } from "@/components/ui/button";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { loadSurveyJson, resetSurveyJson, saveSurveyJson } from "@/storage/survey-json";
@@ -272,7 +272,8 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
     () => creator.getPlugin<TabTestPlugin>("preview").variablePresets.active,
   );
   useEffect(() => {
-    const onChanged = (_: unknown, options: { active: string }) => setPreviewPreset(options.active);
+    const onChanged = (_: unknown, options: VariablePresetsChangedEvent) =>
+      setPreviewPreset(options.activePresetName);
     creator.onVariablePresetsChanged.add(onChanged);
     return () => creator.onVariablePresetsChanged.remove(onChanged);
   }, [creator]);

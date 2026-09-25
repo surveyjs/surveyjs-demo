@@ -89,7 +89,7 @@ git add -A && git commit -m "sync from mit@<sha>"
 
 `apply` fetches `mit` itself, so no separate `git fetch` is needed. It copies every managed path from `mit/main`, deletes every tracked managed path that no longer exists there, writes the MIT commit to `.mit-base`, then runs the check. `--dry-run` does not fetch and changes nothing. `apply` refuses to run over uncommitted changes to managed files, and never commits.
 
-After a sync that changes dependencies, reconcile `package.json` by hand and run `npm install`. There is no lock file: `.npmrc` (from the MIT edition) sets `package-lock=false`, because every SurveyJS package is pinned to `latest`.
+After a sync that changes dependencies, reconcile `package.json` by hand and run `npm install`. There is no lock file: `.npmrc` (from the MIT edition) sets `package-lock=false`, because every SurveyJS package takes a floating `^3.1.1` range.
 
 ## Checking
 

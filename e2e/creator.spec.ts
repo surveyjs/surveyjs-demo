@@ -42,7 +42,7 @@ test("Preview opens on the form's first variable preset, and the selector lists 
   const selector = page.locator(".svc-variable-preset-selector");
   // The title only: the action also holds its (hidden) popup list.
   const selected = selector.locator(".sd-action__title");
-  await expect(selected).toHaveText(`Variables: ${presets[0].name}`);
+  await expect(selected).toHaveText(`Variable preset: ${presets[0].name}`);
   await expect(page.getByText("Welcome back, Maria").first()).toBeVisible();
 
   await selector.getByRole("button").first().click();
@@ -50,7 +50,7 @@ test("Preview opens on the form's first variable preset, and the selector lists 
   await expect(items).toHaveText(presets.map((preset) => preset.name));
   await expect(items.first()).toHaveAttribute("aria-checked", "true");
   await items.nth(1).click();
-  await expect(selected).toHaveText(`Variables: ${presets[1].name}`);
+  await expect(selected).toHaveText(`Variable preset: ${presets[1].name}`);
   // The header follows the Creator's own event.
   await expect(page.getByText(`Previewing as ${presets[1].name}`)).toBeVisible();
 
