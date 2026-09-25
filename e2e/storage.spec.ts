@@ -552,7 +552,8 @@ test.describe("failures the page survives", () => {
     await rail(page, leadsNav.label).getByRole("link", { name: new RegExp(second.title) }).click();
 
     await expect(storageAlert(page)).toBeVisible();
-    await expect(page.getByRole("status").filter({ hasText: "Loading" })).toHaveCount(0);
+    // The failed load is over: Edit acts on the record on screen again.
+    await expect(page.getByRole("button", { name: "Edit", exact: true })).toBeEnabled();
     await expect(formHeading(page)).toHaveText(`View ${first.title}`);
     await expect(page).toHaveURL(new RegExp(`${leadsNav.path}/${first.id}$`));
   });

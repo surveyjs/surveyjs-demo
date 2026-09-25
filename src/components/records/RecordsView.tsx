@@ -833,11 +833,9 @@ export function RecordsView({
                 </p>
               )}
               {formNote && <div className="text-muted-foreground mb-3 text-xs">{formNote}</div>}
-              {loading && (
-                <p className="text-muted-foreground mb-2 text-xs" role="status">
-                  Loading…
-                </p>
-              )}
+              {/* No "Loading…" line while another row loads: a fetch is quick, and
+                  the line pushed the form down and back on every click. The
+                  record on screen stays until the next one arrives. */}
               {/* Only the form: the heading, the actions and the note above are
                   this application's own markup. */}
               <SurveyOutline>
