@@ -70,20 +70,11 @@ export {
 } from "./createSurveyModel";
 
 export {
-  navGroups,
-  navItems,
   navPages,
-  allNavPages,
-  isNavPage,
-  opensInNewTab,
-  navHref,
   getFormNavItem,
   getNavItem,
   isActiveRoute,
-  type NavItem,
   type NavPage,
-  type NavLink,
-  type NavGroup,
   type NavId,
 } from "./navigation";
 

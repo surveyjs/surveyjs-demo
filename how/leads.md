@@ -16,7 +16,7 @@ const record = await getResult("leads", rows[0].id);
 const users = await listSessionUsers("leads");
 ```
 
-[src/app/(shell)/leads/page.tsx](<../src/app/(shell)/leads/page.tsx>)
+[src/app/leads/page.tsx](<../src/app/leads/page.tsx>)
 
 ## What the definition reads
 
@@ -92,7 +92,7 @@ The presets declare those four variables and carry the two people this page sign
 
 [Variables](https://surveyjs.io/form-library/documentation/design-survey/conditional-logic#variables) · [Custom variables (example)](https://surveyjs.io/form-library/examples/custom-variables-for-background-form-calculations/reactjs) · [src/schemas/variables/leads.ts](../src/schemas/variables/leads.ts)
 
-### One JSON definition, edited from the page header
+### One JSON definition, edited from the dock
 
 Three pages of JSON hold every question, every total and every rule on this page, the ones that read the signed-in user included.
 
@@ -157,15 +157,15 @@ View analytics charts the stored leads from the same definition.
 <!-- edition: full -->
 ### Survey Creator (Open in Creator)
 
-The header's editor button opens this definition in the drag-and-drop designer.
+The dock's editor button opens this definition in the drag-and-drop designer.
 
 [Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react)
 <!-- /edition -->
 
 ## Source files
 
-- [src/app/(shell)/leads/page.tsx](<../src/app/(shell)/leads/page.tsx>)
-- [src/app/(shell)/leads/[id]/page.tsx](<../src/app/(shell)/leads/[id]/page.tsx>)
+- [src/app/leads/page.tsx](<../src/app/leads/page.tsx>)
+- [src/app/leads/[id]/page.tsx](<../src/app/leads/[id]/page.tsx>)
 - [src/schemas/leads.ts](../src/schemas/leads.ts)
 - [src/schemas/collections/leads.ts](../src/schemas/collections/leads.ts)
 - [src/schemas/variables/leads.ts](../src/schemas/variables/leads.ts)

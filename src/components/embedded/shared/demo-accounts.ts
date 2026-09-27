@@ -39,12 +39,22 @@ export function accountText(
   return typeof value === "string" && value.trim() ? value : fallback;
 }
 
-/** Initials for the avatar, from whatever the account currently holds. */
+/**
+ * Initials for the avatar, from whatever the account currently holds; an
+ * account that keeps one `name` (a records page's session user) gives the
+ * first letters of its first two words.
+ */
 export function accountInitials(account: Record<string, unknown>): string {
   const first = accountText(account, "firstName");
   const last = accountText(account, "lastName");
-  const initials = `${first.charAt(0)}${last.charAt(0)}`.trim().toUpperCase();
-  return initials || "?";
+  const initials =
+    `${first.charAt(0)}${last.charAt(0)}`.trim() ||
+    accountText(account, "name")
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((word) => word.charAt(0))
+      .join("");
+  return initials.toUpperCase() || "?";
 }
 
 /** First and last name; an account that keeps one `name` (a records page's session user) shows that. */

@@ -3,7 +3,7 @@
  *
  * Shared code: the full edition carries this file unchanged. The copy is written
  * once, here, and what differs between editions is picked by `features.edition`,
- * the same switch the top bar reads. No React: `robots.ts` and the route files
+ * the same switch the dock reads. No React: `robots.ts` and the route files
  * import it, and nothing here touches the DOM.
  *
  * Three environment variables, all read at build time (`NEXT_PUBLIC_` values are
@@ -21,7 +21,7 @@ import type { Metadata } from "next";
 import { features, type Edition } from "@/features";
 import { getNavItem, navPages, type NavId } from "@/schemas/navigation";
 import { getHowContent } from "@/lib/how-content";
-import { HOW_INDEX, howHref } from "@/lib/routes";
+import { howHref } from "@/lib/routes";
 import { DEMO_NAME } from "@/lib/site";
 
 export const SITE_NAME = DEMO_NAME;
@@ -59,7 +59,10 @@ interface PageCopy {
   readonly description: EditionText;
 }
 
-/** The root, which redirects to the first page but is the link people share. */
+/**
+ * The demo as a whole: the fallback title and description of any page that
+ * sets none (the 404), and what a link to the host previews as.
+ */
 const ROOT_COPY: PageCopy = {
   title: {
     full: `${SITE_NAME} — live demo`,
@@ -72,9 +75,9 @@ const ROOT_COPY: PageCopy = {
 };
 
 /**
- * Per page, keyed by sidebar row. A description that names a feature only the
- * full edition has needs an `mit` variant that does not. A page missing here takes its sidebar
- * label and description instead — see `pageCopy`.
+ * Per page, keyed by `NavId`. A description that names a feature only the
+ * full edition has needs an `mit` variant that does not. A page missing here
+ * takes its registry label and description instead — see `pageCopy`.
  */
 const PAGE_COPY: Partial<Record<NavId, PageCopy>> = {
   leads: {
@@ -103,11 +106,6 @@ const PAGE_COPY: Partial<Record<NavId, PageCopy>> = {
     title: "Appointment — a form that drives the page",
     description:
       "A clinic request form whose answers update the visit summary, copay and referral notice beside it. One definition, English and Spanish.",
-  },
-  mySurveys: {
-    title: "MySurveys — built with SurveyJS",
-    description:
-      "A form management application built from the same libraries as this demo: your users create forms, run them and see the results.",
   },
   starter: {
     title: "Starter — the smallest page",
@@ -168,10 +166,28 @@ export const siteMetadata: Metadata = {
   twitter: { card: "summary" },
 };
 
-/** The root route's metadata: its own title, which the template does not wrap. */
-export const rootMetadata: Metadata = buildMetadata(ROOT_COPY, "/", false);
+/**
+ * The root index: the team's list of every example. Suffixed by hand, because
+ * the root is the layout's own segment, which its title template does not reach.
+ */
+const INDEX_COPY: PageCopy = {
+  title: `Every example${TITLE_SUFFIX}`,
+  description:
+    "An index of every example in this demo: what each one shows, how it is built, and where it runs.",
+};
 
-/** A sidebar page's metadata, canonical to its own path. */
+/**
+ * The root route's metadata. `noindex, follow` whatever `NEXT_PUBLIC_INDEXABLE`
+ * says: visitors arrive at an example from the site's use-cases page, and this
+ * index is for the team and for developers, so a search result should never be
+ * it. The examples it links are followed.
+ */
+export const rootMetadata: Metadata = {
+  ...buildMetadata(INDEX_COPY, "/", false),
+  robots: { index: false, follow: true },
+};
+
+/** An example page's metadata, canonical to its own path. */
 export function pageMetadata(id: NavId): Metadata {
   return buildMetadata(pageCopy(id), getNavItem(id).path, true);
 }
@@ -181,7 +197,7 @@ export function pageMetadata(id: NavId): Metadata {
  *
  * The description is the `summary` in the Markdown file's front matter — the
  * one sentence the page opens with and the index lists — so there is no second
- * copy of it here, and renaming the sidebar row renames the page.
+ * copy of it here, and renaming the page renames its explainer.
  */
 export function howMetadata(id: NavId): Metadata {
   const nav = getNavItem(id);
@@ -194,17 +210,6 @@ export function howMetadata(id: NavId): Metadata {
     true,
   );
 }
-
-/** The index of the explainers. Its own copy: it describes no single example. */
-export const howIndexMetadata: Metadata = buildMetadata(
-  {
-    title: "How it's built — every example",
-    description:
-      "One page per example in this demo: what goes into the form, what its definition does with it, what comes back out, and every file behind it.",
-  },
-  HOW_INDEX,
-  true,
-);
 
 /**
  * A tool opened on one form — `/configure?form=`, `/analytics?form=` — titled
@@ -224,6 +229,6 @@ export function formToolMetadata(formPath: string, toolLabel: string, selfPath: 
 
 function navIdForPath(path: string): NavId {
   const item = navPages.find((entry) => entry.path === path);
-  if (!item) throw new Error(`No sidebar page at ${path}`);
+  if (!item) throw new Error(`No example page at ${path}`);
   return item.id;
 }

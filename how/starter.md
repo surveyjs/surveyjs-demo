@@ -15,7 +15,7 @@ The page reads this visitor's definition on the server and hands it to one compo
 />
 ```
 
-[src/app/(shell)/starter/page.tsx](<../src/app/(shell)/starter/page.tsx>)
+[src/app/starter/page.tsx](<../src/app/starter/page.tsx>)
 
 ## What the definition reads
 
@@ -95,11 +95,11 @@ The submissions route runs the same checks the records pages use, and this is th
 
 [src/schemas/tests/index.ts](../src/schemas/tests/index.ts)
 
-### One JSON definition, edited from the page header
+### One JSON definition, edited from the dock
 
-The header's editor button opens this same definition, and what is saved there is what this page renders.
+The dock's editor button opens this same definition, and what is saved there is what this page renders.
 
-[Form Library](https://surveyjs.io/form-library/documentation/overview) · [Backend integration](https://surveyjs.io/documentation/backend-integration) · [src/components/PageHeader.tsx](../src/components/PageHeader.tsx)
+[Form Library](https://surveyjs.io/form-library/documentation/overview) · [Backend integration](https://surveyjs.io/documentation/backend-integration) · [src/components/dock/DemoDock.tsx](../src/components/dock/DemoDock.tsx)
 
 ### Choices from your API *(coming)*
 
@@ -126,14 +126,14 @@ View analytics charts the submissions this page collects.
 <!-- edition: full -->
 ### Survey Creator (Open in Creator)
 
-The header's editor button opens the drag-and-drop designer instead of the JSON workbench.
+The dock's editor button opens the drag-and-drop designer instead of the JSON workbench.
 
 [Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react)
 <!-- /edition -->
 
 ## Source files
 
-- [src/app/(shell)/starter/page.tsx](<../src/app/(shell)/starter/page.tsx>)
+- [src/app/starter/page.tsx](<../src/app/starter/page.tsx>)
 - [src/schemas/checkout.ts](../src/schemas/checkout.ts)
 - [src/schemas/data/checkout-seed.ts](../src/schemas/data/checkout-seed.ts)
 - [src/schemas/tests/checkout.tests.json](../src/schemas/tests/checkout.tests.json)

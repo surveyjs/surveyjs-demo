@@ -43,7 +43,7 @@ The assets are in `public/samples/archive/cms-1500/`: the blank, a filled PDF, a
 
    It has no `fromDocument`, so `createFrom` keeps the old precedence: `newRecord` wins over every extracted answer.
 
-3. **Navigation.** In `src/schemas/navigation.ts`, add `"claims"` to `NavId` and this row to a group, and `claims: FileScanIcon` to `ICONS` in `src/components/Sidebar.tsx`:
+3. **Registry and manifest.** In `src/schemas/navigation.ts`, add `"claims"` to `NavId` and this page to the registry:
 
    ```ts
    {
@@ -52,11 +52,10 @@ The assets are in `public/samples/archive/cms-1500/`: the blank, a filled PDF, a
      path: "/claims",
      description: "CMS-1500: scans into records with AI, and back onto the sheet as PDF.",
      schemaId: "insurance-claim",
-     layout: "shell",
    },
    ```
 
-   Then remove the `/claims` and `/claims/configure` redirects from `next.config.mjs` and from the `legacy redirects` block of `e2e/sidebar.spec.ts`.
+   Add a `claims` entry to `src/examples/manifest.json`, so the dock's "More examples" menu and the root index list it. Then remove the `/claims` and `/claims/configure` redirects from `next.config.mjs` and from `e2e/redirects.spec.ts`.
 
 4. **Editor.** In `src/components/configure/forms.ts`:
 
@@ -70,11 +69,13 @@ The assets are in `public/samples/archive/cms-1500/`: the blank, a filled PDF, a
    }),
    ```
 
-5. **The pages.** `src/app/(shell)/claims/page.tsx`, `claims/[id]/page.tsx` and `claims/from-document/page.tsx`, like the three under `work-orders/`, rendering a view that passes:
+5. **The pages.** `src/app/claims/page.tsx`, `claims/[id]/page.tsx` and `claims/from-document/page.tsx`, like the three under `work-orders/`, each emitting the host's `brandBootScript` and rendering a view that passes the following. `host` is a new entry in `RECORD_HOSTS` (`src/components/hosts/hosts.ts`) and `HOST_BRANDS`, so the page wears a product of its own:
 
    ```tsx
    <RecordsView
      collectionId="claims"
+     host="claims"
+     exampleId="claims"
      basePath="/claims"
      exportPdf={(data) => exportClaimToCms1500(data)}
      documentImport={{
@@ -99,4 +100,4 @@ The assets are in `public/samples/archive/cms-1500/`: the blank, a filled PDF, a
 
 6. **CSS.** Copy the rules in `service-lines.css` back into `src/styles/survey-overrides-shadcn.css`. They were written for a form beside the old table at `lg`; beside the rail, from `xl`, check whether the service-line matrix still needs them.
 
-7. **Explainer.** Write `how/claims.md` and add `src/app/(shell)/claims/how/page.tsx`, and put `insurance-claim` back in the lint-clean list in `e2e/configure.spec.ts`.
+7. **Explainer.** Write `how/claims.md` and add `src/app/claims/how/page.tsx`, and put `insurance-claim` back in the lint-clean list in `e2e/configure.spec.ts`.

@@ -1,225 +1,90 @@
-import { features, type Edition } from "@/features";
-import { EXTERNAL_URLS } from "@/lib/site";
+/**
+ * The route registry: every example page in this application, by `NavId`.
+ *
+ * What a page is called, where it lives and which form it renders. The dock
+ * finds a page's explainer and source file here, the metadata its fallback copy,
+ * the explainers their `<h1>` and their order. Which examples the dock's menu and
+ * the root index list is the examples manifest's business, `src/examples/`: an
+ * entry's `id` is the page's `NavId`.
+ *
+ * No React: Playwright imports this from `e2e/`.
+ */
 
 export type NavId =
   | "leads"
+  | "workOrders"
   | "embeddedFeedback"
   | "embeddedChart"
   | "embeddedClinic"
-  | "workOrders"
-  | "fillTogether"
-  | "editTogether"
-  | "mySurveys"
   | "starter"
   | "definition";
 
-interface NavBase {
+/** A route in this app. `schemaId` only on a page that renders one form. */
+export interface NavPage {
   readonly id: NavId;
   readonly label: string;
+  /** The page's own line: the header of Starter and Definition, and every page's fallback meta description. */
   readonly description: string;
-  /**
-   * Set for a row only one edition shows: a demo of a commercial product has no
-   * row in the MIT edition. Filtered out of `navGroups`, so no reader sees it.
-   */
-  readonly edition?: Edition;
-}
-
-/** A route in this app. `schemaId` only on a page that renders one form. */
-export interface NavPage extends NavBase {
+  /** The route. Its file is `src/app<path>/page.tsx`, and its explainer `<path>/how`. */
   readonly path: string;
-  /**
-   * Which chrome the page wears. "shell": the admin top bar and sidebar, opened in
-   * the same tab; its route lives under `src/app/(shell)/`. "embedded": somebody
-   * else's website with the demo dock, no sidebar, opened in a new tab; its route
-   * lives under `src/app/embedded/`. The embedded demos pretend to be somebody
-   * else's website, so they can't be framed by this template's chrome without
-   * losing the whole point. The folder is what Next.js obeys, and
-   * `e2e/top-bar.spec.ts` fails when this value and the folder disagree.
-   */
-  readonly layout: "shell" | "embedded";
   readonly schemaId?: string;
 }
 
-/** Another site, always opened in a new tab. */
-export interface NavLink extends NavBase {
-  readonly href: string;
-}
-
-export type NavItem = NavPage | NavLink;
-
-/** One labelled block of the sidebar. */
-export interface NavGroup {
-  readonly id: string;
-  readonly label: string;
-  readonly items: readonly NavItem[];
-}
-
-/**
- * The sidebar, in order. A row with a `path` is a page here; a row with an
- * `href` is another site. Whether a row opens in a new tab, and carries the ↗,
- * follows from that and from `layout` — see `opensInNewTab`. Rows for another
- * edition are dropped in `navGroups`.
- */
-const allNavGroups: readonly NavGroup[] = [
+/** Every page, in the manifest's order, which is also the explainers' previous / next. */
+export const navPages: readonly NavPage[] = [
   {
-    id: "inYourApp",
-    label: "In your app",
-    items: [
-      {
-        id: "leads",
-        label: "Leads",
-        path: "/leads",
-        description: "CRM opportunities: contacts, line items with totals, roles from the session.",
-        schemaId: "leads",
-        layout: "shell",
-      },
-      {
-        id: "embeddedFeedback",
-        label: "Feedback",
-        path: "/embedded/feedback",
-        description: "A survey inside a product site, addressed to the signed-in user.",
-        schemaId: "customer-satisfaction",
-        layout: "embedded",
-      },
-      {
-        id: "embeddedChart",
-        label: "Encounter note",
-        path: "/embedded/chart",
-        description: "A clinician's workspace that is nothing but the form.",
-        schemaId: "encounter-note",
-        layout: "embedded",
-      },
-      {
-        id: "embeddedClinic",
-        label: "Appointment",
-        path: "/embedded/clinic",
-        description: "A clinic form that updates the page around it — in English and Spanish.",
-        schemaId: "clinic-visit",
-        layout: "embedded",
-      },
-    ],
+    id: "leads",
+    label: "Leads",
+    path: "/leads",
+    description: "CRM opportunities: contacts, line items with totals, roles from the session.",
+    schemaId: "leads",
   },
   {
-    id: "documents",
-    label: "Documents",
-    items: [
-      {
-        id: "workOrders",
-        label: "Work orders",
-        path: "/work-orders",
-        description: "Job sheets: a PDF, scan or photo into a record with AI.",
-        schemaId: "work-order",
-        layout: "shell",
-      },
-    ],
+    id: "workOrders",
+    label: "Work orders",
+    path: "/work-orders",
+    description: "Job sheets: a PDF, scan or photo into a record with AI.",
+    schemaId: "work-order",
   },
   {
-    id: "together",
-    label: "Together",
-    items: [
-      {
-        id: "fillTogether",
-        label: "Fill together",
-        href: EXTERNAL_URLS.fillTogether,
-        description: "Several people on one form, with presence.",
-      },
-      {
-        id: "editTogether",
-        label: "Edit together",
-        href: EXTERNAL_URLS.editTogether,
-        description: "A team in Survey Creator on one definition.",
-        edition: "full",
-      },
-    ],
+    id: "embeddedFeedback",
+    label: "Feedback",
+    path: "/feedback",
+    description: "A survey inside a product site, addressed to the signed-in user.",
+    schemaId: "customer-satisfaction",
   },
   {
-    id: "yourUsersForms",
-    label: "Your users' forms",
-    items: [
-      {
-        // A page about an application built with Survey Creator and Dashboard:
-        // the full edition's story, so the MIT edition has neither the row nor
-        // the route. It renders no form, hence no `schemaId`.
-        id: "mySurveys",
-        label: "MySurveys",
-        path: "/mysurveys",
-        description: "A form management app built with SurveyJS: list, build, run, results.",
-        layout: "shell",
-        edition: "full",
-      },
-    ],
+    id: "embeddedChart",
+    label: "Encounter note",
+    path: "/chart",
+    description: "A clinician's workspace that is nothing but the form.",
+    schemaId: "encounter-note",
   },
   {
-    id: "forDevelopers",
-    label: "For developers",
-    items: [
-      {
-        id: "starter",
-        label: "Starter",
-        path: "/starter",
-        description: "A checkout form and nothing else.",
-        schemaId: "checkout",
-        layout: "shell",
-      },
-      {
-        id: "definition",
-        label: "Definition & checks",
-        path: "/definition",
-        description: "Any form as JSON, with the linter.",
-        layout: "shell",
-      },
-    ],
+    id: "embeddedClinic",
+    label: "Appointment",
+    path: "/clinic",
+    description: "A clinic form that updates the page around it — in English and Spanish.",
+    schemaId: "clinic-visit",
+  },
+  {
+    id: "starter",
+    label: "Starter",
+    path: "/starter",
+    description: "A checkout form and nothing else.",
+    schemaId: "checkout",
+  },
+  {
+    id: "definition",
+    label: "Definition & checks",
+    path: "/definition",
+    description: "Any form as JSON, with the linter.",
   },
 ];
 
-/**
- * Every page in the template, this edition's and the other's.
- *
- * `navPages` below drops the rows an edition has no sidebar entry for, which is
- * what the sidebar, the top bar and every route lookup want. The two readers
- * that need the whole set are the "how it's built" index — which lists a
- * Full-only example as a link to the Full host rather than as a gap — and
- * `e2e/how-integrity.spec.ts`, which checks both editions' modules from either
- * edition. Nothing else should use it.
- */
-export const allNavPages: readonly NavPage[] = allNavGroups
-  .flatMap((group) => group.items)
-  .filter(isNavPage);
-
-/** The sidebar this edition shows: the rows for another edition, and a group left empty, dropped. */
-export const navGroups: readonly NavGroup[] = allNavGroups
-  .map((group) => ({
-    ...group,
-    items: group.items.filter((item) => item.edition === undefined || item.edition === features.edition),
-  }))
-  .filter((group) => group.items.length > 0);
-
-/** Every sidebar row, in order. */
-export const navItems: readonly NavItem[] = navGroups.flatMap((group) => group.items);
-
-export function isNavPage(item: NavItem): item is NavPage {
-  return "path" in item;
-}
-
-/** The rows that are routes in this app. */
-export const navPages: readonly NavPage[] = navItems.filter(isNavPage);
-
-/**
- * Whether a row opens in a new tab: another site, or an embedded page that
- * pretends to be one. The one source of the sidebar's ↗ and of `target="_blank"`.
- */
-export function opensInNewTab(item: NavItem): boolean {
-  return !isNavPage(item) || item.layout === "embedded";
-}
-
-export function navHref(item: NavItem): string {
-  return isNavPage(item) ? item.path : item.href;
-}
-
 export function getNavItem(id: NavId): NavPage {
-  const item = navItems.find((i) => i.id === id);
+  const item = navPages.find((i) => i.id === id);
   if (!item) throw new Error(`Unknown nav id: ${id}`);
-  if (!isNavPage(item)) throw new Error(`Nav id ${id} is a link, not a page`);
   return item;
 }
 

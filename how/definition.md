@@ -77,7 +77,7 @@ A personalized form is linted with the variables its host injects, or every refe
 
 [Variables](https://surveyjs.io/form-library/documentation/design-survey/conditional-logic#variables) · [Custom variables (example)](https://surveyjs.io/form-library/examples/custom-variables-for-background-form-calculations/reactjs) · [src/schemas/variables/index.ts](../src/schemas/variables/index.ts)
 
-### One JSON definition, edited from the page header
+### One JSON definition, edited on this page
 
 What is saved here is what every page renders for this visitor, read back on the server.
 
@@ -99,7 +99,7 @@ The full edition replaces the chrome-less /configure route with the drag-and-dro
 
 ## Source files
 
-- [src/app/(shell)/definition/page.tsx](<../src/app/(shell)/definition/page.tsx>)
+- [src/app/definition/page.tsx](<../src/app/definition/page.tsx>)
 - [src/app/configure/page.tsx](../src/app/configure/page.tsx)
 - [src/components/configure/JsonWorkbench.tsx](../src/components/configure/JsonWorkbench.tsx)
 - [src/components/configure/forms.ts](../src/components/configure/forms.ts)

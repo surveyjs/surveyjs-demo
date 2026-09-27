@@ -13,6 +13,7 @@ import {
 import { features } from "@/features";
 import "@/lib/surveyjs-license";
 import { submitResult } from "@/storage/survey-results";
+import { announceCompleted } from "@/lib/demo-events";
 import { useStorageAccess } from "./StorageAccess";
 import { FormCompleted } from "./FormCompleted";
 
@@ -241,7 +242,9 @@ function useSubmission(
       if (onComplete) {
         onComplete(sender.data);
       } else if (schemaId && !readOnly) {
-        submitResult(schemaId, sender.data).catch((failure: unknown) => {
+        // Stored: the dock's "See next" card may show. A caller that owns
+        // persistence announces its own save.
+        submitResult(schemaId, sender.data).then(announceCompleted, (failure: unknown) => {
           console.error(`[survey-results] ${schemaId} was not submitted`, failure);
         });
       }

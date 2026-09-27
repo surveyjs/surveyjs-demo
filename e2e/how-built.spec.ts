@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { features } from "../src/features";
 import { HOW_BUILT_TEXT } from "../src/lib/how-built";
 import {
@@ -9,20 +9,20 @@ import {
   otherEditionHowHref,
   parseFrontMatter,
 } from "../src/lib/how-content";
-import { HOW_INDEX, howHref, otherEditionHref } from "../src/lib/routes";
-import { PAGE_ACTIONS } from "../src/lib/site";
+import { howHref } from "../src/lib/routes";
+import { DEMO_NAME, DOCK_LABELS, PAGE_ACTIONS } from "../src/lib/site";
 import { TITLE_TEMPLATE } from "../src/lib/metadata";
-import { allNavPages, navPages, opensInNewTab, type NavPage } from "../src/schemas/navigation";
+import { navPages, type NavPage } from "../src/schemas/navigation";
 
 /**
- * The explainers in a browser: `/x/how` for every example this edition ships,
- * and `/how` that lists them.
+ * The explainers in a browser: `/x/how` for every example.
  *
  * What is *said* on them is `how-integrity.spec.ts`'s business, and it needs no
- * browser. This is about the routes, the chrome and the links between them — in
- * particular that the top bar's control is a plain link to the explainer now,
- * that no drawer exists anywhere any more, and that the MIT edition shows a
- * Full-only block as a link across rather than a gap.
+ * browser. This is about the routes and the links between them: the dock's
+ * "How this page is built" is a plain link to the explainer, in this tab, on
+ * every example page; the explainer links back to its example in this tab and
+ * out to the root index; and the MIT edition shows a Full-only block as a link
+ * across rather than a gap.
  */
 
 const ROOT = path.join(__dirname, "..");
@@ -50,28 +50,18 @@ function expectedTitle(label: string): string {
   return TITLE_TEMPLATE.replace("%s", `${label} — how it's built`);
 }
 
+function dockOf(page: Page) {
+  return page.getByRole("toolbar", { name: DOCK_LABELS.toolbar });
+}
+
 for (const nav of navPages) {
   test(`${howHref(nav.path)} explains ${nav.path}`, async ({ page }) => {
-    if (nav.layout === "shell") {
-      // The top bar links the explainer straight, in this tab. No drawer.
-      await page.goto(nav.path);
-      const link = page.getByRole("banner").getByRole("link", { name: PAGE_ACTIONS.howBuilt });
-      await expect(link).toHaveAttribute("href", howHref(nav.path));
-      await expect(link).not.toHaveAttribute("target", /.*/);
-      // And nothing about every *other* page: that is the explainer's link.
-      await expect(
-        page.getByRole("banner").getByRole("link", { name: PAGE_ACTIONS.howIndex }),
-      ).toHaveCount(0);
-      await link.click();
-    } else {
-      // An embedded demo wears no chrome: its dock links the explainer instead.
-      await page.goto(nav.path);
-      const dock = page.getByRole("toolbar", { name: "Embedded demo tools" });
-      const link = dock.getByRole("link", { name: PAGE_ACTIONS.howBuilt });
-      await expect(link).toHaveAttribute("href", howHref(nav.path));
-      await expect(link).toHaveAttribute("target", "_blank");
-      await page.goto(howHref(nav.path));
-    }
+    // The dock links the explainer straight, in this tab, on every example.
+    await page.goto(nav.path);
+    const link = dockOf(page).getByRole("link", { name: PAGE_ACTIONS.howBuilt });
+    await expect(link).toHaveAttribute("href", howHref(nav.path));
+    await expect(link).not.toHaveAttribute("target", /.*/);
+    await link.click();
 
     await expect(page).toHaveURL(new RegExp(`${howHref(nav.path)}$`));
     await expect(page).toHaveTitle(expectedTitle(nav.label));
@@ -80,18 +70,12 @@ for (const nav of navPages) {
     );
     await expect(page.getByText(summaryOf(nav))).toBeVisible();
 
-    // There is no drawer anywhere any more, and nothing left in the top bar to
-    // open: this page is where the words are.
-    await expect(page.getByRole("complementary", { name: PAGE_ACTIONS.howBuilt })).toHaveCount(0);
-    await expect(
-      page.getByRole("banner").getByRole("link", { name: PAGE_ACTIONS.howBuilt }),
-    ).toHaveCount(0);
-    // And no "Source of this page": its route file is three lines.
+    // An explainer is not an example: no dock, and so no "Source of this page",
+    // whose route file here is three lines.
+    await expect(dockOf(page)).toHaveCount(0);
     await expect(page.getByRole("link", { name: PAGE_ACTIONS.source })).toHaveCount(0);
-    // The way out to every other example is the top bar's, here as everywhere.
-    await expect(
-      page.getByRole("banner").getByRole("link", { name: PAGE_ACTIONS.howIndex }),
-    ).toHaveAttribute("href", HOW_INDEX);
+    // The demo's own header, linking the root index.
+    await expect(page.getByRole("banner").getByRole("link", { name: DEMO_NAME })).toHaveAttribute("href", "/");
 
     // A quoted block is on the page, with the text the file writes out.
     const quote = firstQuote(nav);
@@ -106,82 +90,37 @@ for (const nav of navPages) {
       ).toBeVisible();
     }
 
-    // The header carries the one way back, and nothing else: the index is the
-    // top bar's, beside "How this page is built" on every page of the shell.
-    const header = page.locator("main header").first();
-    const open = header.getByRole("link", { name: HOW_BUILT_TEXT.openExample });
-    await expect(open).toHaveAttribute("href", nav.path);
-    await expect(header.getByRole("link", { name: HOW_BUILT_TEXT.allExamples })).toHaveCount(0);
-    // It is still at the foot of a long page, beside previous and next.
+    // At the foot, beside previous and next: the way out to every example.
     await expect(
       page.getByRole("navigation", { name: "More examples" }).getByRole("link", {
         name: HOW_BUILT_TEXT.allExamples,
       }),
-    ).toHaveAttribute("href", HOW_INDEX);
+    ).toHaveAttribute("href", "/");
 
-    // And back to the example it explains.
-    if (opensInNewTab(nav)) {
-      await expect(open).toHaveAttribute("target", "_blank");
-    } else {
-      await open.click();
-      await expect(page).toHaveURL(new RegExp(`${nav.path}$`));
-    }
+    // And back to the example it explains, in this tab.
+    const open = page.locator("main header").first().getByRole("link", { name: HOW_BUILT_TEXT.openExample });
+    await expect(open).toHaveAttribute("href", nav.path);
+    await expect(open).not.toHaveAttribute("target", /.*/);
+    await open.click();
+    await expect(page).toHaveURL(new RegExp(`${nav.path}$`));
   });
 }
 
 test("a record's URL links its page's explainer", async ({ page }) => {
   await page.goto("/leads/LEAD-0001");
-  const link = page.getByRole("banner").getByRole("link", { name: PAGE_ACTIONS.howBuilt });
+  const link = dockOf(page).getByRole("link", { name: PAGE_ACTIONS.howBuilt });
   await expect(link).toHaveAttribute("href", howHref("/leads"));
   await link.click();
   await expect(page).toHaveURL(/\/leads\/how$/);
 });
 
-test("/how lists every example, and every local link on it answers 200", async ({ page, request }) => {
-  const response = await page.goto(HOW_INDEX);
-  expect(response?.status()).toBe(200);
-  await expect(page).toHaveTitle(TITLE_TEMPLATE.replace("%s", "How it's built — every example"));
-
-  for (const nav of allNavPages) {
-    await expect(page.locator(`[data-example="${nav.id}"]`), nav.id).toBeVisible();
-  }
-
-  // Every link that stays on this host, followed for real.
-  const hrefs = await page.locator("main a").evaluateAll((links) =>
-    links.map((link) => link.getAttribute("href") ?? "").filter((href) => href.startsWith("/")),
-  );
-  expect(hrefs.length).toBeGreaterThan(0);
-  for (const href of [...new Set(hrefs)]) {
-    const answer = await request.get(href);
-    expect(answer.status(), href).toBe(200);
-  }
-
-  // The sidebar gained no row for any of this, and the top bar does not offer
-  // this page a link to itself.
-  const sidebar = page.getByRole("navigation", { name: "Primary" });
-  await expect(sidebar.locator(`a[href="${HOW_INDEX}"]`)).toHaveCount(0);
-  await expect(
-    page.getByRole("banner").getByRole("link", { name: PAGE_ACTIONS.howIndex }),
-  ).toHaveCount(0);
-});
-
-test.describe("in the MIT edition", () => {
-  test.skip(features.edition !== "mit", "About what this edition does not ship");
-
-  test("MySurveys has no page and no explainer, and is linked across instead", async ({ request, page }) => {
-    for (const route of ["/mysurveys", howHref("/mysurveys")]) {
-      const answer = await request.get(route);
-      expect(answer.status(), route).toBe(404);
-    }
-
-    await page.goto(HOW_INDEX);
-    const card = page.locator('[data-example="mySurveys"]');
-    await expect(card).toBeVisible();
-    await expect(card).toContainText(HOW_BUILT_TEXT.otherEdition);
-    // The href, never a request: the other host is not this test's business.
-    await expect(card.getByRole("link", { name: new RegExp(HOW_BUILT_TEXT.readHow) })).toHaveAttribute(
+test("/how, the old index of the explainers, lands on the root index", async ({ page }) => {
+  await page.goto("/how");
+  await expect(page).toHaveURL(/\/$/);
+  for (const nav of navPages) {
+    await expect(page.locator(`[data-example="${nav.id}"]`).getByRole("link", { name: HOW_BUILT_TEXT.howBuilt })).toHaveAttribute(
       "href",
-      otherEditionHref(features.brand.otherEdition.baseUrl, howHref("/mysurveys")),
+      howHref(nav.path),
     );
-  });
+  }
 });

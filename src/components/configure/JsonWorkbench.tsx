@@ -59,7 +59,7 @@ function parse(source: string): { json?: SurveyJSON; error?: string } {
  * actually lives, which for the embedded demos is somebody else's website.
  *
  * It carries no chrome of its own on purpose: `?form=` says which form is being
- * edited, and there is nothing else on the page — no sidebar, no list of the
+ * edited, and there is nothing else on the page — no dock, no list of the
  * others. A reviewer arrives here from a form and leaves back to it.
  *
  * Edits are kept in each visitor's own sandbox on the server (see
@@ -76,9 +76,10 @@ export function JsonWorkbench({
   inShell = false,
 }: {
   /**
-   * Rendered inside the admin shell, on `/definition`: the workbench fills the
-   * main area rather than the viewport, the shell's top bar supplies the theme
-   * switch and the way out, and a picker opens any form in the template.
+   * Rendered on `/definition`, under its header and above its dock: the
+   * workbench fills the page's column rather than the viewport, the header and
+   * the dock supply the way out and the theme switch, and a picker opens any
+   * form in the template.
    * `/configure` leaves it off and stays the chromeless editor every form's
    * editor button opens.
    */
@@ -245,7 +246,7 @@ function FormWorkbench({ form, inShell }: { form: FormEntry; inShell: boolean })
 
   const shown = wiredNames.slice(0, 8);
   const rest = wiredNames.length - shown.length;
-  // Inside the shell the page header holds the h1.
+  // On `/definition` the page's own header holds the h1.
   const Title = inShell ? "h2" : "h1";
 
   return (

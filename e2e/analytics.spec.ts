@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { DOCK_LABELS } from "../src/lib/site";
 
 /**
  * `/analytics` is the dashboard for one form, on the same `?form=` contract as
@@ -25,26 +26,29 @@ test("the dashboard draws charts for a form's responses", async ({ page }) => {
   expect(await charts.count()).toBeGreaterThan(1);
 });
 
-test("the demo toolbar carries Save to PDF and Analytics", async ({ page }) => {
+test("the dock carries Save as PDF and Analytics", async ({ page }) => {
   await page.goto("/embedded/feedback");
-  const dock = page.getByRole("toolbar", { name: "Embedded demo tools" });
+  const dock = page.getByRole("toolbar", { name: DOCK_LABELS.toolbar });
 
-  await expect(dock.getByRole("button", { name: "Save to PDF" })).toBeVisible();
-  await expect(dock.getByRole("link", { name: "Analytics" })).toHaveAttribute(
+  await expect(dock.getByRole("button", { name: DOCK_LABELS.savePdf })).toBeVisible();
+  await expect(dock.getByRole("link", { name: DOCK_LABELS.analytics })).toHaveAttribute(
     "href",
     "/analytics?form=customer-satisfaction",
   );
 });
 
-test("an admin page links to the dashboard, and the survey can save a PDF", async ({
+test("/starter's dock links to the dashboard, and the survey can save a PDF", async ({
   page,
 }) => {
   await page.goto("/starter");
+  const dock = page.getByRole("toolbar", { name: DOCK_LABELS.toolbar });
 
-  await expect(page.getByRole("link", { name: "View analytics" })).toHaveAttribute(
+  await expect(dock.getByRole("link", { name: DOCK_LABELS.analytics })).toHaveAttribute(
     "href",
     "/analytics?form=checkout",
   );
-  // The export sits in the survey's own navigation bar, next to Prefill.
+  // The export sits in the survey's own navigation bar, next to Prefill, and
+  // the dock does not repeat it.
+  await expect(dock.getByRole("button", { name: DOCK_LABELS.savePdf })).toHaveCount(0);
   await expect(page.getByText("Save as PDF")).toBeVisible();
 });

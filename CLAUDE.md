@@ -35,7 +35,7 @@ The files the full edition implements still live at their historical paths, not 
 - `e2e/creator.spec.ts` covers the announcement; `e2e/server-checks.spec.ts`, shared, covers what the routes refuse in both editions. `e2e/lint-api.spec.ts`, which posts every form in `FORMS` with its presets, still covers the advisory route.
 - Creator edits `aiHint`, the per-question note for the document extractor, as "AI extraction hint" in the property grid, under Description, for the survey and every question (not for matrix columns). It is registered in the shared `src/schemas/custom-properties.ts`; `src/components/configure/CreatorPane.tsx` imports that module for its side effect before building the Creator, so a saved definition keeps every hint. CreatorPane also moves the row under Description itself, because Survey Creator 3.0.4 ignores `nextToProperty` when the anchor is in the same tab.
 - `/api/lint` (`src/app/api/lint/route.ts`, `src/lib/lint/lint-survey.ts`) is the shared server route. It is not edited here, and `e2e/lint-api.spec.ts` runs in both editions.
-- The Monaco front end (`JsonWorkbench`, `StaticAnalysisBar`, `monaco-adapter.ts`) is copied here and used on one route: `/definition`, the shared shell page that shows any form as JSON with the linter. `/configure` is still Survey Creator.
+- The Monaco front end (`JsonWorkbench`, `StaticAnalysisBar`, `monaco-adapter.ts`) is copied here and used on one route: `/definition`, the shared page that shows any form as JSON with the linter. `/configure` is still Survey Creator.
 
 ## Variable presets in Survey Creator
 
@@ -102,7 +102,7 @@ It fails, listing every managed path in the working tree that differs from `mit/
 
 ## Environment
 
-`.env.example` arrives from the MIT edition and documents every key; copy it to `.env.local`. The one that matters here is `SURVEYJS_KEY`, the SurveyJS license key: when it is set, `src/lib/surveyjs-license.ts` applies it, and it unlocks Survey Creator, the PDF generator and the dashboard. Without it those three still run, and mark their output. On a deployment, also set `NEXT_PUBLIC_SITE_URL` to this host, or canonicals say `http://localhost:3000`. See `.env.example` for the rest.
+`.env.example` arrives from the MIT edition and documents every key; copy it to `.env.local`. The one that matters here is `SURVEYJS_KEY`, the SurveyJS license key: when it is set, `src/lib/surveyjs-license.ts` applies it, and it unlocks Survey Creator, the PDF generator and the dashboard. Without it those three still run, and mark their output. On a deployment, also set `NEXT_PUBLIC_SITE_URL` to this host (`https://app.demos.surveyjs.io`), or canonicals say `http://localhost:3000`; a production build or start without it prints an error saying so. See `.env.example` for the rest.
 
 ## Adding a commercial feature
 

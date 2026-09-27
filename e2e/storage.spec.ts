@@ -14,6 +14,7 @@ import {
   type DemoStore,
 } from "../src/storage/backend/sqlite";
 import { READ_ONLY_MESSAGE } from "../src/storage/access";
+import { DOCK_LABELS } from "../src/lib/site";
 import { listResults } from "../src/storage/survey-results";
 import { startSession } from "./session";
 
@@ -267,7 +268,8 @@ test.describe("resets", () => {
     await expect(formHeading(page)).toHaveText("View Before the reset");
     const before = (await visitorOf(context))!;
 
-    await page.getByRole("button", { name: "Reset demo data" }).click();
+    // The dock's, as on every records page; it asks first.
+    await page.getByRole("toolbar", { name: DOCK_LABELS.toolbar }).getByRole("button", { name: DOCK_LABELS.resetData }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toContainText("Reset demo data?");
     await dialog.getByRole("button", { name: "Reset demo data" }).click();
@@ -446,10 +448,16 @@ test.describe("a browser that blocks cookies", () => {
     await page.goto("/leads");
     await expect(banner).toBeVisible();
     await expect(formHeading(page)).toHaveText(`View ${title}`);
-    for (const name of ["Edit", "Delete", "Reset demo data"]) {
+    for (const name of ["Edit", "Delete", DOCK_LABELS.resetData]) {
       await expect(page.getByRole("button", { name, exact: true })).toBeDisabled();
     }
     await expect(page.getByRole("button", { name: "New lead" }).first()).toBeDisabled();
+    // The same guard where the dock has no room for Reset: in its ⋯, at 390px.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole("toolbar", { name: DOCK_LABELS.toolbar }).getByRole("button", { name: DOCK_LABELS.overflow }).click();
+    await expect(page.getByRole("menu").getByRole("menuitem", { name: DOCK_LABELS.resetData })).toBeDisabled();
+    await page.keyboard.press("Escape");
+    await page.setViewportSize({ width: 1280, height: 720 });
 
     await page.goto("/work-orders");
     await expect(banner).toBeVisible();

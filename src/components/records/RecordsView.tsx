@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { FileDownIcon, PlusIcon, RotateCcwIcon, ScanTextIcon } from "lucide-react";
+import { PlusIcon, ScanTextIcon } from "lucide-react";
 import type { Model } from "survey-core";
 import {
   getRecordCollection,
@@ -15,13 +15,19 @@ import {
   type SourceDocument,
   type StoredRecord,
   type SurveyData,
+  type NavId,
   type SurveyJSON,
 } from "@/schemas";
 import { deleteResult, getResult, resetDemoData, saveResult } from "@/storage/survey-results";
 import { features } from "@/features";
 import { configureHref, recordHref } from "@/lib/routes";
+import { announceCompleted } from "@/lib/demo-events";
+import { DOCK_LABELS } from "@/lib/site";
 import { stableJson } from "@/lib/utils";
-import { PageHeader } from "@/components/PageHeader";
+import { DemoDock } from "@/components/dock/DemoDock";
+import { applyBrand, getBrand } from "@/components/embedded/shared/demo-controls";
+import { HostHeader } from "@/components/hosts/HostHeader";
+import { RECORD_HOSTS, type RecordHostId } from "@/components/hosts/hosts";
 import { useStorageAccess } from "@/components/StorageAccess";
 import { SurveyForm } from "@/components/SurveyForm";
 import { SurveyOutline, useSurveyOutline } from "@/components/survey-outline/SurveyOutline";
@@ -37,7 +43,6 @@ import {
 import { isEmpty } from "./ColumnValue";
 import { RecordPicker } from "./RecordPicker";
 import { RecordRail } from "./RecordRail";
-import { UserSwitcher } from "./UserSwitcher";
 
 type Mode = "view" | "edit" | "new";
 
@@ -137,8 +142,9 @@ function routeOf(pathname: string, basePath: string, segment: string | undefined
  */
 export function RecordsView({
   collectionId,
+  host,
+  exampleId,
   title,
-  description,
   basePath,
   schema,
   initialRows,
@@ -150,9 +156,12 @@ export function RecordsView({
   formNote,
 }: {
   collectionId: string;
-  /** The nav label, for the page header and the rail's landmark. */
+  /** The product this page pretends to be: its header, its palette, who is signed in. */
+  host: RecordHostId;
+  /** The page's `NavId`: the dock's current menu entry and its explainer. */
+  exampleId: NavId;
+  /** The nav label, for the page's heading and the rail's landmark. */
   title: string;
-  description: string;
   /** The page's route, `nav.path`. Record URLs are built under it. */
   basePath: string;
   /** The collection's definition as this visitor stored it, read on the server by the page. */
@@ -165,7 +174,7 @@ export function RecordsView({
   initialRecord: StoredRecord | undefined;
   /** The page was loaded at the import panel's URL. */
   initialImport?: boolean;
-  /** From `listSessionUsers`. Fewer than two renders no switcher. */
+  /** From `listSessionUsers`. Fewer than two renders no "Login as" in the dock. */
   users?: readonly SessionUser[];
   /** Replaces the generic PDF export for this collection (Work orders: the job sheet). */
   exportPdf?: (data: SurveyData) => void | Promise<void>;
@@ -183,6 +192,15 @@ export function RecordsView({
   // The ring around the form: the records pages show which part SurveyJS draws,
   // as the embedded demos do.
   useSurveyOutline();
+
+  // The host's palette, for as long as the page is on screen, as `useDemo`
+  // does for the embedded hosts. The route's boot script painted the first
+  // frame in it already.
+  const hostInfo = RECORD_HOSTS[host];
+  useEffect(() => {
+    applyBrand(getBrand(hostInfo.brandId));
+    return () => applyBrand(getBrand("neutral"));
+  }, [hostInfo.brandId]);
 
   const [rows, setRows] = useState<RecordRow[]>(() => [...initialRows]);
   const [open, setOpen] = useState<OpenRecord | null>(() =>
@@ -531,6 +549,8 @@ export function RecordsView({
       upsertRow(saved);
       if (current.mode === "new") writeRoute(recordHref(basePath, saved.id), "push");
       show("view", saved);
+      // Saved: the dock's "See next" card may show. Not on delete or reset.
+      announceCompleted();
     },
     [basePath, collectionId, show, upsertRow, writeRoute, activeUser],
   );
@@ -669,8 +689,8 @@ export function RecordsView({
 
   /* ── PDF ─────────────────────────────────────────────────────────────────── */
 
-  // What is exported is the record, so the button sits with the record's
-  // actions rather than in the survey's navigation.
+  // What is exported is the record, so the button is the dock's "Save as PDF",
+  // disabled while no record is open, rather than one in the survey's navigation.
   const canExportPdf = Boolean(exportPdf || features.exportPdf);
   const saveAsPdf = useCallback(() => {
     if (!model) return;
@@ -694,181 +714,160 @@ export function RecordsView({
   const selectedId = !importing && open && open.mode !== "new" ? open.record.id : undefined;
 
   return (
-    <div>
-      <PageHeader
-        title={title}
-        description={description}
-        configureHref={configureHref(schemaId)}
-        analyticsHref={features.analyticsHref?.(schemaId)}
+    <div className="bg-background text-foreground min-h-svh">
+      <HostHeader
+        host={hostInfo}
+        account={activeUser ?? hostInfo.staticUser ?? {}}
         actions={
-          <>
-            {documentImport && (
-              <Button
-                size="sm"
-                className="gap-2"
-                disabled={importing || readOnly}
-                onClick={() => openImport(window.location.pathname)}
-              >
-                <ScanTextIcon />
-                {documentImport.label}
-              </Button>
-            )}
-            {activeUser && (
-              <UserSwitcher users={users} activeId={activeUser.id} onSelect={selectUser} />
-            )}
-            {canExportPdf && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                disabled={!model || !open}
-                onClick={saveAsPdf}
-              >
-                <FileDownIcon />
-                Save as PDF
-              </Button>
-            )}
-            {/* Enabled with no record open too: an emptied list is exactly when
-                it is wanted. */}
+          // The host product's own feature, so it stays in the host's header
+          // rather than in the reviewer's dock.
+          documentImport && (
             <Button
-              variant="ghost"
               size="sm"
               className="gap-2"
-              disabled={readOnly || importBusy}
-              onClick={() => setConfirmReset(true)}
+              aria-label={documentImport.label}
+              disabled={importing || readOnly}
+              onClick={() => openImport(window.location.pathname)}
             >
-              <RotateCcwIcon />
-              Reset demo data
+              <ScanTextIcon />
+              <span className="hidden sm:inline">{documentImport.label}</span>
             </Button>
-          </>
+          )
         }
       />
 
-      {/* From `xl` the rail sits beside the form; below it, `RecordPicker` takes
-          its place. At 1280px that leaves the form 676px, above the theme's
-          640px `--sd-mobile-width`, so matrices keep their columns. */}
-      <div className="grid items-start gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
-        {/* `top-14` clears the shell's top bar: the page is one scroller, so
-            this sticks to the viewport and `top-0` would slide under it. */}
-        <div className="hidden min-w-0 overflow-x-hidden xl:sticky xl:top-14 xl:block xl:max-h-[calc(100svh-8rem)] xl:overflow-y-auto">
-          <RecordRail
-            collection={collection}
-            title={title}
-            rows={rows}
-            selectedId={selectedId}
-            basePath={basePath}
-            onSelect={selectRow}
-            onNew={startNew}
-            noun={noun}
-            disabled={importBusy}
-            newDisabled={readOnly}
-          />
-        </div>
+      {/* The host header is the page's top; the bottom leaves room for the
+          dock, which is fixed over the page. */}
+      <main className="mx-auto w-full max-w-[96rem] px-4 pt-6 pb-28 sm:px-6 lg:pt-8">
+        <h1 className="sr-only">{title}</h1>
 
-        {/* `scroll-mt-14`: the `scrollIntoView` above scrolls the page, whose
-            top is behind the shell's sticky top bar. */}
-        <div ref={formColumn} className="min-w-0 scroll-mt-14">
-          <RecordPicker
-            collection={collection}
-            rows={rows}
-            selectedId={selectedId}
-            onSelect={selectRow}
-            onNew={startNew}
-            noun={noun}
-            disabled={importBusy}
-            newDisabled={readOnly}
-          />
+        {/* From `xl` the rail sits beside the form; below it, `RecordPicker` takes
+            its place. At 1280px that leaves the form 676px, above the theme's
+            640px `--sd-mobile-width`, so matrices keep their columns. */}
+        <div className="grid items-start gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
+          {/* `top-14` clears the host header, which is sticky too: the page is
+              one scroller, so this sticks to the viewport and `top-0` would
+              slide under it. `100svh-8rem` is the header and the dock's room. */}
+          <div className="hidden min-w-0 overflow-x-hidden xl:sticky xl:top-14 xl:block xl:max-h-[calc(100svh-8rem)] xl:overflow-y-auto">
+            <RecordRail
+              collection={collection}
+              title={title}
+              rows={rows}
+              selectedId={selectedId}
+              basePath={basePath}
+              onSelect={selectRow}
+              onNew={startNew}
+              noun={noun}
+              disabled={importBusy}
+              newDisabled={readOnly}
+            />
+          </div>
 
-          {importing && documentImport ? (
-            <>
-              <div className="mb-3 flex items-center justify-end gap-2">
-                <Button size="sm" variant="ghost" disabled={importBusy} onClick={closeImport}>
-                  Close
+          {/* `scroll-mt-14`: the `scrollIntoView` above scrolls the page, whose
+              top is behind the sticky host header. */}
+          <div ref={formColumn} className="min-w-0 scroll-mt-14">
+            <RecordPicker
+              collection={collection}
+              rows={rows}
+              selectedId={selectedId}
+              onSelect={selectRow}
+              onNew={startNew}
+              noun={noun}
+              disabled={importBusy}
+              newDisabled={readOnly}
+            />
+
+            {importing && documentImport ? (
+              <>
+                <div className="mb-3 flex items-center justify-end gap-2">
+                  <Button size="sm" variant="ghost" disabled={importBusy} onClick={closeImport}>
+                    Close
+                  </Button>
+                </div>
+                {documentImport.render({ createFrom, onBusyChange: setImportBusyNow })}
+              </>
+            ) : open ? (
+              <>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h2 className="text-base font-semibold">{heading}</h2>
+                  <div className="flex gap-2">
+                    {open.mode === "view" ? (
+                      <>
+                        {/* Off while another row loads: the URL already names it,
+                            and these would act on the record still on screen. */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={readOnly || loading}
+                          onClick={() => openRow(open.record.id, "edit")}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          disabled={readOnly || loading}
+                          onClick={() => setDeleteTarget(open.record)}
+                        >
+                          Delete
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="ghost" onClick={cancel}>
+                          Cancel
+                        </Button>
+                        <Button size="sm" disabled={!model} onClick={saveChanges}>
+                          Save changes
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {storageError && (
+                  <p role="alert" className="border-destructive/50 text-destructive mb-3 rounded-md border px-3 py-2 text-sm">
+                    {storageError}
+                  </p>
+                )}
+                {formNote && <div className="text-muted-foreground mb-3 text-xs">{formNote}</div>}
+                {/* No "Loading…" line while another row loads: a fetch is quick, and
+                    the line pushed the form down and back on every click. The
+                    record on screen stays until the next one arrives. */}
+                {/* Only the form: the heading, the actions and the note above are
+                    this application's own markup. */}
+                <SurveyOutline>
+                  <SurveyForm
+                    key={open.key}
+                    schema={schema}
+                    schemaId={schemaId}
+                    data={open.data}
+                    variables={variables}
+                    mode={open.mode === "view" ? "display" : "edit"}
+                    onComplete={open.mode === "view" ? undefined : handleComplete}
+                    pdfInNavigation={false}
+                    completeText="Save changes"
+                    onModelReady={handleModelReady}
+                  />
+                </SurveyOutline>
+              </>
+            ) : (
+              <div className="text-muted-foreground flex flex-col items-center gap-3 rounded-lg border border-dashed px-6 py-12 text-sm">
+                {storageError && (
+                  <p role="alert" className="text-destructive">
+                    {storageError}
+                  </p>
+                )}
+                <p>No {noun.many} yet</p>
+                <Button size="sm" variant="outline" className="gap-1.5" disabled={readOnly} onClick={startNew}>
+                  <PlusIcon />
+                  New {noun.one}
                 </Button>
               </div>
-              {documentImport.render({ createFrom, onBusyChange: setImportBusyNow })}
-            </>
-          ) : open ? (
-            <>
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold">{heading}</h2>
-                <div className="flex gap-2">
-                  {open.mode === "view" ? (
-                    <>
-                      {/* Off while another row loads: the URL already names it,
-                          and these would act on the record still on screen. */}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={readOnly || loading}
-                        onClick={() => openRow(open.record.id, "edit")}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        disabled={readOnly || loading}
-                        onClick={() => setDeleteTarget(open.record)}
-                      >
-                        Delete
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button size="sm" variant="ghost" onClick={cancel}>
-                        Cancel
-                      </Button>
-                      <Button size="sm" disabled={!model} onClick={saveChanges}>
-                        Save changes
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-              {storageError && (
-                <p role="alert" className="border-destructive/50 text-destructive mb-3 rounded-md border px-3 py-2 text-sm">
-                  {storageError}
-                </p>
-              )}
-              {formNote && <div className="text-muted-foreground mb-3 text-xs">{formNote}</div>}
-              {/* No "Loading…" line while another row loads: a fetch is quick, and
-                  the line pushed the form down and back on every click. The
-                  record on screen stays until the next one arrives. */}
-              {/* Only the form: the heading, the actions and the note above are
-                  this application's own markup. */}
-              <SurveyOutline>
-                <SurveyForm
-                  key={open.key}
-                  schema={schema}
-                  schemaId={schemaId}
-                  data={open.data}
-                  variables={variables}
-                  mode={open.mode === "view" ? "display" : "edit"}
-                  onComplete={open.mode === "view" ? undefined : handleComplete}
-                  pdfInNavigation={false}
-                  completeText="Save changes"
-                  onModelReady={handleModelReady}
-                />
-              </SurveyOutline>
-            </>
-          ) : (
-            <div className="text-muted-foreground flex flex-col items-center gap-3 rounded-lg border border-dashed px-6 py-12 text-sm">
-              {storageError && (
-                <p role="alert" className="text-destructive">
-                  {storageError}
-                </p>
-              )}
-              <p>No {noun.many} yet</p>
-              <Button size="sm" variant="outline" className="gap-1.5" disabled={readOnly} onClick={startNew}>
-                <PlusIcon />
-                New {noun.one}
-              </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      </main>
 
       <Dialog open={deleteTarget !== null} onOpenChange={(value) => !value && setDeleteTarget(null)}>
         <DialogContent>
@@ -940,6 +939,26 @@ export function RecordsView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* The reviewer's controls, never the host's: the same dock as every
+          example page. Reset asks first, in the dialog above; the guards are
+          the ones the header's buttons had. */}
+      <DemoDock
+        exampleId={exampleId}
+        configureHref={configureHref(schemaId)}
+        onReset={() => setConfirmReset(true)}
+        // Enabled with no record open too: an emptied list is exactly when it
+        // is wanted.
+        resetDisabled={readOnly || importBusy}
+        resetLabel={DOCK_LABELS.resetData}
+        resetTitle="Delete everything you changed in this demo and start from the data that ships"
+        onExportPdf={canExportPdf ? saveAsPdf : undefined}
+        exportPdfDisabled={!model || !open}
+        analyticsHref={features.analyticsHref?.(schemaId)}
+        users={users}
+        activeUserId={activeUser?.id}
+        onSelectUser={selectUser}
+      />
     </div>
   );
 }

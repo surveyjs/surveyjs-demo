@@ -12,7 +12,7 @@ export type Edition = "mit" | "full";
 export interface Features {
   edition: Edition;
   brand: {
-    /** The edition pill in the top bar: "MIT" or "Full". */
+    /** The edition beside the demo's name in the dock's "More examples" menu: "MIT" or "Full". */
     editionLabel: string;
     /** This edition's repository. The page-source link and forms.ts build on it. */
     sourceUrl: string;

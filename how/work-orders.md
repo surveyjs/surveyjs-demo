@@ -15,7 +15,7 @@ const schema = await loadSurveyJson("work-order") ?? getSchemaDefinition("work-o
 const record = await getResult("workOrders", rows[0].id);
 ```
 
-[src/app/(shell)/work-orders/page.tsx](<../src/app/(shell)/work-orders/page.tsx>)
+[src/app/work-orders/page.tsx](<../src/app/work-orders/page.tsx>)
 
 ## What the definition reads
 
@@ -109,7 +109,7 @@ A new sheet gets the next job number and the standard labor rate in code, and a 
 
 [Storing survey results](https://surveyjs.io/form-library/documentation/how-to-store-survey-results) · [Saving and restoring responses (example)](https://surveyjs.io/form-library/examples/save-and-restore-user-responses-to-complete-survey/reactjs) · [src/schemas/collections/work-order.ts](../src/schemas/collections/work-order.ts)
 
-### One JSON definition, edited from the page header
+### One JSON definition, edited from the dock
 
 Two pages of JSON hold the questions, the totals, the rules and a hint per box.
 
@@ -144,16 +144,16 @@ View analytics charts the stored work orders from the same definition.
 <!-- edition: full -->
 ### Survey Creator (Open in Creator)
 
-The header's editor button opens this definition in the drag-and-drop designer.
+The dock's editor button opens this definition in the drag-and-drop designer.
 
 [Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react)
 <!-- /edition -->
 
 ## Source files
 
-- [src/app/(shell)/work-orders/page.tsx](<../src/app/(shell)/work-orders/page.tsx>)
-- [src/app/(shell)/work-orders/[id]/page.tsx](<../src/app/(shell)/work-orders/[id]/page.tsx>)
-- [src/app/(shell)/work-orders/from-document/page.tsx](<../src/app/(shell)/work-orders/from-document/page.tsx>)
+- [src/app/work-orders/page.tsx](<../src/app/work-orders/page.tsx>)
+- [src/app/work-orders/[id]/page.tsx](<../src/app/work-orders/[id]/page.tsx>)
+- [src/app/work-orders/from-document/page.tsx](<../src/app/work-orders/from-document/page.tsx>)
 - [src/schemas/work-order.ts](../src/schemas/work-order.ts)
 - [src/schemas/collections/work-order.ts](../src/schemas/collections/work-order.ts)
 - [src/components/WorkOrdersView.tsx](../src/components/WorkOrdersView.tsx)

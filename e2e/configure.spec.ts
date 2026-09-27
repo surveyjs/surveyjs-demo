@@ -99,7 +99,7 @@ test("a definition saved here is what the embedded site renders", async ({ page 
   });
 
   await page.getByRole("button", { name: "View Result" }).click();
-  await expect(page).toHaveURL(/\/embedded\/clinic$/);
+  await expect(page).toHaveURL(/\/clinic$/);
 
   // The host site is untouched — it is the survey inside it that came from the
   // editor, piping the same account the editor was showing.
@@ -116,7 +116,7 @@ test("a definition saved here is what the embedded site renders", async ({ page 
   await page.goto(CLINIC);
   await waitForEditor(page);
   await page.getByRole("button", { name: "Reset" }).click();
-  await page.goto("/embedded/clinic");
+  await page.goto("/clinic");
   // Back to the definition that ships — which, for Maria, is the Spanish one:
   // her chart asks for it, and the page reads the chart before it reads anything
   // the visitor stored.

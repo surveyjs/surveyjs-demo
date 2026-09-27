@@ -7,6 +7,7 @@ import { createSurveyModel, type SurveyData, type SurveyJSON } from "@/schemas";
 import "@/lib/surveyjs-license";
 import { mergeTailwindClasses } from "@/lib/utils";
 import { SurveyOutlineLabel } from "@/components/survey-outline/SurveyOutline";
+import { announceCompleted } from "@/lib/demo-events";
 
 import "survey-core/survey-core.css";
 import "survey-core/themes/adapters/shadcn-base-nova.css";
@@ -94,6 +95,14 @@ export function EmbeddedSurvey({
     model.onComplete.add(handler);
     return () => model.onComplete.remove(handler);
   }, [model, onComplete]);
+
+  // Every completion, whether or not the host page listens for one: the dock's
+  // "See next" card does. Nothing is stored here, so completing is the moment.
+  useEffect(() => {
+    const handler = () => announceCompleted();
+    model.onComplete.add(handler);
+    return () => model.onComplete.remove(handler);
+  }, [model]);
 
   return <Survey model={model} />;
 }

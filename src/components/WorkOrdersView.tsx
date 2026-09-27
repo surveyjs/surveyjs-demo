@@ -7,7 +7,7 @@ import { ExtractFromDocument } from "@/components/extract/ExtractFromDocument";
 import { workOrderSampleDocuments } from "@/components/extract/sample-documents";
 
 /**
- * Adding a work order from paper. The header's "Add from document" opens the
+ * Adding a work order from paper. The host header's "Add from document" opens the
  * panel in the form column's place, at `/work-orders/from-document`; a finished
  * reading opens the new draft at its own URL.
  */
@@ -33,7 +33,6 @@ const fromDocument: DocumentImport = {
  */
 export function WorkOrdersView({
   title,
-  description,
   basePath,
   schema,
   initialRows,
@@ -41,7 +40,6 @@ export function WorkOrdersView({
   initialImport,
 }: {
   title: string;
-  description: string;
   basePath: string;
   /** The visitor's work order definition, read on the server by the page. */
   schema: SurveyJSON;
@@ -59,8 +57,9 @@ export function WorkOrdersView({
   return (
     <RecordsView
       collectionId="workOrders"
+      host="workOrders"
+      exampleId="workOrders"
       title={title}
-      description={description}
       basePath={basePath}
       schema={schema}
       initialRows={initialRows}

@@ -49,6 +49,22 @@ export const BRANDS: readonly DemoBrand[] = [
 
 export const DEFAULT_BRAND_ID = "indigo";
 
+/**
+ * The palette each host site wears, by the page's `NavId`.
+ *
+ * Kept here rather than beside each host component because the route files
+ * read it on the server for `brandBootScript`: a value exported from a
+ * `"use client"` module reaches a server component as a client reference, not
+ * as the string, and the boot script came out empty.
+ */
+export const HOST_BRANDS = {
+  embeddedFeedback: "indigo",
+  embeddedChart: "violet",
+  embeddedClinic: "emerald",
+  leads: "rose",
+  workOrders: "amber",
+} as const;
+
 export function getBrand(brandId: string): DemoBrand {
   return BRANDS.find((brand) => brand.id === brandId) ?? BRANDS[0];
 }

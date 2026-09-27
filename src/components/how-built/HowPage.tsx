@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type { Element, ElementContent, Nodes } from "hast";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowLeftIcon, ArrowRightIcon, ExternalLinkIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { allNavPages, navPages, opensInNewTab, type NavId } from "@/schemas";
+import { getNavItem, navPages, type NavId } from "@/schemas";
+import { NeutralHeader } from "@/components/hosts/NeutralHeader";
 import { HOW_BUILT_TEXT } from "@/lib/how-built";
 import {
   getHowContent,
@@ -14,7 +16,7 @@ import {
   parseQuoteMeta,
   repoPathFromLink,
 } from "@/lib/how-content";
-import { HOW_INDEX, howHref, sourceHref } from "@/lib/routes";
+import { howHref, sourceHref } from "@/lib/routes";
 import { mergeTailwindClasses } from "@/lib/utils";
 
 /** Every string in a hast subtree, in order. */
@@ -234,20 +236,10 @@ function markdownComponents(navPath: string): Components {
   };
 }
 
-function HeaderLink({
-  href,
-  children,
-  newTab,
-}: {
-  href: string;
-  children: ReactNode;
-  newTab?: boolean;
-}) {
+function HeaderLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Button asChild size="sm" className="gap-2">
-      <a href={href} {...(newTab ? { target: "_blank", rel: "noreferrer" } : {})}>
-        {children}
-      </a>
+      <a href={href}>{children}</a>
     </Button>
   );
 }
@@ -262,8 +254,7 @@ function HeaderLink({
  * directory: a person opens the file, reads it top to bottom and edits it.
  */
 export function HowPage({ navId }: { navId: NavId }) {
-  const nav = allNavPages.find((item) => item.id === navId);
-  if (!nav) throw new Error(`No sidebar row for ${navId}`);
+  const nav = getNavItem(navId);
   const { summary, body } = getHowContent(navId);
 
   const inOrder = navPages;
@@ -272,54 +263,61 @@ export function HowPage({ navId }: { navId: NavId }) {
   const next = here >= 0 && here < inOrder.length - 1 ? inOrder[here + 1] : undefined;
 
   return (
-    <article className="mx-auto w-full max-w-3xl">
-      <header className="space-y-3">
-        <h1 className="text-xl font-semibold tracking-tight">{nav.label} — how it&apos;s built</h1>
-        <p className="text-muted-foreground text-sm">{summary}</p>
-        {/* The way back to the example. The way out to the rest of them is the
-            top bar's own link, beside it on every page of the shell. */}
-        <div className="flex flex-wrap items-center gap-2">
-          <HeaderLink href={nav.path} newTab={opensInNewTab(nav)}>
-            {HOW_BUILT_TEXT.openExample}
-            {opensInNewTab(nav) ? <ExternalLinkIcon /> : <ArrowRightIcon />}
-          </HeaderLink>
-        </div>
-      </header>
+    <div className="min-h-svh">
+      {/* The demo's own header, linking the root index: an explainer is nobody's product. */}
+      <NeutralHeader width="max-w-3xl" />
+      <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:py-8">
+        <article>
+          <header className="space-y-3">
+            <h1 className="text-xl font-semibold tracking-tight">{nav.label} — how it&apos;s built</h1>
+            <p className="text-muted-foreground text-sm">{summary}</p>
+            {/* The way back to the example, in this tab like every example link.
+                The way out to the rest of them is at the foot, and in the header's
+                link to the root index. */}
+            <div className="flex flex-wrap items-center gap-2">
+              <HeaderLink href={nav.path}>
+                {HOW_BUILT_TEXT.openExample}
+                <ArrowRightIcon />
+              </HeaderLink>
+            </div>
+          </header>
 
-      <div className={mergeTailwindClasses("mt-2")}>
-        <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents(nav.path)}>
-          {body}
-        </Markdown>
-      </div>
+          <div className={mergeTailwindClasses("mt-2")}>
+            <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents(nav.path)}>
+              {body}
+            </Markdown>
+          </div>
 
-      <nav
-        aria-label="More examples"
-        className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-6 text-sm"
-      >
-        <span className="flex items-center gap-4">
-          {previous && (
-            <a
-              href={howHref(previous.path)}
-              className="text-primary flex items-center gap-1 underline-offset-4 hover:underline"
-            >
-              <ArrowLeftIcon className="size-3.5" />
-              {previous.label}
-            </a>
-          )}
-          {next && (
-            <a
-              href={howHref(next.path)}
-              className="text-primary flex items-center gap-1 underline-offset-4 hover:underline"
-            >
-              {next.label}
-              <ArrowRightIcon className="size-3.5" />
-            </a>
-          )}
-        </span>
-        <a href={HOW_INDEX} className="text-muted-foreground underline-offset-4 hover:underline">
-          {HOW_BUILT_TEXT.allExamples}
-        </a>
-      </nav>
-    </article>
+          <nav
+            aria-label="More examples"
+            className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-6 text-sm"
+          >
+            <span className="flex items-center gap-4">
+              {previous && (
+                <a
+                  href={howHref(previous.path)}
+                  className="text-primary flex items-center gap-1 underline-offset-4 hover:underline"
+                >
+                  <ArrowLeftIcon className="size-3.5" />
+                  {previous.label}
+                </a>
+              )}
+              {next && (
+                <a
+                  href={howHref(next.path)}
+                  className="text-primary flex items-center gap-1 underline-offset-4 hover:underline"
+                >
+                  {next.label}
+                  <ArrowRightIcon className="size-3.5" />
+                </a>
+              )}
+            </span>
+            <Link href="/" className="text-muted-foreground underline-offset-4 hover:underline">
+              {HOW_BUILT_TEXT.allExamples}
+            </Link>
+          </nav>
+        </article>
+      </main>
+    </div>
   );
 }

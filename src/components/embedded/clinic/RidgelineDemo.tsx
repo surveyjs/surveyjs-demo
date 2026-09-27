@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { chartLocale, visitSummaryFor, type ClinicLocale, type SurveyData } from "@/schemas";
-import { DemoDock } from "../shared/DemoDock";
+import { DemoDock } from "@/components/dock/DemoDock";
 import { DemoUserDialog } from "../shared/DemoUserDialog";
 import { EmbeddedSurvey, SurveyCard } from "../shared/EmbeddedSurvey";
 import {
@@ -13,10 +13,10 @@ import {
   VisitSummaryPanel,
 } from "./RidgelineSite";
 import { useDemo } from "../shared/useDemo";
-import type { DemoSurvey } from "../shared/demo-controls";
+import { HOST_BRANDS, type DemoSurvey } from "../shared/demo-controls";
 
 const ANCHOR = "request";
-export const RIDGELINE_BRAND = "emerald";
+const RIDGELINE_BRAND = HOST_BRANDS.embeddedClinic;
 
 /**
  * Embedded demo: a US clinic page whose appointment form prices the visit.

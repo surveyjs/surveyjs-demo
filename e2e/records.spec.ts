@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { features } from "../src/features";
 import { configureHref } from "../src/lib/routes";
+import { DOCK_LABELS } from "../src/lib/site";
 import { getFormNavItem } from "../src/schemas/navigation";
 import { getRecordCollection, recordTitle } from "../src/schemas/records";
 import type { SurveyData } from "../src/schemas/types";
@@ -9,7 +10,7 @@ import { startSession } from "./session";
 
 /**
  * The shared records page, proved on `/work-orders`: the rail, record URLs and
- * Back, the header actions, new / cancel / save / delete, the unsaved-changes
+ * Back, the dock's actions, new / cancel / save / delete, the unsaved-changes
  * dialog, the import panel, the outline around the form, and the "How this page
  * is built" panel. Then what a work order adds: totals, the signature rule and a
  * record linked to its original. Every label comes from the code under test. The
@@ -92,6 +93,18 @@ async function openForEdit(page: Page, id: string) {
   await expect(formHeading(page)).toHaveText(`Edit ${id}`);
 }
 
+function dockOf(page: Page) {
+  return page.getByRole("toolbar", { name: DOCK_LABELS.toolbar });
+}
+
+/** The dock's "⋯", open: what the bar has no room for below `lg`. */
+async function openOverflow(page: Page) {
+  await dockOf(page).getByRole("button", { name: DOCK_LABELS.overflow }).click();
+  const menu = page.getByRole("menu");
+  await expect(menu).toBeVisible();
+  return menu;
+}
+
 function addFromDocument(page: Page) {
   // Exact: the panel's own "Add from your document" must not match.
   return page.getByRole("button", { name: "Add from document", exact: true });
@@ -109,26 +122,58 @@ async function type(page: Page, name: string, value: string) {
 }
 
 test.describe("on /work-orders", () => {
-  test("the first record is open, and the header holds its actions", async ({ page }) => {
+  test("the first record is open, the dock holds the reviewer's actions and the header the host's", async ({ page }) => {
     const rows = await listResults("workOrders");
     await page.goto("/work-orders");
     await expect(formHeading(page)).toHaveText(`View ${recordTitle(workOrders, rows[0])}`);
+    const dock = dockOf(page);
 
     // The job sheet printer, where the edition plugs one in; nothing about it otherwise.
-    await expect(page.getByRole("button", { name: "Save as PDF" })).toHaveCount(
+    await expect(dock.getByRole("button", { name: DOCK_LABELS.savePdf })).toHaveCount(
       features.exportWorkOrderPdf ? 1 : 0,
     );
     await expect(page.getByText("prints this work order onto")).toHaveCount(
       features.exportWorkOrderPdf ? 1 : 0,
     );
-    await expect(page.getByRole("link", { name: features.designer.label })).toHaveAttribute(
+    await expect(dock.getByRole("link", { name: features.designer.label })).toHaveAttribute(
       "href",
       configureHref(workOrders.schemaId),
     );
-    await expect(page.getByRole("link", { name: "View analytics" })).toHaveCount(
+    await expect(dock.getByRole("link", { name: DOCK_LABELS.analytics })).toHaveCount(
       features.analyticsHref ? 1 : 0,
     );
-    await expect(page.getByRole("button", { name: /Signed in as/ })).toHaveCount(0);
+    await expect(dock.getByRole("button", { name: DOCK_LABELS.resetData })).toBeEnabled();
+    // Nobody to switch to: a dispatch desk is a role, shown in the host header.
+    await expect(dock.getByRole("button", { name: /Login as/ })).toHaveCount(0);
+    const banner = page.getByRole("banner");
+    await expect(banner).toContainText("Tallis Mechanical — dispatch");
+    await expect(banner).toContainText("Dispatch desk");
+    // Reading a document in is the host's own feature, so it stays in its header.
+    await expect(banner.getByRole("button", { name: "Add from document", exact: true })).toBeEnabled();
+  });
+
+  test("at 390px the same guards hold through the dock's ⋯", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/work-orders");
+    await expect(formHeading(page)).toBeVisible();
+
+    let menu = await openOverflow(page);
+    await expect(menu.getByRole("menuitem", { name: DOCK_LABELS.resetData })).toBeEnabled();
+    if (features.exportWorkOrderPdf) {
+      await expect(menu.getByRole("menuitem", { name: DOCK_LABELS.savePdf })).toBeEnabled();
+    }
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("menu")).toHaveCount(0);
+
+    // No record open while the panel is: the PDF is the record's.
+    await addFromDocument(page).click();
+    await expect(page).toHaveURL(/\/work-orders\/from-document$/);
+    await expect(addFromDocument(page)).toBeDisabled();
+    menu = await openOverflow(page);
+    if (features.exportWorkOrderPdf) {
+      await expect(menu.getByRole("menuitem", { name: DOCK_LABELS.savePdf })).toBeDisabled();
+    }
+    await expect(menu.getByRole("menuitem", { name: DOCK_LABELS.resetData })).toBeEnabled();
   });
 
   test("+ New opens an unsaved record, and Cancel goes back", async ({ page }) => {
@@ -429,7 +474,7 @@ test.describe("the import panel", () => {
     await expect(rail(page).locator('[aria-current="page"]')).toHaveCount(0);
     // "Save as PDF" is the record's, and no record is open.
     if (features.exportWorkOrderPdf) {
-      await expect(page.getByRole("button", { name: "Save as PDF" })).toBeDisabled();
+      await expect(dockOf(page).getByRole("button", { name: DOCK_LABELS.savePdf })).toBeDisabled();
     }
   });
 

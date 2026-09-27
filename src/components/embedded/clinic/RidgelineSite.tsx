@@ -177,7 +177,7 @@ export function ClinicHeader({
 
   return (
     <header className="bg-background/85 sticky top-0 z-40 border-b backdrop-blur">
-      <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-6 py-3.5">
+      <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-3.5 sm:px-6">
         <div className="flex items-center gap-2.5">
           <span className="demo-brand-bg text-primary-foreground grid size-9 place-items-center rounded-lg">
             <HeartPulseIcon className="size-5" />
@@ -203,9 +203,11 @@ export function ClinicHeader({
             meta={mrn ? `${strings.mrn} ${mrn} · ${plan}` : undefined}
             signInLabel={strings.signIn}
           />
-          <Button size="sm" onClick={onRequest}>
+          {/* Its icon alone on a phone, where the full label pushed the page
+              sideways. */}
+          <Button size="sm" aria-label={strings.requestAppointment} onClick={onRequest}>
             <CalendarCheckIcon />
-            {strings.requestAppointment}
+            <span className="hidden sm:inline">{strings.requestAppointment}</span>
           </Button>
         </div>
       </div>

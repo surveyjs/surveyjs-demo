@@ -1,4 +1,5 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
+import { DOCK_LABELS } from "../src/lib/site";
 import {
   chartLocale,
   formatDollars,
@@ -8,7 +9,7 @@ import {
 } from "../src/schemas";
 
 /**
- * `/embedded/clinic` in two languages.
+ * `/clinic` in two languages.
  *
  * The page opens in the language the patient's chart asks for, and everything on
  * it follows: the form from its own definition, the site around it from
@@ -29,7 +30,7 @@ function pressLocale(page: Page, locale: "EN" | "ES") {
 }
 
 function dockOf(page: Page) {
-  return page.getByRole("toolbar", { name: "Embedded demo tools" });
+  return page.getByRole("toolbar", { name: DOCK_LABELS.toolbar });
 }
 
 /**
@@ -97,7 +98,7 @@ test("the switch keeps the answers and re-derives the summary in the other langu
   page,
 }) => {
   test.slow();
-  await page.goto("/embedded/clinic");
+  await page.goto("/clinic");
   await dockOf(page).getByRole("button", { name: "Prefill" }).click();
 
   const spanishPanel = page.getByRole("complementary", { name: "Su visita" });
@@ -147,7 +148,7 @@ test("the chart wins again whenever the patient or the chart's language changes"
   page,
 }) => {
   test.slow();
-  await page.goto("/embedded/clinic");
+  await page.goto("/clinic");
   const banner = page.getByRole("note");
   const card = page.locator("#request");
 
@@ -195,7 +196,7 @@ test("a chart in a language this demo does not have opens in English, and says n
   page,
 }) => {
   test.slow();
-  await page.goto("/embedded/clinic");
+  await page.goto("/clinic");
   const dialog = await openUserDialog(page);
   await chooseInEditor(dialog, "user_preferredLanguage", "Vietnamese", "vi");
 
@@ -208,7 +209,7 @@ test("the reviewer's own tools stay English, and the sign-in fallback does not",
   page,
 }) => {
   test.slow();
-  await page.goto("/embedded/clinic");
+  await page.goto("/clinic");
 
   // The switch names itself in the language of the page it is on.
   await expect(page.getByRole("group", { name: "Idioma de la página" }).first()).toBeVisible();
@@ -232,7 +233,7 @@ test("the reviewer's own tools stay English, and the sign-in fallback does not",
 test("the form and the whole panel are above the fold at 1440×900", async ({ page }) => {
   test.slow();
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/embedded/clinic");
+  await page.goto("/clinic");
 
   const panel = page.getByRole("complementary", { name: "Su visita" });
   await expect(panel).toBeVisible();

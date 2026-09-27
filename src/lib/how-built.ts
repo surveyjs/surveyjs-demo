@@ -3,7 +3,7 @@
  *
  * Everything an explainer says about an example is in `how/<route>.md` — the
  * words, the links, the files, the quoted definitions. What is left here is the
- * fixed chrome wording the page, the index and the specs share, and the walk
+ * fixed chrome wording the page, the root index and the specs share, and the walk
  * over a definition that lets `e2e/how-integrity.spec.ts` check a quoted block
  * against the JSON that actually ships.
  *
@@ -13,9 +13,9 @@ import { features } from "@/features";
 
 /** Wording the explainer, the index and the specs share. */
 export const HOW_BUILT_TEXT = {
-  /** The index card's way into an explainer. */
-  readHow: "Read how it's built",
-  /** Beside "Open this example" at the top of an explainer, and again at the foot. */
+  /** The root index card's way into an explainer. */
+  howBuilt: "How it's built",
+  /** At the foot of an explainer, to the root index. */
   allExamples: "All examples",
   openExample: "Open this example",
   /** The badge the loader appends to a block only the other edition ships. */

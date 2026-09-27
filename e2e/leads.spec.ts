@@ -9,6 +9,7 @@ import { getResult, listResults } from "../src/storage/survey-results";
 import { startSession } from "./session";
 import { LEADS_USERS } from "../src/storage/session";
 import { toVariables } from "../src/schemas/variables";
+import { DOCK_LABELS } from "../src/lib/site";
 
 /**
  * `/leads`: a CRM opportunity on the shared records page. Totals over the line
@@ -143,10 +144,16 @@ async function nextPage(page: Page) {
   await form(page).getByRole("button", { name: "Next" }).click();
 }
 
+function dockOf(page: Page) {
+  return page.getByRole("toolbar", { name: DOCK_LABELS.toolbar });
+}
+
+/** "Login as" is the dock's; the host header shows whoever it signed in. */
 async function signInAs(page: Page, name: string) {
-  await page.getByRole("button", { name: /^Signed in as:/ }).click();
+  await dockOf(page).getByRole("button", { name: /^Login as:/ }).click();
   await page.getByRole("menuitemradio", { name }).click();
-  await expect(page.getByRole("button", { name: `Signed in as: ${name}` })).toBeVisible();
+  await expect(dockOf(page).getByRole("button", { name: `Login as: ${name}` })).toBeVisible();
+  await expect(page.getByRole("banner")).toContainText(name);
 }
 
 async function choose(page: Page, combobox: ReturnType<Page["locator"]>, option: string) {
@@ -168,7 +175,10 @@ test.describe("on /leads", () => {
     await expect(rail(page).getByRole("link")).toHaveCount(rows.length);
     await openLead(page, "Northwind Labs");
     await expect(form(page).locator('[data-name="accountName"] input')).toHaveValue("Northwind Labs");
-    await expect(page.getByRole("button", { name: `Signed in as: ${sales.name}` })).toBeVisible();
+    await expect(dockOf(page).getByRole("button", { name: `Login as: ${sales.name}` })).toBeVisible();
+    // Larkspur's own header says who that is.
+    await expect(page.getByRole("banner")).toContainText("Larkspur CRM");
+    await expect(page.getByRole("banner")).toContainText(sales.name);
     // The list's first row is the soonest expected close.
     await expect(rail(page).getByRole("link").first()).toContainText(recordTitle(leads, rows[0]));
   });

@@ -2,16 +2,16 @@
 
 import { StethoscopeIcon } from "lucide-react";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { DemoDock } from "../shared/DemoDock";
+import { DemoDock } from "@/components/dock/DemoDock";
 import { DemoUserDialog } from "../shared/DemoUserDialog";
 import { EmbeddedSurvey, SurveyCard } from "../shared/EmbeddedSurvey";
 import { SignedInChip } from "../shared/SignedInChip";
 import { accountText } from "../shared/demo-accounts";
 import { useDemo } from "../shared/useDemo";
-import type { DemoSurvey } from "../shared/demo-controls";
+import { HOST_BRANDS, type DemoSurvey } from "../shared/demo-controls";
 
 const ANCHOR = "note";
-export const CHART_BRAND = "violet";
+const CHART_BRAND = HOST_BRANDS.embeddedChart;
 
 /**
  * Embedded demo: the clinician's side of the clinic — an encounter note.

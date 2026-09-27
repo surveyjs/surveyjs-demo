@@ -1,5 +1,6 @@
 /**
- * The demo's name and the site around it — the same in every edition.
+ * The demo's name, the site it belongs to and the dock's wording — the same in
+ * every edition.
  *
  * Plain constants on purpose: nothing here is secret or differs per deployment,
  * so a change is an edit here, not an environment variable. No React either:
@@ -8,40 +9,44 @@
 
 export const DEMO_NAME = "SurveyJS in your app";
 
-/** The site this demo belongs to, linked from the top bar and opened in a new tab. */
-export const SITE_LINKS = [
-  { id: "useCases", label: "Use cases", href: "https://surveyjs.io/use-cases" },
-  {
-    id: "serverIntegration",
-    label: "Server integration",
-    href: "https://surveyjs.io/backend-integration/examples",
-  },
-  { id: "docs", label: "Documentation", href: "https://surveyjs.io/backend-integration" },
-] as const;
+/**
+ * The site's use-cases page: where visitors arrive from, and where the dock's
+ * "More examples" menu sends them back. A manifest entry's `useCaseAnchor` is a
+ * section of it.
+ */
+export const USE_CASES_URL = "https://surveyjs.io/use-cases";
 
 /**
- * The demos that live on their own hosts, linked from the sidebar, and the two
- * places the MySurveys page sends people. All opened in a new tab.
+ * The mark after a link that opens in a new tab: ↗, with the text-presentation
+ * selector, or Windows draws it as a blue emoji tile.
  */
-export const EXTERNAL_URLS = {
-  fillTogether: "https://collaborative-form-filling.demos.surveyjs.io",
-  editTogether: "https://collaborative-form-editing.demos.surveyjs.io",
-  // The hosted application; it asks for a surveyjs.io account first.
-  mySurveys: "https://surveyjs.io/Service/MySurveys",
-  // Survey Creator on its own, with nothing to sign up for.
-  createFreeSurvey: "https://surveyjs.io/create-free-survey",
+export const NEW_TAB_MARK = "↗︎";
+
+/**
+ * What the dock calls its controls, on every page that has one. Specs import
+ * these, so a label is changed here and nowhere else.
+ */
+export const DOCK_LABELS = {
+  /** The toolbar's accessible name. */
+  toolbar: "Demo tools",
+  moreExamples: "More examples",
+  allUseCases: "All use cases",
+  /** The "⋯" menu that holds what the bar has no room for. */
+  overflow: "More demo tools",
+  prefill: "Prefill",
+  /** An embedded demo's: start the form again. */
+  reset: "Reset",
+  /** A records page's: this visitor's stored data, after a confirm dialog. */
+  resetData: "Reset demo data",
+  savePdf: "Save as PDF",
+  analytics: "Analytics",
+  loginAs: "Login as",
+  editUser: "Edit the user",
+  seeNext: "See next",
 } as const;
 
-/** Shared with the embedded demo dock later, so the two never word these differently. */
+/** Worded once, for the dock and the specs. */
 export const PAGE_ACTIONS = {
   source: "Source of this page",
   howBuilt: "How this page is built",
-  /**
-   * The index of every example's explainer, which the top bar offers **on an
-   * explainer only** — on the example itself the link above is the one worth
-   * having, and a second, vaguer one beside it would only blur it. Worded in
-   * parallel with it all the same: the only thing that differs between the two
-   * is *this page* against *every page*.
-   */
-  howIndex: "How every page is built",
 } as const;

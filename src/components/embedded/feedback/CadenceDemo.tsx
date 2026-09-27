@@ -13,21 +13,20 @@ import {
   Suite,
   Testimonials,
 } from "./CadenceSite";
-import { DemoDock } from "../shared/DemoDock";
+import { DemoDock } from "@/components/dock/DemoDock";
 import { EmbeddedSurvey, SurveyCard } from "../shared/EmbeddedSurvey";
 import { DemoUserDialog } from "../shared/DemoUserDialog";
 import { useDemo } from "../shared/useDemo";
-import type { DemoSurvey } from "../shared/demo-controls";
+import { HOST_BRANDS, type DemoSurvey } from "../shared/demo-controls";
 
 const ANCHOR = "feedback";
-export const CADENCE_BRAND = "indigo";
+const CADENCE_BRAND = HOST_BRANDS.embeddedFeedback;
 
 /**
  * Embedded demo: an ordinary product marketing site with a survey in its hero.
  *
- * The page it lives on has no admin demo by design — see `src/app/layout.tsx`
- * and the `(shell)` route group — and the sidebar entry opens it in a new tab so
- * nothing of this template frames it.
+ * The page it lives on is Cadence's alone: nothing of this template frames it
+ * but the reviewer's dock, fixed over it at the bottom.
  *
  * The survey is addressed to whoever is signed in: the header shows the account,
  * and the form greets them by name, works out how long they have been a customer,

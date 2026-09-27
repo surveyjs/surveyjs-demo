@@ -16,8 +16,7 @@ import {
   repoPathFromLink,
   type HowQuote,
 } from "../src/lib/how-content";
-import { HOW_INDEX, howHref } from "../src/lib/routes";
-import { allNavPages, type NavPage } from "../src/schemas/navigation";
+import { navPages, type NavPage } from "../src/schemas/navigation";
 import { getSchemaDefinition } from "../src/schemas";
 
 /**
@@ -141,7 +140,7 @@ interface HowFile {
   readonly scan: Scan;
 }
 
-const FILES: HowFile[] = allNavPages.map((nav) => {
+const FILES: HowFile[] = navPages.map((nav) => {
   const file = `${HOW_CONTENT_DIR}/${howFileName(nav.path)}`;
   // A missing file is the listing test's finding, with the name it is missing
   // under; reading it here would only throw at collection time instead.
@@ -167,8 +166,8 @@ test("every page has a file, and every file a page", () => {
   const onDisk = readdirSync(DIR)
     .filter((name) => name.endsWith(".md") && name !== HOW_README)
     .sort();
-  const expected = allNavPages.map((nav) => howFileName(nav.path)).sort();
-  expect(onDisk, `${HOW_CONTENT_DIR}/ and the sidebar disagree`).toEqual(expected);
+  const expected = navPages.map((nav) => howFileName(nav.path)).sort();
+  expect(onDisk, `${HOW_CONTENT_DIR}/ and the route registry disagree`).toEqual(expected);
   // The README is for whoever edits one; the loader ignores it.
   expect(existsSync(path.join(DIR, HOW_README))).toBe(true);
 });
@@ -178,7 +177,7 @@ for (const entry of FILES) {
     test("front matter is the two keys, and the summary is one sentence", () => {
       expect(existsSync(path.join(ROOT, entry.file)), `${entry.file} is not on disk`).toBe(true);
       expect([...entry.keys].sort(), "front matter keys").toEqual(["nav", "summary"]);
-      expect(entry.nav.id, "front matter names another row").toBe(
+      expect(entry.nav.id, "front matter names another page").toBe(
         parseFrontMatter(readFileSync(path.join(ROOT, entry.file), "utf8")).data.nav,
       );
       expect(entry.summary.length, "the summary is over 200 characters").toBeLessThanOrEqual(200);
@@ -186,7 +185,7 @@ for (const entry of FILES) {
       const terminators = entry.summary.match(/[.!?](\s|$)/g) ?? [];
       expect(terminators.length, "the summary is more than one sentence").toBe(1);
       expect(/[.!?]$/.test(entry.summary), "the summary does not end in a terminator").toBe(true);
-      // The `<h1>` comes from the sidebar row, so the file must not carry one.
+      // The `<h1>` comes from the route registry, so the file must not carry one.
       expect(/^#\s/m.test(entry.body), "a level-one heading belongs to the page").toBe(false);
     });
 
@@ -210,12 +209,8 @@ for (const entry of FILES) {
       for (const link of entry.scan.links) {
         if (howLinkKind(strip(link.href)) !== "route") continue;
         const target = strip(link.href).split("#")[0];
-        const candidates =
-          target === HOW_INDEX || target.endsWith("/how")
-            ? [`src/app/(shell)${target}/page.tsx`]
-            : [`src/app/(shell)${target}/page.tsx`, `src/app${target}/page.tsx`];
         expect(
-          candidates.some((file) => existsSync(path.join(ROOT, file))),
+          existsSync(path.join(ROOT, `src/app${target === "/" ? "" : target}/page.tsx`)),
           `${entry.file}:${link.line}: ${target} has no page.tsx`,
         ).toBe(true);
       }
@@ -327,16 +322,4 @@ test("the TODOs, counted and named", () => {
   });
   // Not an assertion about the count: a TODO is allowed, and is not filler.
   expect(notes.every((note) => note.trim().length > 0)).toBe(true);
-});
-
-test("an example this edition does not ship is still listed, and linked across", () => {
-  const elsewhere = FILES.filter((entry) => !here(entry.nav.edition));
-  for (const entry of elsewhere) {
-    // The file is here, so the index can list it and link the other host.
-    expect(existsSync(path.join(ROOT, entry.file))).toBe(true);
-    expect(howHref(entry.nav.path)).toBe(`${entry.nav.path}/how`);
-  }
-  expect(elsewhere.map((entry) => entry.nav.id)).toEqual(
-    features.edition === "mit" ? ["mySurveys"] : [],
-  );
 });

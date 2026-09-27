@@ -172,7 +172,7 @@
 .lint-line-highlight { background: color-mix(in oklab, var(--accent) 70%, transparent); }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Embedded demo (/embedded) — a mock product site that hosts the survey.
+   Embedded demos (/feedback, /chart, /clinic) — a mock product site that hosts the survey.
 
    Only the effects Tailwind utilities cannot express live here: the brand hue
    the demo toolbar swaps at runtime, and the gradient/grid washes the hero is
@@ -291,11 +291,12 @@ html[data-demo-highlight] [data-survey-root] [data-survey-outline-label]:hover {
   }
 }
 
-/* The toolbar sits over the page and should read as an overlay, not as part of
-   the mock site. It is fully visible by default: on a phone there is no way to
-   reveal a dimmed control, and a reviewer who cannot find the toolbar cannot
+/* The dock sits over every example page and should read as an overlay, not as
+   part of the host site. It is fully visible by default: on a phone there is no
+   way to reveal a dimmed control, and a reviewer who cannot find the dock cannot
    use the demo. Only a mouse — which can hover it back to full strength — gets
-   the quiet version. */
+   the quiet version, and never while one of its menus is open: the menu is in a
+   portal, so focus and the pointer have both left the bar by then. */
 .demo-dock {
   opacity: 1;
   transition: opacity 150ms ease, transform 150ms ease;
@@ -305,7 +306,8 @@ html[data-demo-highlight] [data-survey-root] [data-survey-outline-label]:hover {
     opacity: 0.55;
   }
   .demo-dock:hover,
-  .demo-dock:focus-within {
+  .demo-dock:focus-within,
+  .demo-dock:has([aria-expanded="true"]) {
     opacity: 1;
   }
 }

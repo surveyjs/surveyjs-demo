@@ -3,6 +3,29 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
+// Every canonical and og:url is built from NEXT_PUBLIC_SITE_URL, and without it
+// they all say http://localhost:3000. Loud rather than fatal: `npm run e2e:ci`,
+// `npm run verify` and CI run production builds with no site URL on purpose.
+// Once per process tree: Next.js loads this file again in its build workers,
+// which inherit the flag.
+if (
+  process.env.NODE_ENV === "production" &&
+  !process.env.NEXT_PUBLIC_SITE_URL &&
+  !process.env.SJS_SITE_URL_REPORTED
+) {
+  process.env.SJS_SITE_URL_REPORTED = "1";
+  console.error(
+    [
+      "",
+      "NEXT_PUBLIC_SITE_URL is not set.",
+      "  Every canonical link and og:url on this deployment will point at http://localhost:3000.",
+      "  Set it to this host, with no trailing slash, and rebuild: it is inlined at build time.",
+      "  See .env.example for each edition's production host.",
+      "",
+    ].join("\n"),
+  );
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: here,
@@ -39,6 +62,14 @@ const nextConfig = {
         destination: "/configure?form=work-order",
         permanent: false,
       },
+      // The explainers' index, folded into the root index; and a page retired
+      // because the site's use-cases page links that application directly.
+      { source: "/how", destination: "/", permanent: false },
+      { source: "/mysurveys", destination: "/", permanent: false },
+      { source: "/mysurveys/how", destination: "/", permanent: false },
+      // The host pages lost their `/embedded` prefix when the admin shell they
+      // stood outside of was removed; the explainers moved with them.
+      { source: "/embedded/:path*", destination: "/:path*", permanent: false },
     ];
   },
 };

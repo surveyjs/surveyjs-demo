@@ -1,8 +1,8 @@
 # How it's built — the explainers
 
 One file per example. Everything a `/x/how` page says about its example is in the
-file named after its route: `/leads` → `leads.md`, `/embedded/chart` →
-`embedded-chart.md`. The server reads the file at build time and builds the page
+file named after its route: `/leads` → `leads.md`, `/chart` →
+`chart.md`. The server reads the file at build time and builds the page
 from it (`src/lib/how-content.ts`), so editing a sentence here and rebuilding
 changes that page and nothing else.
 
@@ -22,12 +22,13 @@ summary: A CRM opportunity as one form: contacts in a dynamic panel, line items 
 ---
 ```
 
-`nav` is the sidebar row's id. `summary` is one sentence, **200 characters at
-most** — it is the page's meta description, its lead paragraph and its card on
-`/how`, so it is the one string with a cap.
+`nav` is the page's `NavId`. `summary` is one sentence, **200 characters at
+most** — it is the page's meta description and its lead paragraph, so it is the
+one string with a cap.
 
 There is no `# heading` in the file: the page writes `<Label> — how it's built`
-from the sidebar row, so renaming the row renames the page.
+from the page's entry in `src/schemas/navigation.ts`, so renaming the page
+renames its explainer.
 
 ## The body
 
@@ -49,7 +50,7 @@ Three kinds, told apart by where they point:
 | `[Variables](https://surveyjs.io/…)` | documentation or a live example | a link with ↗, new tab |
 
 A path with brackets or parentheses needs the pointy-bracket form, or Markdown
-mis-reads it: `[…](<../src/app/(shell)/leads/page.tsx>)`.
+mis-reads it: `[…](<../src/app/leads/[id]/page.tsx>)`.
 
 Anything external must be `https://` on an allow-listed host — `surveyjs.io`
 today. Extend the list in `e2e/how-integrity.spec.ts`, with the reason, rather
@@ -118,6 +119,6 @@ never an invented URL — an absent link is just an absent link.
 ## Adding one
 
 Create `<route-with-dashes>.md`, give it the two front-matter keys, and add
-`src/app/(shell)/<route>/how/page.tsx` — three lines around `HowPage`. Every
-sidebar page needs a file and every file a sidebar page, and
+`src/app/<route>/how/page.tsx` — three lines around `HowPage`. Every page in
+the route registry needs a file and every file a page, and
 `e2e/how-integrity.spec.ts` fails without one.
