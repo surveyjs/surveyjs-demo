@@ -77,19 +77,19 @@ PUT /api/storage/results/workOrders/WO-2026-0120
 
 The route checks the shape of every answer, and the completeness of anything that is no longer a draft, before it stores it.
 
-[Server-side validation](https://surveyjs.io/form-library/documentation/data-validation#server-side-validation) · [Data validation](https://surveyjs.io/form-library/documentation/data-validation) · [Server-side validation (example)](https://surveyjs.io/form-library/examples/javascript-server-side-form-validation/reactjs) · [src/lib/checks/check-response.ts](../src/lib/checks/check-response.ts)
+[Server-side validation](https://surveyjs.io/form-library/documentation/data-validation#server-side-validation) · [Data validation](https://surveyjs.io/form-library/documentation/data-validation) · [Server-side validation (example)](https://surveyjs.io/form-library/examples/javascript-server-side-form-validation/reactjs) · [src/lib/checks/check-response.ts](../src/lib/checks/check-response.ts) · [Validate the response (backend)](https://surveyjs.io/backend-integration/examples#validate)
 
 ### AI extraction from a PDF, scan or photo
 
 Add from document posts the file to `/api/extract`, which reads it against this definition and its hints and opens the result as a draft.
 
-[Combine paper and online data](https://surveyjs.io/documentation/combine-paper-and-online-survey-form-data) · [Extracting data from paper forms (example)](https://surveyjs.io/form-library/examples/extract-data-from-paper-forms-pdf/reactjs) · [src/app/api/extract/route.ts](../src/app/api/extract/route.ts) · [src/components/extract/ExtractFromDocument.tsx](../src/components/extract/ExtractFromDocument.tsx)
+[Combine paper and online data](https://surveyjs.io/documentation/combine-paper-and-online-survey-form-data) · [Extracting data from paper forms (example)](https://surveyjs.io/form-library/examples/extract-data-from-paper-forms-pdf/reactjs) · [src/app/api/extract/route.ts](../src/app/api/extract/route.ts) · [src/components/extract/ExtractFromDocument.tsx](../src/components/extract/ExtractFromDocument.tsx) · [Paper, PDF and images (backend)](https://surveyjs.io/backend-integration/examples#extract)
 
 ### The original kept beside the record
 
 `keepSourceDocument` stores the original beside the record and links it, so the reading can always be checked against the paper.
 
-[File question](https://surveyjs.io/form-library/documentation/api-reference/file-model) · [File upload (example)](https://surveyjs.io/form-library/examples/file-upload/reactjs) · [src/storage/documents.ts](../src/storage/documents.ts)
+[File question](https://surveyjs.io/form-library/documentation/api-reference/file-model) · [File upload (example)](https://surveyjs.io/form-library/examples/file-upload/reactjs) · [src/storage/documents.ts](../src/storage/documents.ts) · [Files outside the response (backend)](https://surveyjs.io/backend-integration/examples#files)
 
 ### A signature that a completed record needs
 
@@ -107,7 +107,7 @@ A new sheet gets the next job number and the standard labor rate in code, and a 
 
 `toColumns` derives the five list columns from each document, the total recomputed from the parts and the labor rather than read back.
 
-[Storing survey results](https://surveyjs.io/form-library/documentation/how-to-store-survey-results) · [Saving and restoring responses (example)](https://surveyjs.io/form-library/examples/save-and-restore-user-responses-to-complete-survey/reactjs) · [src/schemas/collections/work-order.ts](../src/schemas/collections/work-order.ts)
+[Storing survey results](https://surveyjs.io/form-library/documentation/how-to-store-survey-results) · [Saving and restoring responses (example)](https://surveyjs.io/form-library/examples/save-and-restore-user-responses-to-complete-survey/reactjs) · [src/schemas/collections/work-order.ts](../src/schemas/collections/work-order.ts) · [Responses in a relational database (backend)](https://surveyjs.io/backend-integration/examples#relational)
 
 ### One JSON definition, edited from the dock
 
@@ -119,11 +119,13 @@ Two pages of JSON hold the questions, the totals, the rules and a hint per box.
 
 The technician and equipment lists are still constants in the schema file.
 
-[choicesByUrl](https://surveyjs.io/form-library/documentation/api-reference/choicesrestful) · [Choices from a REST service (example)](https://surveyjs.io/form-library/examples/dropdown-menu-load-data-from-restful-service/reactjs)
+[choicesByUrl](https://surveyjs.io/form-library/documentation/api-reference/choicesrestful) · [Choices from a REST service (example)](https://surveyjs.io/form-library/examples/dropdown-menu-load-data-from-restful-service/reactjs) · [Choices from the web (backend)](https://surveyjs.io/backend-integration/examples#choices)
 
 ### Per-field confidence in the review *(coming)*
 
 The extractor returns answers without saying how sure it is of each one.
+
+[Paper, PDF and images (backend)](https://surveyjs.io/backend-integration/examples#extract)
 
 <!-- edition: full -->
 ### Job sheet PDF
@@ -138,7 +140,7 @@ Save as PDF prints the record box by box onto the company's own blank, with a co
 
 View analytics charts the stored work orders from the same definition.
 
-[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react)
+[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react) · [Responses in the Dashboard (backend)](https://surveyjs.io/backend-integration/examples#dashboard)
 <!-- /edition -->
 
 <!-- edition: full -->
@@ -146,7 +148,7 @@ View analytics charts the stored work orders from the same definition.
 
 The dock's editor button opens this definition in the drag-and-drop designer.
 
-[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react)
+[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react) · [Load and save definitions (backend)](https://surveyjs.io/backend-integration/examples#creator-save)
 <!-- /edition -->
 
 ## Source files
@@ -163,11 +165,11 @@ The dock's editor button opens this definition in the drag-and-drop designer.
 
 ## What your server does
 
-- [Know who the page is rendered for](https://surveyjs.io/documentation/backend-integration#user-authentication-and-authorization)
-- [Load the form definition](https://surveyjs.io/documentation/backend-integration#rest-api)
-- [List the stored records](https://surveyjs.io/documentation/backend-integration#survey-data-storage)
-- [Read one stored record](https://surveyjs.io/documentation/backend-integration#survey-data-storage)
-- [Read answers off a document](https://surveyjs.io/documentation/combine-paper-and-online-survey-form-data)
-- [Keep the uploaded original](https://surveyjs.io/documentation/backend-integration)
-- [Check it before storing it](https://surveyjs.io/documentation/backend-integration#data-validation-and-sanitization)
-- [Store a response](https://surveyjs.io/documentation/backend-integration#survey-data-storage)
+<!-- TODO: surveyjs.io/backend-integration/examples is not published yet. Every link to it in this file uses an anchor from its layout proposal; check each one when the page goes live -->
+
+- [Load the definition and the open record](https://surveyjs.io/backend-integration/examples#load)
+- [List the records from columns mapped out of each response](https://surveyjs.io/backend-integration/examples#relational)
+- [Read the answers off a PDF, scan or photo](https://surveyjs.io/backend-integration/examples#extract)
+- [Keep the uploaded original outside the response](https://surveyjs.io/backend-integration/examples#files)
+- [Validate the response against the definition](https://surveyjs.io/backend-integration/examples#validate)
+- [Save the response](https://surveyjs.io/backend-integration/examples#save)

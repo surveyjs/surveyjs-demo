@@ -39,6 +39,38 @@ server does** — a convention, not something the parser enforces. A feature is 
 `###` heading, and `*(coming)*` after it is the whole of the status vocabulary:
 it is prose, nothing parses it.
 
+## What your server does
+
+One link per thing this page's server does, into the backend integration
+examples page, `https://surveyjs.io/backend-integration/examples`, at the
+section that shows it for Node.js, ASP.NET Core, PHP and Python. The label says
+what this page does; the anchor is that page's:
+
+| Anchor | Section there |
+|---|---|
+| `#save` | I.1 Save the response |
+| `#load` | I.2 Load the definition, variables and previous answers |
+| `#resume` | I.3 Resume where the user left off |
+| `#files` | I.4 Store files outside the response |
+| `#choices` | I.5 Choices from the web |
+| `#async` | I.6 Async functions: calculations and validation |
+| `#relational` | I.7 Store responses in a relational database |
+| `#fill-together` | I.8 Fill one form together |
+| `#dashboard` | II.1 Show responses in SurveyJS Dashboard |
+| `#creator-save` | III.1 Load and save definitions |
+| `#creator-files` | III.2 Upload images and files from Creator |
+| `#creator-translate` | III.3 Translate strings with AI |
+| `#creator-presets` | III.4 Variable presets |
+| `#edit-together` | III.5 Edit one form together |
+| `#validate` | IV.1 Validate the response against the definition |
+| `#lint` | IV.2 Lint definitions before saving |
+| `#pdf` | IV.3 Export forms to PDF on the server |
+| `#extract` | IV.4 Turn paper, PDF and images into responses |
+
+A feature whose server side is one of those sections, *(coming)* ones included,
+ends its link row with the same anchor, labelled `(backend)` the way an example
+is labelled `(example)`: `[Validate the response (backend)](…#validate)`.
+
 ## Links
 
 Three kinds, told apart by where they point:
@@ -115,6 +147,15 @@ An unclosed or nested marker fails the test.
 on a line of its own, where a sentence nobody has written would go. It renders as
 nothing; the test counts and prints each one and **passes**. Never filler prose,
 never an invented URL — an absent link is just an absent link.
+
+The one exception is the backend integration examples page above. It is not
+published yet, but its anchors are fixed by its layout, so its links are written
+now, and every file that has one carries this TODO under **What your server
+does** until the page is live and the anchors are checked:
+
+```markdown
+<!-- TODO: surveyjs.io/backend-integration/examples is not published yet. Every link to it in this file uses an anchor from its layout proposal; check each one when the page goes live -->
+```
 
 ## Adding one
 

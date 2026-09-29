@@ -78,13 +78,13 @@ PUT /api/storage/results/leads/LEAD-0001
 
 The route rebuilds this same model with the signed-in user's variables and refuses a record the definition rejects, naming the first bad cell.
 
-[Server-side validation](https://surveyjs.io/form-library/documentation/data-validation#server-side-validation) · [Data validation](https://surveyjs.io/form-library/documentation/data-validation) · [Server-side validation (example)](https://surveyjs.io/form-library/examples/javascript-server-side-form-validation/reactjs) · [src/lib/checks/check-response.ts](../src/lib/checks/check-response.ts)
+[Server-side validation](https://surveyjs.io/form-library/documentation/data-validation#server-side-validation) · [Data validation](https://surveyjs.io/form-library/documentation/data-validation) · [Server-side validation (example)](https://surveyjs.io/form-library/examples/javascript-server-side-form-validation/reactjs) · [src/lib/checks/check-response.ts](../src/lib/checks/check-response.ts) · [Validate the response (backend)](https://surveyjs.io/backend-integration/examples#validate)
 
 ### Variables from the server
 
 `user_id`, `user_name`, `user_role` and `user_currency` come from `listSessionUsers` on the server, which is `getSession` in your app.
 
-[Variables](https://surveyjs.io/form-library/documentation/design-survey/conditional-logic#variables) · [setVariable](https://surveyjs.io/form-library/documentation/api-reference/survey-data-model#setVariable) · [Custom variables (example)](https://surveyjs.io/form-library/examples/custom-variables-for-background-form-calculations/reactjs) · [src/storage/session.ts](../src/storage/session.ts)
+[Variables](https://surveyjs.io/form-library/documentation/design-survey/conditional-logic#variables) · [setVariable](https://surveyjs.io/form-library/documentation/api-reference/survey-data-model#setVariable) · [Custom variables (example)](https://surveyjs.io/form-library/examples/custom-variables-for-background-form-calculations/reactjs) · [src/storage/session.ts](../src/storage/session.ts) · [Variables and previous answers (backend)](https://surveyjs.io/backend-integration/examples#load)
 
 ### Variable presets
 
@@ -120,23 +120,25 @@ Line totals, discounts, the deal value and the stage-weighted value are all expr
 
 `toColumns` derives seven values from each record — five the list shows, plus the currency the money column reads and the expected close it sorts by.
 
-[Storing survey results](https://surveyjs.io/form-library/documentation/how-to-store-survey-results) · [Saving and restoring responses (example)](https://surveyjs.io/form-library/examples/save-and-restore-user-responses-to-complete-survey/reactjs) · [src/schemas/collections/leads.ts](../src/schemas/collections/leads.ts)
+[Storing survey results](https://surveyjs.io/form-library/documentation/how-to-store-survey-results) · [Saving and restoring responses (example)](https://surveyjs.io/form-library/examples/save-and-restore-user-responses-to-complete-survey/reactjs) · [src/schemas/collections/leads.ts](../src/schemas/collections/leads.ts) · [Responses in a relational database (backend)](https://surveyjs.io/backend-integration/examples#relational)
 
 ### Choices from your API *(coming)*
 
 The owner dropdown still reads a static list in the schema file.
 
-[choicesByUrl](https://surveyjs.io/form-library/documentation/api-reference/choicesrestful) · [Choices from a REST service (example)](https://surveyjs.io/form-library/examples/dropdown-menu-load-data-from-restful-service/reactjs)
+[choicesByUrl](https://surveyjs.io/form-library/documentation/api-reference/choicesrestful) · [Choices from a REST service (example)](https://surveyjs.io/form-library/examples/dropdown-menu-load-data-from-restful-service/reactjs) · [Choices from the web (backend)](https://surveyjs.io/backend-integration/examples#choices)
 
 ### An async validator calling the server *(coming)*
 
 No question here asks the server whether an answer is acceptable while it is typed.
 
-[Custom validators](https://surveyjs.io/form-library/documentation/data-validation#implement-custom-client-side-validation) · [Async validation (example)](https://surveyjs.io/form-library/examples/javascript-async-form-validation/reactjs)
+[Custom validators](https://surveyjs.io/form-library/documentation/data-validation#implement-custom-client-side-validation) · [Async validation (example)](https://surveyjs.io/form-library/examples/javascript-async-form-validation/reactjs) · [Async functions (backend)](https://surveyjs.io/backend-integration/examples#async)
 
 ### Live updates with presence *(coming)*
 
 The row ids and the no-accumulating-totals rule are here so that two people on one lead can be added without a rewrite.
+
+[Fill one form together (backend)](https://surveyjs.io/backend-integration/examples#fill-together)
 
 <!-- edition: full -->
 ### PDF export
@@ -151,7 +153,7 @@ Save as PDF turns the open lead into a document with the answers in it.
 
 View analytics charts the stored leads from the same definition.
 
-[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react)
+[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react) · [Responses in the Dashboard (backend)](https://surveyjs.io/backend-integration/examples#dashboard)
 <!-- /edition -->
 
 <!-- edition: full -->
@@ -159,7 +161,7 @@ View analytics charts the stored leads from the same definition.
 
 The dock's editor button opens this definition in the drag-and-drop designer.
 
-[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react)
+[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react) · [Load and save definitions (backend)](https://surveyjs.io/backend-integration/examples#creator-save)
 <!-- /edition -->
 
 ## Source files
@@ -175,9 +177,9 @@ The dock's editor button opens this definition in the drag-and-drop designer.
 
 ## What your server does
 
-- [Know who the page is rendered for](https://surveyjs.io/documentation/backend-integration#user-authentication-and-authorization)
-- [Load the form definition](https://surveyjs.io/documentation/backend-integration#rest-api)
-- [List the stored records](https://surveyjs.io/documentation/backend-integration#survey-data-storage)
-- [Read one stored record](https://surveyjs.io/documentation/backend-integration#survey-data-storage)
-- [Check it before storing it](https://surveyjs.io/documentation/backend-integration#data-validation-and-sanitization)
-- [Store a response](https://surveyjs.io/documentation/backend-integration#survey-data-storage)
+<!-- TODO: surveyjs.io/backend-integration/examples is not published yet. Every link to it in this file uses an anchor from its layout proposal; check each one when the page goes live -->
+
+- [Load the definition, the signed-in user's variables and the open record](https://surveyjs.io/backend-integration/examples#load)
+- [List the records from columns mapped out of each response](https://surveyjs.io/backend-integration/examples#relational)
+- [Validate the response against the definition](https://surveyjs.io/backend-integration/examples#validate)
+- [Save the response](https://surveyjs.io/backend-integration/examples#save)

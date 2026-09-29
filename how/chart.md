@@ -119,7 +119,7 @@ Three triggers write an answer the clinician did not type: escalate a visit, fla
 
 Conditions and medications on the chart become choice-level visibility, one `visibleIf` per choice, so the same definition asks a different set of questions per patient.
 
-[Variables](https://surveyjs.io/form-library/documentation/design-survey/conditional-logic#variables) · [setVariable](https://surveyjs.io/form-library/documentation/api-reference/survey-data-model#setVariable) · [Custom variables (example)](https://surveyjs.io/form-library/examples/custom-variables-for-background-form-calculations/reactjs) · [src/schemas/variables/patient.ts](../src/schemas/variables/patient.ts)
+[Variables](https://surveyjs.io/form-library/documentation/design-survey/conditional-logic#variables) · [setVariable](https://surveyjs.io/form-library/documentation/api-reference/survey-data-model#setVariable) · [Custom variables (example)](https://surveyjs.io/form-library/examples/custom-variables-for-background-form-calculations/reactjs) · [src/schemas/variables/patient.ts](../src/schemas/variables/patient.ts) · [Variables and previous answers (backend)](https://surveyjs.io/backend-integration/examples#load)
 
 ### Variable presets
 
@@ -158,7 +158,7 @@ Save as PDF in the dock turns the whole note into a document.
 
 Analytics in the dock charts the scores and vitals this note collects.
 
-[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react)
+[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react) · [Responses in the Dashboard (backend)](https://surveyjs.io/backend-integration/examples#dashboard)
 <!-- /edition -->
 
 <!-- edition: full -->
@@ -166,7 +166,7 @@ Analytics in the dock charts the scores and vitals this note collects.
 
 The dock's editor link opens the drag-and-drop designer instead of the JSON workbench.
 
-[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react)
+[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react) · [Load and save definitions (backend)](https://surveyjs.io/backend-integration/examples#creator-save)
 <!-- /edition -->
 
 ## Source files
@@ -180,4 +180,6 @@ The dock's editor link opens the drag-and-drop designer instead of the JSON work
 
 ## What your server does
 
-- [Load the form definition](https://surveyjs.io/documentation/backend-integration#rest-api)
+<!-- TODO: surveyjs.io/backend-integration/examples is not published yet. Every link to it in this file uses an anchor from its layout proposal; check each one when the page goes live -->
+
+- [Load the definition and the open chart's variables](https://surveyjs.io/backend-integration/examples#load)

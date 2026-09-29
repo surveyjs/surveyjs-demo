@@ -63,7 +63,7 @@ PUT /api/storage/definitions/checkout
 
 `survey-core`'s own linter runs headless on every change and maps each finding back to a line in the editor.
 
-[Form Library](https://surveyjs.io/form-library/documentation/overview) · [src/lib/lint/monaco-adapter.ts](../src/lib/lint/monaco-adapter.ts)
+[Form Library](https://surveyjs.io/form-library/documentation/overview) · [src/lib/lint/monaco-adapter.ts](../src/lib/lint/monaco-adapter.ts) · [Lint definitions (backend)](https://surveyjs.io/backend-integration/examples#lint)
 
 ### Behaviour tests for a definition
 
@@ -81,20 +81,20 @@ A personalized form is linted with the variables its host injects, or every refe
 
 What is saved here is what every page renders for this visitor, read back on the server.
 
-[Form Library](https://surveyjs.io/form-library/documentation/overview) · [Backend integration](https://surveyjs.io/documentation/backend-integration) · [src/storage/survey-json.ts](../src/storage/survey-json.ts)
+[Form Library](https://surveyjs.io/form-library/documentation/overview) · [Backend integration](https://surveyjs.io/documentation/backend-integration) · [src/storage/survey-json.ts](../src/storage/survey-json.ts) · [Load and save definitions (backend)](https://surveyjs.io/backend-integration/examples#creator-save)
 
 ### Server-side validation
 
 The route decides and the editor only advises: `/api/lint` answers with findings and stores nothing.
 
-[Server-side validation](https://surveyjs.io/form-library/documentation/data-validation#server-side-validation) · [Data validation](https://surveyjs.io/form-library/documentation/data-validation) · [Server-side validation (example)](https://surveyjs.io/form-library/examples/javascript-server-side-form-validation/reactjs) · [src/lib/checks/messages.ts](../src/lib/checks/messages.ts)
+[Server-side validation](https://surveyjs.io/form-library/documentation/data-validation#server-side-validation) · [Data validation](https://surveyjs.io/form-library/documentation/data-validation) · [Server-side validation (example)](https://surveyjs.io/form-library/examples/javascript-server-side-form-validation/reactjs) · [src/lib/checks/messages.ts](../src/lib/checks/messages.ts) · [Lint definitions (backend)](https://surveyjs.io/backend-integration/examples#lint)
 
 <!-- edition: full -->
 ### Survey Creator (Open in Creator)
 
 The full edition replaces the chrome-less /configure route with the drag-and-drop designer, and keeps this page's Monaco view as it is.
 
-[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react) · [Saving and loading a schema](https://surveyjs.io/survey-creator/documentation/get-started-react#save-and-load-survey-model-schemas) · [src/app/configure/page.tsx](../src/app/configure/page.tsx) · [src/components/configure/CreatorPane.tsx](../src/components/configure/CreatorPane.tsx) · [src/components/configure/SurveyDesigner.tsx](../src/components/configure/SurveyDesigner.tsx)
+[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react) · [Saving and loading a schema](https://surveyjs.io/survey-creator/documentation/get-started-react#save-and-load-survey-model-schemas) · [src/app/configure/page.tsx](../src/app/configure/page.tsx) · [src/components/configure/CreatorPane.tsx](../src/components/configure/CreatorPane.tsx) · [src/components/configure/SurveyDesigner.tsx](../src/components/configure/SurveyDesigner.tsx) · [Load and save definitions (backend)](https://surveyjs.io/backend-integration/examples#creator-save)
 <!-- /edition -->
 
 ## Source files
@@ -110,6 +110,8 @@ The full edition replaces the chrome-less /configure route with the drag-and-dro
 
 ## What your server does
 
-- [Load the form definition](https://surveyjs.io/documentation/backend-integration#rest-api)
-- [Check it before storing it](https://surveyjs.io/documentation/backend-integration#data-validation-and-sanitization)
-- [Store an edited definition](https://surveyjs.io/documentation/backend-integration#rest-api)
+<!-- TODO: surveyjs.io/backend-integration/examples is not published yet. Every link to it in this file uses an anchor from its layout proposal; check each one when the page goes live -->
+
+- [Load the definition](https://surveyjs.io/backend-integration/examples#load)
+- [Lint the definition before saving it](https://surveyjs.io/backend-integration/examples#lint)
+- [Save the edited definition](https://surveyjs.io/backend-integration/examples#creator-save)

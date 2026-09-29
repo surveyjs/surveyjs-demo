@@ -87,7 +87,7 @@ The form takes the application's shadcn/ui tokens through the SurveyJS theme ada
 
 The submissions route runs the same checks the records pages use, and this is the one form with a behaviour suite behind it as well.
 
-[Server-side validation](https://surveyjs.io/form-library/documentation/data-validation#server-side-validation) · [Data validation](https://surveyjs.io/form-library/documentation/data-validation) · [Server-side validation (example)](https://surveyjs.io/form-library/examples/javascript-server-side-form-validation/reactjs) · [src/schemas/tests/checkout.tests.json](../src/schemas/tests/checkout.tests.json)
+[Server-side validation](https://surveyjs.io/form-library/documentation/data-validation#server-side-validation) · [Data validation](https://surveyjs.io/form-library/documentation/data-validation) · [Server-side validation (example)](https://surveyjs.io/form-library/examples/javascript-server-side-form-validation/reactjs) · [src/schemas/tests/checkout.tests.json](../src/schemas/tests/checkout.tests.json) · [Validate the response (backend)](https://surveyjs.io/backend-integration/examples#validate)
 
 ### Behaviour tests for a definition
 
@@ -105,7 +105,7 @@ The dock's editor button opens this same definition, and what is saved there is 
 
 <!-- TODO: Nobody has decided whether the starter should show a remote choice list at all -->
 
-[choicesByUrl](https://surveyjs.io/form-library/documentation/api-reference/choicesrestful) · [Choices from a REST service (example)](https://surveyjs.io/form-library/examples/dropdown-menu-load-data-from-restful-service/reactjs)
+[choicesByUrl](https://surveyjs.io/form-library/documentation/api-reference/choicesrestful) · [Choices from a REST service (example)](https://surveyjs.io/form-library/examples/dropdown-menu-load-data-from-restful-service/reactjs) · [Choices from the web (backend)](https://surveyjs.io/backend-integration/examples#choices)
 
 <!-- edition: full -->
 ### PDF export
@@ -120,7 +120,7 @@ Save as PDF sits in the survey's own navigation bar and turns the answers so far
 
 View analytics charts the submissions this page collects.
 
-[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react)
+[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react) · [Responses in the Dashboard (backend)](https://surveyjs.io/backend-integration/examples#dashboard)
 <!-- /edition -->
 
 <!-- edition: full -->
@@ -128,7 +128,7 @@ View analytics charts the submissions this page collects.
 
 The dock's editor button opens the drag-and-drop designer instead of the JSON workbench.
 
-[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react)
+[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react) · [Load and save definitions (backend)](https://surveyjs.io/backend-integration/examples#creator-save)
 <!-- /edition -->
 
 ## Source files
@@ -142,6 +142,8 @@ The dock's editor button opens the drag-and-drop designer instead of the JSON wo
 
 ## What your server does
 
-- [Load the form definition](https://surveyjs.io/documentation/backend-integration#rest-api)
-- [Check it before storing it](https://surveyjs.io/documentation/backend-integration#data-validation-and-sanitization)
-- [Store a response](https://surveyjs.io/documentation/backend-integration#survey-data-storage)
+<!-- TODO: surveyjs.io/backend-integration/examples is not published yet. Every link to it in this file uses an anchor from its layout proposal; check each one when the page goes live -->
+
+- [Render the definition into the page](https://surveyjs.io/backend-integration/examples#load)
+- [Validate the response against the definition](https://surveyjs.io/backend-integration/examples#validate)
+- [Save the response](https://surveyjs.io/backend-integration/examples#save)

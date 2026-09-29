@@ -114,7 +114,7 @@ Spanish is rendered on the server from the chart, and the EN/ES switch is an ove
 
 The plan, the conditions and the refills on the record decide the copay, the referral warning and half the questions.
 
-[Variables](https://surveyjs.io/form-library/documentation/design-survey/conditional-logic#variables) · [setVariable](https://surveyjs.io/form-library/documentation/api-reference/survey-data-model#setVariable) · [Custom variables (example)](https://surveyjs.io/form-library/examples/custom-variables-for-background-form-calculations/reactjs) · [src/schemas/variables/patient.ts](../src/schemas/variables/patient.ts)
+[Variables](https://surveyjs.io/form-library/documentation/design-survey/conditional-logic#variables) · [setVariable](https://surveyjs.io/form-library/documentation/api-reference/survey-data-model#setVariable) · [Custom variables (example)](https://surveyjs.io/form-library/examples/custom-variables-for-background-form-calculations/reactjs) · [src/schemas/variables/patient.ts](../src/schemas/variables/patient.ts) · [Variables and previous answers (backend)](https://surveyjs.io/backend-integration/examples#load)
 
 ### Variable presets
 
@@ -153,7 +153,7 @@ Save as PDF in the dock turns the request into a document in the language it was
 
 Analytics in the dock charts the requests this form collects.
 
-[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react)
+[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react) · [Responses in the Dashboard (backend)](https://surveyjs.io/backend-integration/examples#dashboard)
 <!-- /edition -->
 
 <!-- edition: full -->
@@ -161,7 +161,7 @@ Analytics in the dock charts the requests this form collects.
 
 The designer's Translation tab opens this definition's English and Spanish side by side.
 
-[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react) · [The Translations tab](https://surveyjs.io/survey-creator/documentation/end-user-guide/translations-tab)
+[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react) · [The Translations tab](https://surveyjs.io/survey-creator/documentation/end-user-guide/translations-tab) · [Load and save definitions (backend)](https://surveyjs.io/backend-integration/examples#creator-save)
 <!-- /edition -->
 
 ## Source files
@@ -177,4 +177,6 @@ The designer's Translation tab opens this definition's English and Spanish side 
 
 ## What your server does
 
-- [Load the form definition](https://surveyjs.io/documentation/backend-integration#rest-api)
+<!-- TODO: surveyjs.io/backend-integration/examples is not published yet. Every link to it in this file uses an anchor from its layout proposal; check each one when the page goes live -->
+
+- [Load the definition and the patient's variables](https://surveyjs.io/backend-integration/examples#load)

@@ -99,7 +99,7 @@ Nothing is posted anywhere: this page is a mock of somebody else's website, so t
 
 Every field of the signed-in account is published as `user_<field>`, so a variable can never collide with a question of the same name.
 
-[Variables](https://surveyjs.io/form-library/documentation/design-survey/conditional-logic#variables) · [setVariable](https://surveyjs.io/form-library/documentation/api-reference/survey-data-model#setVariable) · [Custom variables (example)](https://surveyjs.io/form-library/examples/custom-variables-for-background-form-calculations/reactjs) · [src/schemas/variables/prefix.ts](../src/schemas/variables/prefix.ts)
+[Variables](https://surveyjs.io/form-library/documentation/design-survey/conditional-logic#variables) · [setVariable](https://surveyjs.io/form-library/documentation/api-reference/survey-data-model#setVariable) · [Custom variables (example)](https://surveyjs.io/form-library/examples/custom-variables-for-background-form-calculations/reactjs) · [src/schemas/variables/prefix.ts](../src/schemas/variables/prefix.ts) · [Variables and previous answers (backend)](https://surveyjs.io/backend-integration/examples#load)
 
 ### Variable presets
 
@@ -138,7 +138,7 @@ Save as PDF in the dock turns the form, with whatever has been answered, into a 
 
 Analytics in the dock charts this form's responses.
 
-[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react)
+[Dashboard](https://surveyjs.io/dashboard/documentation/overview) · [Dashboard for React](https://surveyjs.io/dashboard/documentation/get-started-react) · [Responses in the Dashboard (backend)](https://surveyjs.io/backend-integration/examples#dashboard)
 <!-- /edition -->
 
 <!-- edition: full -->
@@ -146,7 +146,7 @@ Analytics in the dock charts this form's responses.
 
 The dock's editor link opens the drag-and-drop designer instead of the JSON workbench.
 
-[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react)
+[Survey Creator](https://surveyjs.io/survey-creator/documentation/overview) · [Survey Creator for React](https://surveyjs.io/survey-creator/documentation/get-started-react) · [Load and save definitions (backend)](https://surveyjs.io/backend-integration/examples#creator-save)
 <!-- /edition -->
 
 ## Source files
@@ -160,4 +160,6 @@ The dock's editor link opens the drag-and-drop designer instead of the JSON work
 
 ## What your server does
 
-- [Load the form definition](https://surveyjs.io/documentation/backend-integration#rest-api)
+<!-- TODO: surveyjs.io/backend-integration/examples is not published yet. Every link to it in this file uses an anchor from its layout proposal; check each one when the page goes live -->
+
+- [Load the definition and the account's variables](https://surveyjs.io/backend-integration/examples#load)
