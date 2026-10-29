@@ -29,8 +29,18 @@ export interface Features {
     /** Selector Playwright waits for once /configure has loaded its editor. */
     readySelector: string;
   };
-  /** The form as a document. Undefined here: no button renders. */
-  exportPdf?: (json: SurveyJSON, opts: { label: string; data?: SurveyData }) => Promise<void>;
+  /**
+   * The form as a document. Undefined here: no button renders.
+   *
+   * `variables` are the `{user_…}` values the page published with
+   * `setVariable`. Neither `model.toJSON()` nor `model.data` carries them, so a
+   * document built without them prints the placeholders, and its expressions
+   * and `visibleIf`s read nothing.
+   */
+  exportPdf?: (
+    json: SurveyJSON,
+    opts: { label: string; data?: SurveyData; variables?: Readonly<Record<string, unknown>> },
+  ) => Promise<void>;
   /**
    * A work order printed onto the company's own job sheet, box by box: Work
    * orders' "Save as PDF", in place of `exportPdf`. Undefined here: no button

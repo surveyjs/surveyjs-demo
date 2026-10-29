@@ -113,7 +113,7 @@ export function SurveyForm({
   }, [completeText, model]);
 
   usePrefillAction(model, prefillData, prefillLabel);
-  usePdfAction(model, schemaId, pdfInNavigation);
+  usePdfAction(model, schemaId, variables, pdfInNavigation);
   const { completed, resume } = useSubmission(model, onComplete, schemaId);
 
   useEffect(() => {
@@ -184,11 +184,14 @@ function usePrefillAction(
  * There is no separate print layout and no export mapping: `model.toJSON()` is
  * the definition currently on screen — the shipped one, or the copy a visitor
  * edited on `/configure` — and `model.data` is what they have answered so far,
- * so the document is the form, filled in as far as it has been filled in.
+ * so the document is the form, filled in as far as it has been filled in. The
+ * variables go with them: the definition reads them, and the JSON does not hold
+ * them.
  */
 function usePdfAction(
   model: SurveyModel,
   schemaId: string | undefined,
+  variables: Readonly<Record<string, unknown>> | undefined,
   enabled: boolean,
 ): void {
   useEffect(() => {
@@ -203,6 +206,7 @@ function usePdfAction(
         void exportPdf(model.toJSON() as SurveyJSON, {
           label: model.title || schemaId || "form",
           data: model.data,
+          variables,
         });
       },
     });
@@ -210,7 +214,7 @@ function usePdfAction(
     return () => {
       model.navigationBar.removeActionById(id);
     };
-  }, [enabled, model, schemaId]);
+  }, [enabled, model, schemaId, variables]);
 }
 
 /**

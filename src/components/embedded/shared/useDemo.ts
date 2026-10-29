@@ -237,9 +237,9 @@ export function useDemo({
     const exportSurvey = features.exportPdf;
     if (!exportSurvey) return undefined;
     return () => {
-      void exportSurvey(json, { label: survey.label, data: answers.current });
+      void exportSurvey(json, { label: survey.label, data: answers.current, variables });
     };
-  }, [json, survey.label]);
+  }, [json, survey.label, variables]);
 
   const restart = useCallback(() => {
     setSeed(undefined);

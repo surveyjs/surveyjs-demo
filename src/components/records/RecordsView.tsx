@@ -698,9 +698,9 @@ export function RecordsView({
     if (exportPdf) {
       void exportPdf(data);
     } else if (features.exportPdf) {
-      void features.exportPdf(model.toJSON() as SurveyJSON, { label: title, data });
+      void features.exportPdf(model.toJSON() as SurveyJSON, { label: title, data, variables });
     }
-  }, [exportPdf, model, title]);
+  }, [exportPdf, model, title, variables]);
 
   /* ── render ──────────────────────────────────────────────────────────────── */
 
