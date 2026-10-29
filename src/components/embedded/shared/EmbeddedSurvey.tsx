@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Survey } from "survey-react-ui";
 import type { Model } from "survey-core";
-import { createSurveyModel, type SurveyData, type SurveyJSON } from "@/schemas";
+import { createSurveyModel, type FinishMode, type SurveyData, type SurveyJSON } from "@/schemas";
 import "@/lib/surveyjs-license";
 import { mergeTailwindClasses } from "@/lib/utils";
 import { SurveyOutlineLabel } from "@/components/survey-outline/SurveyOutline";
+import { SavedToast, useSavedToast } from "@/components/SavedToast";
+import { useFinish } from "@/components/useFinish";
 import { announceCompleted } from "@/lib/demo-events";
 
 import "survey-core/survey-core.css";
@@ -25,12 +27,17 @@ import "@/styles/survey-overrides-base-nova.css";
  * `onDataChange` is what lets a host page price itself from the answers as they
  * are given. It fires for plain answers, dynamic-panel edits and matrix cells,
  * and once on mount so a prefilled model does not look empty to the page.
+ *
+ * `finish` is the page's, from the route registry, through `useDemo`. The three
+ * demos `"complete"`, which is also the default for the forms that are not an
+ * example's own: the editor on `/configure` and the "Edit the user" popup.
  */
 export function EmbeddedSurvey({
   json,
   data,
   variables,
   locale,
+  finish = "complete",
   onDataChange,
   onComplete,
 }: {
@@ -49,8 +56,9 @@ export function EmbeddedSurvey({
    * already in that language, and it is kept in step below without rebuilding.
    */
   locale?: string;
+  finish?: FinishMode;
   onDataChange?: (data: SurveyData) => void;
-  onComplete?: (data: SurveyData) => void;
+  onComplete?: (data: SurveyData) => unknown;
 }) {
   const model = useMemo(
     () => createSurveyModel(json, { data, variables, locale }),
@@ -89,22 +97,25 @@ export function EmbeddedSurvey({
     };
   }, [model, onDataChange]);
 
-  useEffect(() => {
-    if (!onComplete) return;
-    const handler = (sender: Model) => onComplete({ ...sender.data });
-    model.onComplete.add(handler);
-    return () => model.onComplete.remove(handler);
-  }, [model, onComplete]);
+  const { visible: savedVisible, show: showSaved } = useSavedToast();
+  const finished = useCallback(
+    async (answers: SurveyData) => {
+      await onComplete?.(answers);
+      // Every finish, whether or not the host page listens for one: the dock's
+      // "See next" card does. Nothing is stored here, so finishing is the moment.
+      announceCompleted();
+      if (finish === "save") showSaved();
+    },
+    [onComplete, finish, showSaved],
+  );
+  useFinish(model, finish, finished);
 
-  // Every completion, whether or not the host page listens for one: the dock's
-  // "See next" card does. Nothing is stored here, so completing is the moment.
-  useEffect(() => {
-    const handler = () => announceCompleted();
-    model.onComplete.add(handler);
-    return () => model.onComplete.remove(handler);
-  }, [model]);
-
-  return <Survey model={model} />;
+  return (
+    <>
+      <Survey model={model} />
+      {finish === "save" && <SavedToast visible={savedVisible} />}
+    </>
+  );
 }
 
 /**

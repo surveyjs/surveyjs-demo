@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { PlusIcon, ScanTextIcon } from "lucide-react";
 import type { Model } from "survey-core";
 import {
+  getFormNavItem,
   getRecordCollection,
   isActiveRoute,
   recordTitle,
@@ -28,6 +29,7 @@ import { DemoDock } from "@/components/dock/DemoDock";
 import { applyBrand, getBrand } from "@/components/embedded/shared/demo-controls";
 import { HostHeader } from "@/components/hosts/HostHeader";
 import { RECORD_HOSTS, type RecordHostId } from "@/components/hosts/hosts";
+import { SavedToast, useSavedToast } from "@/components/SavedToast";
 import { useStorageAccess } from "@/components/StorageAccess";
 import { SurveyForm } from "@/components/SurveyForm";
 import { SurveyOutline, useSurveyOutline } from "@/components/survey-outline/SurveyOutline";
@@ -138,7 +140,9 @@ function routeOf(pathname: string, basePath: string, segment: string | undefined
  *
  * It subscribes to no SurveyJS event. It reads `model.data`, calls
  * `model.toJSON()`, `model.validate()` and `model.completeLastPage()`, and gets
- * saves through `SurveyForm`'s `onComplete`.
+ * saves through `SurveyForm`'s `onComplete`. What finishing the form does is the
+ * page's `finish` in the route registry: on a `"save"` page the survey never
+ * completes, and a stored record says "Changes saved".
  */
 export function RecordsView({
   collectionId,
@@ -185,6 +189,7 @@ export function RecordsView({
 }) {
   const collection = getRecordCollection(collectionId);
   const { schemaId, noun } = collection;
+  const { finish } = getFormNavItem(exampleId);
   const { readOnly } = useStorageAccess();
   const segment = documentImport?.segment;
   const importPath = segment === undefined ? undefined : `${basePath}/${segment}`;
@@ -215,6 +220,10 @@ export function RecordsView({
   const [confirmReset, setConfirmReset] = useState(false);
   // The last write or read storage refused, until the next transition.
   const [storageError, setStorageError] = useState<string | null>(null);
+  // A save in flight: the header's Save changes is off. The survey's own button
+  // is blocked by survey-core meanwhile, see `useFinish`.
+  const [saving, setSaving] = useState(false);
+  const { visible: savedVisible, show: showSaved } = useSavedToast();
   const [activeUserId, setActiveUserId] = useState(users[0]?.id);
   const formColumn = useRef<HTMLDivElement>(null);
 
@@ -531,28 +540,36 @@ export function RecordsView({
       const current = openRef.current;
       if (!current) return;
       let saved: StoredRecord;
+      setSaving(true);
       try {
         // The active user travels as an id, not as values: the server looks them
         // up and builds the variables the form reads, so a client cannot answer its
         // way past a rule that reads {user_role}.
         saved = await saveResult(collectionId, current.record.id, data, activeUser?.id);
       } catch (failure) {
-        // The form already completed, so it is rebuilt with the answers that were
-        // not saved, on the page it was on, still unsaved as far as the guard is
-        // concerned.
-        const form = modelRef.current;
-        if (form) carriedPage.current = form.currentPageNo;
-        setOpen((prev) => prev && { ...prev, data, key: nextKey(prev) });
+        // "save": the survey never completed, so the form is still on screen with
+        // the answers that were not saved, on the page it was on. "complete": it
+        // did, so it is rebuilt with them. Either way the guard still counts them
+        // as unsaved.
+        if (finish === "complete") {
+          const form = modelRef.current;
+          if (form) carriedPage.current = form.currentPageNo;
+          setOpen((prev) => prev && { ...prev, data, key: nextKey(prev) });
+        }
         setStorageError(messageOf(failure));
         return;
+      } finally {
+        setSaving(false);
       }
       upsertRow(saved);
       if (current.mode === "new") writeRoute(recordHref(basePath, saved.id), "push");
       show("view", saved);
+      // Only once the server has stored it: a refusal says so above the form.
+      if (finish === "save") showSaved();
       // Saved: the dock's "See next" card may show. Not on delete or reset.
       announceCompleted();
     },
-    [basePath, collectionId, show, upsertRow, writeRoute, activeUser],
+    [basePath, collectionId, finish, show, upsertRow, writeRoute, activeUser, showSaved],
   );
 
   // The header's Save checks every page, not only the one on screen:
@@ -818,7 +835,7 @@ export function RecordsView({
                         <Button size="sm" variant="ghost" onClick={cancel}>
                           Cancel
                         </Button>
-                        <Button size="sm" disabled={!model} onClick={saveChanges}>
+                        <Button size="sm" disabled={!model || saving} onClick={saveChanges}>
                           Save changes
                         </Button>
                       </>
@@ -844,6 +861,7 @@ export function RecordsView({
                     data={open.data}
                     variables={variables}
                     mode={open.mode === "view" ? "display" : "edit"}
+                    finish={finish}
                     onComplete={open.mode === "view" ? undefined : handleComplete}
                     pdfInNavigation={false}
                     completeText="Save changes"
@@ -959,6 +977,10 @@ export function RecordsView({
         activeUserId={activeUser?.id}
         onSelectUser={selectUser}
       />
+
+      {/* The host app's own notice, not the reviewer's: it outlives the form,
+          which a save rebuilds. */}
+      <SavedToast visible={savedVisible} />
     </div>
   );
 }

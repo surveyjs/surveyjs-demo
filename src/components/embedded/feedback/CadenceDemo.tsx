@@ -54,6 +54,7 @@ export function CadenceDemo({ survey }: { survey: DemoSurvey }) {
               key={demo.runKey}
               json={demo.json}
               data={demo.seed}
+              finish={demo.finish}
               variables={demo.variables}
               onDataChange={demo.trackAnswers}
             />

@@ -74,6 +74,8 @@ export {
   getFormNavItem,
   getNavItem,
   isActiveRoute,
+  CHANGES_SAVED,
+  type FinishMode,
   type NavPage,
   type NavId,
 } from "./navigation";

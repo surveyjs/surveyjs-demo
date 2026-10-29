@@ -13,10 +13,12 @@ import type { SurveyJSON } from "../src/schemas";
  * So this is a real checkout, only short: the two conditional blocks the suite is
  * about (the card panel, the separate billing address) and the review summary it
  * calculates, plus one free-text question on the last page for a spec to fill in.
- * It lints clean and passes all four tests.
+ * It lints clean and passes all four tests. Its completed page is the shipped
+ * checkout's, which is what `/starter` shows once the form is finished.
  */
 export const SHORT_CHECKOUT: SurveyJSON = {
   title: "Checkout",
+  completedHtml: "<h4>Thanks! Your order has been placed.</h4>",
   pages: [
     {
       name: "payment",

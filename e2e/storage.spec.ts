@@ -527,7 +527,7 @@ test.describe("failures the page survives", () => {
     await page.locator('[data-name="note"] input').fill("From the storage spec");
     await page.getByRole("button", { name: "Complete" }).click();
     expect((await submitted).status()).toBe(201);
-    await expect(page.getByText("Thank you. Your response has been submitted.")).toBeVisible();
+    await expect(page.getByText("Thanks! Your order has been placed.")).toBeVisible();
 
     const uid = (await visitorOf(context))!;
     const rows = withDatabase((store) => store.listRecords(uid, "checkout"));
@@ -548,7 +548,7 @@ test.describe("failures the page survives", () => {
     await page.goto("/starter");
     await toTheLastPage(page);
     await page.getByRole("button", { name: "Complete" }).click();
-    await expect(page.getByText("Thank you. Your response has been submitted.")).toBeVisible();
+    await expect(page.getByText("Thanks! Your order has been placed.")).toBeVisible();
     expect((await logged).text()).toContain("[survey-results] checkout was not submitted");
   });
 

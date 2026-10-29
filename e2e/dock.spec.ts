@@ -144,7 +144,7 @@ test.describe("the edition switch", () => {
 test.describe("See next", () => {
   const card = (page: Page) => page.getByRole("region", { name: DOCK_LABELS.seeNext });
 
-  test("appears once a /starter is completed, and not again after Dismiss", async ({ page }) => {
+  test("appears once a /starter is completed", async ({ page }) => {
     const manifest = await loadExamples();
     const related = manifest.entries.find((entry) => entry.id === "starter")!.related;
     // A short checkout for this visitor, so the form completes in two steps.
@@ -155,7 +155,8 @@ test.describe("See next", () => {
     await expect(card(page)).toHaveCount(0);
     await page.getByRole("button", { name: "Next" }).click();
     await page.getByRole("button", { name: "Complete" }).click();
-    await expect(page.getByText("Thank you. Your response has been submitted.")).toBeVisible();
+    // The definition's own completed page, drawn by SurveyJS.
+    await expect(page.getByText("Thanks! Your order has been placed.")).toBeVisible();
 
     await expect(card(page)).toBeVisible();
     for (const id of related) {
@@ -164,29 +165,31 @@ test.describe("See next", () => {
     }
     await card(page).getByRole("button", { name: "Dismiss" }).click();
     await expect(card(page)).toHaveCount(0);
-
-    // A second completion on the same page view does not bring it back.
-    await page.getByRole("button", { name: "Edit Response" }).click();
-    await page.getByRole("button", { name: "Next" }).click();
-    const submitted = page.waitForResponse("**/api/storage/submissions/checkout");
-    await page.getByRole("button", { name: "Complete" }).click();
-    expect((await submitted).status()).toBe(201);
-    await expect(page.getByText("Thank you. Your response has been submitted.")).toBeVisible();
-    await expect(card(page)).toHaveCount(0);
   });
 
-  test("appears once a lead is saved", async ({ page }) => {
+  test("appears once a lead is saved, and not again after Dismiss", async ({ page }) => {
+    const heading = (mode: RegExp) => page.getByRole("heading", { level: 2 }).filter({ hasText: mode });
+    const saveLead = async () => {
+      await page.getByRole("button", { name: "Edit", exact: true }).click();
+      await expect(heading(/^Edit /)).toBeVisible();
+      const saved = page.waitForResponse(
+        (response) => response.url().includes("/api/storage/results/leads/") && response.request().method() === "PUT",
+      );
+      await page.getByRole("button", { name: "Save changes" }).first().click();
+      expect((await saved).ok()).toBe(true);
+      await expect(heading(/^View /)).toBeVisible();
+    };
+
     await page.goto("/leads");
     await expect(card(page)).toHaveCount(0);
-    await page.getByRole("button", { name: "Edit", exact: true }).click();
-    await expect(page.getByRole("heading", { level: 2 }).filter({ hasText: /^Edit / })).toBeVisible();
-    const saved = page.waitForResponse(
-      (response) => response.url().includes("/api/storage/results/leads/") && response.request().method() === "PUT",
-    );
-    await page.getByRole("button", { name: "Save changes" }).first().click();
-    expect((await saved).ok()).toBe(true);
-    await expect(page.getByRole("heading", { level: 2 }).filter({ hasText: /^View / })).toBeVisible();
+    await saveLead();
     await expect(card(page)).toBeVisible();
+    await card(page).getByRole("button", { name: "Dismiss" }).click();
+    await expect(card(page)).toHaveCount(0);
+
+    // A second save on the same page view does not bring it back.
+    await saveLead();
+    await expect(card(page)).toHaveCount(0);
   });
 });
 

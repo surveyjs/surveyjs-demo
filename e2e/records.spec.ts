@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { features } from "../src/features";
 import { configureHref } from "../src/lib/routes";
 import { DOCK_LABELS } from "../src/lib/site";
-import { getFormNavItem } from "../src/schemas/navigation";
+import { CHANGES_SAVED, getFormNavItem } from "../src/schemas/navigation";
 import { getRecordCollection, recordTitle } from "../src/schemas/records";
 import type { SurveyData } from "../src/schemas/types";
 import { getResult, listResults } from "../src/storage/survey-results";
@@ -105,6 +105,11 @@ async function openOverflow(page: Page) {
   return menu;
 }
 
+/** The host app's notice after a save: a status region, under the header. */
+function savedNotice(page: Page) {
+  return page.getByRole("status").filter({ hasText: CHANGES_SAVED });
+}
+
 function addFromDocument(page: Page) {
   // Exact: the panel's own "Add from your document" must not match.
   return page.getByRole("button", { name: "Add from document", exact: true });
@@ -202,6 +207,30 @@ test.describe("on /work-orders", () => {
 
     await expect(formHeading(page)).toHaveText(`View ${title}`);
     await expect(listRow(page, title).locator('[data-slot="badge"]')).toHaveText(statusLabels.completed);
+  });
+
+  test(`a "save" page says ${CHANGES_SAVED} and never shows a completed page`, async ({ page }) => {
+    expect(workOrdersNav.finish).toBe("save");
+    const [first] = await listResults("workOrders");
+    await page.goto("/work-orders");
+    const title = recordTitle(workOrders, first);
+    await openForEdit(page, title);
+    await expect(savedNotice(page)).toHaveCount(0);
+
+    // Not even for the length of the request: the survey never completes.
+    await page.evaluate(() => {
+      const seen = window as unknown as { completedPageSeen?: boolean };
+      new MutationObserver(() => {
+        if (document.querySelector(".sd-completedpage")) seen.completedPageSeen = true;
+      }).observe(document.body, { childList: true, subtree: true });
+    });
+    await page.getByRole("button", { name: "Save changes" }).first().click();
+
+    await expect(savedNotice(page)).toBeVisible();
+    await expect(formHeading(page)).toHaveText(`View ${title}`);
+    expect(await page.evaluate(() => (window as unknown as { completedPageSeen?: boolean }).completedPageSeen)).toBeFalsy();
+    // It goes by itself.
+    await expect(savedNotice(page)).toHaveCount(0, { timeout: 6000 });
   });
 
   test("leaving a changed form asks first", async ({ page }) => {
@@ -573,6 +602,7 @@ test("a record the server refuses shows the reason and keeps the answers", async
 
   await expect(page.locator('p[role="alert"]')).toContainText("Not stored:");
   await expect(page.locator('p[role="alert"]')).toContainText("notAQuestion");
+  await expect(savedNotice(page)).toHaveCount(0);
   // The form is still open, still in edit mode, with the answer that was not saved.
   await expect(formHeading(page)).toHaveText("Edit WO-2026-0119");
   await expect(page.locator('[data-name="status"]')).toContainText(statusLabels.completed);

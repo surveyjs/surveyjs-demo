@@ -443,7 +443,6 @@ export const workOrderJson: SurveyJSON = {
       ],
     },
   ],
-  completedHtml: "<h4>Work order saved.</h4>",
 };
 
 export const workOrderSchema: SchemaDefinition = {

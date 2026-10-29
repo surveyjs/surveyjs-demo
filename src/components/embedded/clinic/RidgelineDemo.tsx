@@ -149,6 +149,7 @@ export function RidgelineDemo({ survey }: { survey: DemoSurvey }) {
                     key={demo.runKey}
                     json={demo.json}
                     data={demo.seed}
+                    finish={demo.finish}
                     variables={demo.variables}
                     locale={locale}
                     onDataChange={handleDataChange}

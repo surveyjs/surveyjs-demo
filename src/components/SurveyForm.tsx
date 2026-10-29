@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Survey } from "survey-react-ui";
 import type { Model as SurveyModel, Question } from "survey-core";
 import {
   createSurveyModel,
+  type FinishMode,
   type SchemaInput,
   type SurveyData,
   type SurveyJSON,
@@ -15,7 +16,7 @@ import "@/lib/surveyjs-license";
 import { submitResult } from "@/storage/survey-results";
 import { announceCompleted } from "@/lib/demo-events";
 import { useStorageAccess } from "./StorageAccess";
-import { FormCompleted } from "./FormCompleted";
+import { useFinish } from "./useFinish";
 
 import "survey-core/survey-core.css";
 import "survey-core/themes/adapters/shadcn-base-nova.css";
@@ -43,8 +44,12 @@ import "@/styles/survey-overrides-base-nova.css";
  *    own navigation bar, for filling a long form in front of an audience;
  *  - {@link usePdfAction} — "Save as PDF" beside it, when the edition provides a
  *    PDF export, which gets the same definition and the answers on screen;
- *  - {@link useSubmission} — what happens on completion: hand the answers to the
- *    caller, or POST them through the storage seam.
+ *  - {@link useSubmission} — what happens to the answers when the form is
+ *    finished: hand them to the caller, or POST them through the storage seam.
+ *
+ * Whether finishing *completes* the survey is the page's `finish`, applied by
+ * `useFinish`: `"complete"` shows the definition's own `completedHtml`, and
+ * `"save"` keeps the form on screen while the caller saves.
  *
  * Server rendering needs nothing special: this component is a client component
  * because survey-react-ui uses browser APIs, but Next.js still renders it on the
@@ -58,8 +63,8 @@ export function SurveyForm({
   data,
   variables,
   mode,
+  finish,
   onComplete,
-  completedMessage = "Thank you. Your response has been submitted.",
   prefillData,
   prefillLabel = "Prefill demo data",
   pdfInNavigation = true,
@@ -80,12 +85,14 @@ export function SurveyForm({
    */
   variables?: Readonly<Record<string, unknown>>;
   mode?: SurveyMode;
+  /** The page's `finish`: what finishing the form does. See `FinishMode`. */
+  finish: FinishMode;
   /**
    * Called instead of {@link submitResult} when the caller owns persistence
-   * itself, as the records pages do.
+   * itself, as the records pages do. In `"save"` mode it may return a promise,
+   * and the survey's navigation stays blocked until it settles.
    */
-  onComplete?: (data: SurveyData) => void;
-  completedMessage?: string;
+  onComplete?: (data: SurveyData) => unknown;
   prefillData?: SurveyData;
   prefillLabel?: string;
   /**
@@ -114,20 +121,11 @@ export function SurveyForm({
 
   usePrefillAction(model, prefillData, prefillLabel);
   usePdfAction(model, schemaId, variables, pdfInNavigation);
-  const { completed, resume } = useSubmission(model, onComplete, schemaId);
+  useFinish(model, finish, useSubmission(onComplete, schemaId));
 
   useEffect(() => {
     onModelReady?.(model);
   }, [model, onModelReady]);
-
-  const editAgain = useCallback(() => {
-    model.clear(false);
-    resume();
-  }, [model, resume]);
-
-  if (completed) {
-    return <FormCompleted message={completedMessage} onEdit={editAgain} />;
-  }
 
   return (
     <div className="relative overflow-hidden border">
@@ -218,47 +216,33 @@ function usePdfAction(
 }
 
 /**
- * What a completed form does with its answers.
+ * What a finished form does with its answers: the callback `useFinish` calls.
  *
  * `onComplete` wins where the caller owns persistence — a records page writes
  * the record itself — and otherwise the answers go through the storage seam,
- * which is where a real app POSTs them. `resume` is the "Edit response" way back
- * from the thank-you screen.
+ * which is where a real app POSTs them.
  *
- * A submission that fails is logged, and the thank-you screen shows anyway:
- * nothing on the page reads submissions back, so a retry would be new UI for
- * nothing. A browser that blocks the storage cookie submits nothing at all.
+ * A submission that fails is logged, and the definition's completed page shows
+ * anyway: nothing on the page reads submissions back, so a retry would be new
+ * UI for nothing. A browser that blocks the storage cookie submits nothing at
+ * all.
  */
 function useSubmission(
-  model: SurveyModel,
-  onComplete: ((data: SurveyData) => void) | undefined,
+  onComplete: ((data: SurveyData) => unknown) | undefined,
   schemaId: string | undefined,
-): { completed: boolean; resume: () => void } {
-  const [completed, setCompleted] = useState(false);
+): (data: SurveyData) => unknown {
   const { readOnly } = useStorageAccess();
 
-  // A rebuilt model is a fresh form: the records page opened another record.
-  useEffect(() => setCompleted(false), [model]);
-
-  useEffect(() => {
-    const handler = (sender: SurveyModel) => {
-      setCompleted(true);
-      if (onComplete) {
-        onComplete(sender.data);
-      } else if (schemaId && !readOnly) {
-        // Stored: the dock's "See next" card may show. A caller that owns
-        // persistence announces its own save.
-        submitResult(schemaId, sender.data).then(announceCompleted, (failure: unknown) => {
-          console.error(`[survey-results] ${schemaId} was not submitted`, failure);
-        });
-      }
-    };
-
-    model.onComplete.add(handler);
-    return () => model.onComplete.remove(handler);
-  }, [model, onComplete, schemaId, readOnly]);
-
-  const resume = useCallback(() => setCompleted(false), []);
-
-  return { completed, resume };
+  return useCallback(
+    (data: SurveyData) => {
+      if (onComplete) return onComplete(data);
+      if (!schemaId || readOnly) return;
+      // Stored: the dock's "See next" card may show. A caller that owns
+      // persistence announces its own save.
+      return submitResult(schemaId, data).then(announceCompleted, (failure: unknown) => {
+        console.error(`[survey-results] ${schemaId} was not submitted`, failure);
+      });
+    },
+    [onComplete, schemaId, readOnly],
+  );
 }

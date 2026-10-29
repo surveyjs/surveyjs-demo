@@ -21,6 +21,7 @@ export default async function StarterPage() {
         <SurveyForm
           schema={(await loadSurveyJson(nav.schemaId)) ?? getSchemaDefinition(nav.schemaId).json}
           schemaId={nav.schemaId}
+          finish={nav.finish}
           prefillData={checkoutSample}
         />
       </main>

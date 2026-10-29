@@ -2,7 +2,8 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { test, expect } from "@playwright/test";
 import { howHref, isHowRoute, otherEditionHref, pageSourcePath } from "../src/lib/routes";
-import { navPages } from "../src/schemas/navigation";
+import { getFormNavItem, navPages } from "../src/schemas/navigation";
+import { recordCollections } from "../src/schemas/records";
 
 /**
  * The route helpers the dock builds its links from, without a browser.
@@ -55,4 +56,15 @@ test("isHowRoute is a registered page's /how, and nothing else", () => {
   // A record whose id looked like the segment is not an explainer.
   expect(isHowRoute("/work-orders/WO-2026-0118/how")).toBe(false);
   expect(isHowRoute("/configure/how")).toBe(false);
+});
+
+test("every form page says what finishing it does: a records page saves, every other completes", () => {
+  const recordSchemas = new Set(Object.values(recordCollections).map((collection) => collection.schemaId));
+  for (const item of navPages) {
+    if (!item.schemaId) {
+      expect(item.finish, item.id).toBeUndefined();
+      continue;
+    }
+    expect(getFormNavItem(item.id).finish, item.id).toBe(recordSchemas.has(item.schemaId) ? "save" : "complete");
+  }
 });

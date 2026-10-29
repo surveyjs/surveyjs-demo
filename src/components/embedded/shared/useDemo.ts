@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fromVariables,
+  getFormNavItem,
   getVariablePresets,
   navPages,
+  type FinishMode,
   type NavId,
   type SurveyData,
   type SurveyJSON,
@@ -55,6 +57,8 @@ export interface Demo {
   readonly account: Record<string, unknown>;
   /** Changes whenever the survey has to be rebuilt from scratch. */
   readonly runKey: string;
+  /** The page's `finish` in the route registry, for `EmbeddedSurvey`. */
+  readonly finish: FinishMode;
   /** Scrolls the page to the form. */
   readonly requestSurvey: () => void;
   /** Rebuild the survey carrying these answers over — "change my answers". */
@@ -305,6 +309,7 @@ export function useDemo({
     if (!nav) throw new Error(`No page renders ${survey.id}`);
     return nav.id;
   }, [survey.id]);
+  const { finish } = getFormNavItem(exampleId);
 
   return {
     survey,
@@ -313,6 +318,7 @@ export function useDemo({
     variables,
     account,
     runKey: `${survey.id}-${runCount}`,
+    finish,
     requestSurvey: revealAnchor,
     resumeWith,
     trackAnswers,
