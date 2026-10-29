@@ -23,7 +23,11 @@ function fileNameFor(label: string): string {
  */
 export async function exportSurveyToPdf(
   json: SurveyJSON,
-  { label, data }: { label: string; data?: SurveyData },
+  {
+    label,
+    data,
+    variables,
+  }: { label: string; data?: SurveyData; variables?: Readonly<Record<string, unknown>> },
 ): Promise<void> {
   await import("@/lib/surveyjs-license");
   const { SurveyPDF } = await import("survey-pdf");
@@ -32,6 +36,13 @@ export async function exportSurveyToPdf(
     fontSize: 12,
     margins: { left: 10, right: 10, top: 10, bot: 10 },
   });
+  // Variables before data, as `createSurveyModel` does: the titles, HTML,
+  // expressions and `visibleIf`s read `{user_…}`, and the JSON does not hold it.
+  if (variables) {
+    for (const [name, value] of Object.entries(variables)) {
+      pdf.setVariable(name, value);
+    }
+  }
   if (data) pdf.data = data;
 
   await pdf.save(fileNameFor(label));
