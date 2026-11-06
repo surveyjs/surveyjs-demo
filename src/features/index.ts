@@ -23,7 +23,7 @@ export const features: Features = {
   },
   designer: {
     label: "Open in Creator",
-    hint: "Open this form in Survey Creator — the one designer every form in the template is edited in",
+    hint: "Edit this form in Survey Creator",
     icon: "designer",
     readySelector: ".svc-creator",
   },
