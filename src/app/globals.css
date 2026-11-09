@@ -241,36 +241,70 @@ html[data-demo-highlight] [data-survey-root] {
   animation: demo-survey-ring 1.9s ease-out infinite;
 }
 
-/* The label is a button rather than a pseudo-element, because it is also the
-   way out: whoever has seen where the form is drawn can dismiss the ring from
-   the ring itself, which is where they are already looking. */
-[data-survey-outline-label] {
+/* Only the outside edge and corner label receive clicks. The form remains
+   interactive through the empty centre of this dismissal button. */
+[data-survey-outline-dismiss] {
   display: none;
 }
 
-html[data-demo-highlight] [data-survey-root] [data-survey-outline-label] {
+html[data-demo-highlight] [data-survey-root] > [data-survey-outline-dismiss] {
+  display: block;
+  position: absolute;
+  inset: -6px;
+  z-index: 5;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  font: inherit;
+  pointer-events: none;
+}
+
+[data-survey-outline-dismiss]:focus-visible {
+  outline: 2px solid var(--demo-brand);
+  outline-offset: 2px;
+}
+
+[data-survey-outline-edge] {
+  position: absolute;
+  pointer-events: auto;
+}
+[data-survey-outline-edge="top"],
+[data-survey-outline-edge="bottom"] {
+  right: 0;
+  left: 0;
+  height: 6px;
+}
+[data-survey-outline-edge="left"],
+[data-survey-outline-edge="right"] {
+  top: 0;
+  bottom: 0;
+  width: 6px;
+}
+[data-survey-outline-edge="top"] { top: 0; }
+[data-survey-outline-edge="right"] { right: 0; }
+[data-survey-outline-edge="bottom"] { bottom: 0; }
+[data-survey-outline-edge="left"] { left: 0; }
+
+[data-survey-outline-label] {
   display: inline-flex;
   position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 5;
+  top: 6px;
+  right: 6px;
+  pointer-events: auto;
   align-items: center;
   gap: 0.375rem;
   padding: 0.25rem 0.5rem;
   border: 0;
   border-bottom-left-radius: 0.5rem;
+  border-top-right-radius: inherit;
   background-color: var(--demo-brand);
-  color: var(--demo-brand-foreground, oklch(0.99 0 0));
+  color: var(--demo-brand-foreground, var(--primary-foreground));
   font: inherit;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  cursor: pointer;
-}
-
-html[data-demo-highlight] [data-survey-root] [data-survey-outline-label]:hover {
-  filter: brightness(1.08);
 }
 
 @keyframes demo-survey-ring {
@@ -291,19 +325,29 @@ html[data-demo-highlight] [data-survey-root] [data-survey-outline-label]:hover {
   }
 }
 
-/* The dock sits over every example page and should read as an overlay, not as
-   part of the host site. It is fully visible by default: on a phone there is no
-   way to reveal a dimmed control, and a reviewer who cannot find the dock cannot
-   use the demo. Only a mouse — which can hover it back to full strength — gets
-   the quiet version, and never while one of its menus is open: the menu is in a
-   portal, so focus and the pointer have both left the bar by then. */
+/* Non-modal editors keep SurveyJS popups interactive while locking the page.
+   A stable gutter prevents the layout shifting when the scrollbar disappears. */
+html:has([data-lock-background-scroll][data-state="open"]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+
+/* Keep the backdrop separate so fading the toolbar still reveals blurred content. */
 .demo-dock {
-  opacity: 1;
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition: opacity 150ms ease;
 }
 @media (hover: hover) and (pointer: fine) {
+  .demo-dock-backdrop::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+  }
   .demo-dock {
-    opacity: 0.55;
+    opacity: 0.75;
+    will-change: opacity;
   }
   .demo-dock:hover,
   .demo-dock:focus-within,

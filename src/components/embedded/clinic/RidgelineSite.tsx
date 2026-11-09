@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 import {
   CalendarCheckIcon,
   CheckIcon,
@@ -10,10 +8,9 @@ import {
   HeartPulseIcon,
   LanguagesIcon,
   MapPinIcon,
-  MoonIcon,
+  MenuIcon,
   PhoneIcon,
   StethoscopeIcon,
-  SunIcon,
   TriangleAlertIcon,
   UserRoundIcon,
 } from "lucide-react";
@@ -25,6 +22,8 @@ import {
   type VisitSummary,
 } from "@/schemas";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DemoPlaceholder } from "../shared/DemoPlaceholder";
 import { SignedInChip } from "../shared/SignedInChip";
 import { accountText } from "../shared/demo-accounts";
 import { mergeTailwindClasses } from "@/lib/utils";
@@ -50,53 +49,35 @@ import { RIDGELINE_BANNER, RIDGELINE_STRINGS } from "./ridgeline-strings";
 
 /* ── chrome ─────────────────────────────────────────────────────────────────── */
 
-/**
- * Light and dark, where a real site puts it: in its own utility bar.
- *
- * It is not a demo control — every visitor expects a site to have one — so it
- * belongs to the host page rather than to the reviewer's toolbar. The label only
- * appears once mounted, because the server has no way to know which scheme the
- * browser will resolve.
- */
-function SchemeToggle({ locale }: { locale: ClinicLocale }) {
-  const strings = RIDGELINE_STRINGS[locale];
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
-
-  const isDark = mounted && resolvedTheme === "dark";
-
-  return (
-    <button
-      type="button"
-      className="hover:text-foreground focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
-      aria-label={isDark ? strings.switchToLight : strings.switchToDark}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-    >
-      {isDark ? <MoonIcon className="size-3.5" /> : <SunIcon className="size-3.5" />}
-      {isDark ? strings.schemeDark : strings.schemeLight}
-    </button>
-  );
-}
-
-export function ClinicUtilityBar({ locale }: { locale: ClinicLocale }) {
+export function ClinicUtilityBar({
+  locale,
+  onLocaleChange,
+}: {
+  locale: ClinicLocale;
+  onLocaleChange: (next: ClinicLocale) => void;
+}) {
   const strings = RIDGELINE_STRINGS[locale];
 
   return (
     <div className="bg-muted/50 border-b text-xs">
-      <div className="text-muted-foreground mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-5 gap-y-1 px-6 py-2">
+      <div className="text-muted-foreground mx-auto flex w-full max-w-6xl flex-col items-start gap-2 px-6 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-1 sm:py-2">
         <span className="text-foreground flex items-center gap-1.5 font-medium">
           <PhoneIcon className="size-3.5" /> (503) 555-0148
         </span>
-        <span className="flex items-center gap-1.5">
-          <ClockIcon className="size-3.5" /> {strings.urgentCareHours}
+        <span className="flex items-start gap-1.5 sm:items-center">
+          <ClockIcon className="mt-px size-3.5 shrink-0 sm:mt-0" /> {strings.urgentCareHours}
         </span>
-        <span className="ml-auto flex items-center gap-x-5">
-          <span>{strings.payBill}</span>
-          <span className="text-foreground font-medium">{strings.patientPortal}</span>
-          <SchemeToggle locale={locale} />
-        </span>
+        <div className="flex w-full items-center gap-3 sm:ml-auto sm:w-auto sm:flex-wrap sm:justify-end sm:gap-x-5 sm:gap-y-1">
+          <DemoPlaceholder message={strings.demoPlaceholder}>
+            <button type="button" className="min-h-9 text-left sm:min-h-0">{strings.payBill}</button>
+          </DemoPlaceholder>
+          <DemoPlaceholder message={strings.demoPlaceholder}>
+            <button type="button" className="text-foreground min-h-9 text-left font-medium sm:min-h-0">
+              {strings.patientPortal}
+            </button>
+          </DemoPlaceholder>
+          <LocaleSwitch locale={locale} onLocaleChange={onLocaleChange} className="ml-auto shrink-0 sm:ml-0" />
+        </div>
       </div>
     </div>
   );
@@ -105,9 +86,9 @@ export function ClinicUtilityBar({ locale }: { locale: ClinicLocale }) {
 /**
  * The page's language, as a two-button segmented control.
  *
- * Present for every patient and at every width — the nav beside it is what hides
- * below `lg`, not this: a patient who was handed the wrong language must always
- * be able to fix it. Each button carries its own `lang` and the language's name
+ * Present in the utility bar for every patient and at every width: a patient
+ * who was handed the wrong language must always be able to fix it. Each button
+ * carries its own `lang` and the language's name
  * in full, so "ES" is announced as Spanish rather than spelled out in English.
  */
 export function LocaleSwitch({
@@ -160,13 +141,11 @@ export function ClinicHeader({
   onRequest,
   account,
   locale,
-  onLocaleChange,
 }: {
   onRequest: () => void;
   /** The patient whose portal record the form is rendered from. */
   account: Record<string, unknown>;
   locale: ClinicLocale;
-  onLocaleChange: (next: ClinicLocale) => void;
 }) {
   const strings = RIDGELINE_STRINGS[locale];
   const mrn = accountText(account, "mrn");
@@ -184,24 +163,26 @@ export function ClinicHeader({
           </span>
           <span className="leading-tight">
             <span className="block text-[15px] font-semibold tracking-tight">Ridgeline</span>
-            <span className="text-muted-foreground block text-[11px]">Family Health</span>
+            <span className="text-muted-foreground block text-[11px]">Family&nbsp;Health</span>
           </span>
         </div>
 
-        <nav className="text-muted-foreground hidden items-center gap-6 text-sm lg:flex">
+        <nav aria-label={strings.navLabel} className="text-muted-foreground hidden items-center gap-6 text-sm whitespace-nowrap lg:flex min-[66rem]:ml-2 xl:ml-4">
           {strings.nav.map((item, index) => (
-            <span key={item} className={index === 0 ? "text-foreground font-medium" : undefined}>
-              {item}
-            </span>
+            <DemoPlaceholder key={item} message={strings.demoPlaceholder}>
+              <button type="button" className={index === 0 ? "text-foreground font-medium" : undefined}>
+                {item}
+              </button>
+            </DemoPlaceholder>
           ))}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <LocaleSwitch locale={locale} onLocaleChange={onLocaleChange} />
           <SignedInChip
             account={account}
-            meta={mrn ? `${strings.mrn} ${mrn} · ${plan}` : undefined}
+            details={mrn ? `${strings.mrn} ${mrn} · ${plan}` : undefined}
             signInLabel={strings.signIn}
+            signInMessage={strings.demoPlaceholder}
           />
           {/* Its icon alone on a phone, where the full label pushed the page
               sideways. */}
@@ -209,6 +190,30 @@ export function ClinicHeader({
             <CalendarCheckIcon />
             <span className="hidden sm:inline">{strings.requestAppointment}</span>
           </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon-sm" className="lg:hidden" aria-label={strings.navLabel}>
+                <MenuIcon />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              aria-label={strings.navLabel}
+              align="end"
+              sideOffset={8}
+              collisionPadding={12}
+              className="w-56 max-w-(--radix-popover-content-available-width) p-1 lg:hidden"
+            >
+              <nav className="flex flex-col" aria-label={strings.navLabel}>
+                {strings.nav.map((item) => (
+                  <DemoPlaceholder key={item} message={strings.demoPlaceholder}>
+                    <Button variant="ghost" size="sm" className="justify-start">
+                      {item}
+                    </Button>
+                  </DemoPlaceholder>
+                ))}
+              </nav>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </header>
@@ -241,9 +246,9 @@ export function ChartLanguageBanner({
   return (
     <div
       role="note"
-      className="border-primary/40 bg-primary/5 mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border p-3 text-xs leading-relaxed"
+      className="border-primary/40 bg-primary/5 mb-6 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-lg border p-3 text-xs leading-relaxed sm:flex sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2"
     >
-      <LanguagesIcon className="text-primary size-4 shrink-0" />
+      <LanguagesIcon className="text-primary mt-0.5 size-4 shrink-0 sm:mt-0" />
       <div className="min-w-0 flex-1 space-y-0.5">
         {order.map((line) => (
           <p
@@ -255,7 +260,7 @@ export function ChartLanguageBanner({
           </p>
         ))}
       </div>
-      <LocaleSwitch locale={locale} onLocaleChange={onLocaleChange} />
+      <LocaleSwitch locale={locale} onLocaleChange={onLocaleChange} className="col-start-2 justify-self-start" />
     </div>
   );
 }

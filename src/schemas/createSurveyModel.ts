@@ -112,5 +112,11 @@ export function createSurveyModel(
 
   model.mode = mode;
 
+  // Allocate navigation IDs before browser-only animation work can consume
+  // numbers from the same counter and make the first render differ from SSR.
+  for (const action of model.navigationBar.actions) {
+    void action.renderedId;
+  }
+
   return model;
 }

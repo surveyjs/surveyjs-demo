@@ -15,6 +15,7 @@ import {
   ZapIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DemoPlaceholder } from "../shared/DemoPlaceholder";
 import { SignedInChip } from "../shared/SignedInChip";
 import { accountText } from "../shared/demo-accounts";
 import { mergeTailwindClasses } from "@/lib/utils";
@@ -79,13 +80,14 @@ export function SiteHeader({
 
         <nav aria-label="Cadence" className="hidden items-center gap-1 lg:flex">
           {NAV_LINKS.map((link) => (
-            <a
-              key={link}
-              href="#top"
-              className="text-muted-foreground hover:text-foreground rounded-md px-3 py-2 text-sm transition-colors"
-            >
-              {link}
-            </a>
+            <DemoPlaceholder key={link}>
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground rounded-md px-3 py-2 text-sm transition-colors"
+              >
+                {link}
+              </button>
+            </DemoPlaceholder>
           ))}
         </nav>
 
@@ -147,14 +149,18 @@ export function Hero({ children }: { children: ReactNode }) {
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
-            <Button size="lg" className="demo-brand-bg gap-2 hover:opacity-90">
-              Start free
-              <ArrowRightIcon />
-            </Button>
-            <Button size="lg" variant="outline" className="gap-2">
-              <PlayIcon />
-              Watch the tour
-            </Button>
+            <DemoPlaceholder>
+              <Button size="lg" className="demo-brand-bg gap-2 hover:opacity-90">
+                Start free
+                <ArrowRightIcon />
+              </Button>
+            </DemoPlaceholder>
+            <DemoPlaceholder>
+              <Button size="lg" variant="outline" className="gap-2">
+                <PlayIcon />
+                Watch the tour
+              </Button>
+            </DemoPlaceholder>
           </div>
 
           <p className="text-muted-foreground mt-4 text-xs">
@@ -586,12 +592,14 @@ export function Pricing() {
                 </li>
               ))}
             </ul>
-            <Button
-              className={mergeTailwindClasses("mt-6 w-full", plan.highlighted && "demo-brand-bg hover:opacity-90")}
-              variant={plan.highlighted ? "default" : "outline"}
-            >
-              {plan.cta}
-            </Button>
+            <DemoPlaceholder>
+              <Button
+                className={mergeTailwindClasses("mt-6 w-full", plan.highlighted && "demo-brand-bg hover:opacity-90")}
+                variant={plan.highlighted ? "default" : "outline"}
+              >
+                {plan.cta}
+              </Button>
+            </DemoPlaceholder>
           </div>
         ))}
       </div>
@@ -612,10 +620,12 @@ export function ClosingBand({ onFeedback }: { onFeedback: () => void }) {
           will help you export everything back out.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Button size="lg" className="demo-brand-bg gap-2 hover:opacity-90">
-            Start free
-            <ArrowRightIcon />
-          </Button>
+          <DemoPlaceholder>
+            <Button size="lg" className="demo-brand-bg gap-2 hover:opacity-90">
+              Start free
+              <ArrowRightIcon />
+            </Button>
+          </DemoPlaceholder>
           <Button size="lg" variant="outline" onClick={onFeedback}>
             Tell us what to fix
           </Button>
@@ -653,12 +663,14 @@ export function SiteFooter() {
               <ul className="mt-3 flex flex-col gap-2">
                 {column.links.map((link) => (
                   <li key={link}>
-                    <a
-                      href="#top"
-                      className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-                    >
-                      {link}
-                    </a>
+                    <DemoPlaceholder>
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-foreground text-left text-sm transition-colors"
+                      >
+                        {link}
+                      </button>
+                    </DemoPlaceholder>
                   </li>
                 ))}
               </ul>

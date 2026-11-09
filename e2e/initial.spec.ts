@@ -4,6 +4,7 @@ import { checkoutJson } from "../src/schemas/checkout";
 import { navPages } from "../src/schemas/navigation";
 import { howHref } from "../src/lib/routes";
 import { DOCK_LABELS } from "../src/lib/site";
+import { APPOINTMENT_COPY, ENCOUNTER_NOTE_COPY } from "../src/components/embedded/shared/patient-demo-copy";
 import { SHORT_CHECKOUT } from "./short-checkout";
 import { startSession } from "./session";
 
@@ -95,13 +96,13 @@ test("/chart is the survey and almost nothing else", async ({ page }) => {
   });
 });
 
-test("opening another chart changes the note's shape", async ({ page }) => {
+test("selecting another patient changes the note's shape", async ({ page }) => {
   test.slow();
   await page.goto("/chart");
   const dock = dockOf(page);
   const card = page.locator("[data-survey-root]");
 
-  await dock.getByRole("button", { name: /Open chart/ }).click();
+  await dock.getByRole("button", { name: new RegExp(`^${ENCOUNTER_NOTE_COPY.dock.usersLabel}:`) }).click();
   await page.getByRole("menuitemradio", { name: "Priya Raman" }).click();
 
   // Priya has never been seen here, so a page exists for her and for nobody
@@ -229,8 +230,16 @@ for (const route of allRoutes) {
 }
 
 /** Opens the toolbar's user popup and waits for the editor survey inside it. */
-async function openUserDialog(page: import("@playwright/test").Page) {
-  await dockOf(page).getByRole("button", { name: DOCK_LABELS.editUser }).click();
+async function openUserDialog(
+  page: import("@playwright/test").Page,
+  name = "Alex Rivera",
+  { usersLabel, editLabel }: { usersLabel: string; editLabel: string } = {
+    usersLabel: DOCK_LABELS.loginAs,
+    editLabel: DOCK_LABELS.editUser,
+  },
+) {
+  await dockOf(page).getByRole("button", { name: new RegExp(`^${usersLabel}:`) }).click();
+  await page.getByRole("menuitem", { name: `${editLabel}: ${name}`, exact: true }).click();
   const dialog = page.getByRole("dialog");
   // The editor is a SurveyJS survey — same markup as the demo it drives.
   await expect(dialog.locator(".sd-root-modern")).toBeVisible();
@@ -339,9 +348,9 @@ test("the dock leads to more examples, and the demo outlines where SurveyJS draw
 
   // No way "home" any more: the menu of every example replaces it.
   await expect(dock.getByRole("link", { name: "SurveyJS demos" })).toHaveCount(0);
-  await dock.getByRole("button", { name: DOCK_LABELS.moreExamples }).click();
+  await dock.getByRole("button", { name: "Encounter Note", exact: true }).click();
   const menu = page.getByRole("dialog", { name: DOCK_LABELS.moreExamples });
-  await expect(menu.getByRole("link", { name: "Encounter note", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(menu.getByRole("link", { name: "Encounter Note", exact: true })).toHaveAttribute("aria-current", "page");
   await page.keyboard.press("Escape");
   await expect(menu).toHaveCount(0);
 
@@ -350,6 +359,26 @@ test("the dock leads to more examples, and the demo outlines where SurveyJS draw
   // SurveyJS draws, and that nobody has to press anything for it.
   await expect(page.locator("html")).toHaveAttribute("data-demo-highlight", "");
   await expect(page.locator("[data-survey-root]")).toHaveCSS("outline-style", "dashed");
+
+  const highlight = dock.getByRole("button", { name: DOCK_LABELS.highlightSurvey, exact: true });
+  await expect(highlight).toHaveAttribute("aria-pressed", "true");
+  await highlight.click();
+  await expect(page.locator("[data-survey-root]")).toHaveCSS("outline-style", "none");
+  await expect(highlight).toHaveAttribute("aria-pressed", "false");
+  await highlight.press("Space");
+  await expect(page.locator("[data-survey-root]")).toHaveCSS("outline-style", "dashed");
+  await expect(highlight).toHaveAttribute("aria-pressed", "true");
+
+  // Both the unchanged caption and the outside edge dismiss the same highlight.
+  await page.locator("[data-survey-outline-label]").click();
+  await expect(highlight).toHaveAttribute("aria-pressed", "false");
+  await highlight.click();
+  await page.locator('[data-survey-outline-edge="top"]').click();
+  await expect(highlight).toHaveAttribute("aria-pressed", "false");
+  await highlight.click();
+  await page.locator("[data-survey-outline-dismiss]").press("Enter");
+  await expect(page.locator("[data-survey-root]")).toHaveCSS("outline-style", "none");
+  await expect(highlight).toHaveAttribute("aria-pressed", "false");
 });
 
 test("/clinic opens in the chart's language and fills the request from it", async ({
@@ -433,7 +462,7 @@ test("/clinic opens in the chart's language and fills the request from it", asyn
 
   // Sign in as the patient who has no chart. Same definition, and the form is
   // the long one: identity to fill in, insurance card fields, an extra page.
-  await dock.getByRole("button", { name: /Login as: Maria Delgado/ }).click();
+  await dock.getByRole("button", { name: new RegExp(`^${APPOINTMENT_COPY.dock.usersLabel}: Maria Delgado$`) }).click();
   await page.getByRole("menuitemradio", { name: /Priya Raman/ }).click();
 
   await expect(card).toContainText("You are new to Ridgeline");
@@ -447,8 +476,8 @@ test("/clinic opens in the chart's language and fills the request from it", asyn
 
   // And the popup is where that patient's record is edited, with the object the
   // survey receives shown underneath it.
-  const dialog = await openUserDialog(page);
-  await expect(dialog).toContainText("The signed-in user");
+  const dialog = await openUserDialog(page, "Priya Raman", APPOINTMENT_COPY.dock);
+  await expect(dialog).toContainText(APPOINTMENT_COPY.dialog.title);
   await expect(dialog.locator("pre")).toContainText('"user_isNewPatient": true');
   await typeInEditor(dialog, "user_preferredName", "Pri");
   await expect(card).toContainText("You are new to Ridgeline");

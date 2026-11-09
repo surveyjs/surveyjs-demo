@@ -1,13 +1,13 @@
 "use client";
 
 import { StethoscopeIcon } from "lucide-react";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { DemoDock } from "@/components/dock/DemoDock";
 import { DemoUserDialog } from "../shared/DemoUserDialog";
 import { EmbeddedSurvey, SurveyCard } from "../shared/EmbeddedSurvey";
 import { SignedInChip } from "../shared/SignedInChip";
 import { accountText } from "../shared/demo-accounts";
 import { useDemo } from "../shared/useDemo";
+import { ENCOUNTER_NOTE_COPY } from "../shared/patient-demo-copy";
 import { HOST_BRANDS, type DemoSurvey } from "../shared/demo-controls";
 
 const ANCHOR = "note";
@@ -24,8 +24,8 @@ const CHART_BRAND = HOST_BRANDS.embeddedChart;
  * completion page.
  *
  * So there is deliberately almost nothing here. A header bar with the product
- * mark, the chart that is open and a colour-scheme switch — and below it the
- * survey, full width. The pages, the table of contents, the problem list, the
+ * mark and the chart that is open — and below it the survey, full width.
+ * The pages, the table of contents, the problem list, the
  * medication totals, the risk score, the signature and the "note filed" screen
  * are all in `encounter-note.ts`; not one of them is React in this file. That is the claim,
  * and the emptiness of this component is the evidence for it.
@@ -40,6 +40,7 @@ export function ChartDemo({ survey }: { survey: DemoSurvey }) {
     survey,
     anchorId: ANCHOR,
     brandId: CHART_BRAND,
+    userDescriptions: ENCOUNTER_NOTE_COPY.descriptions,
   });
 
   const mrn = accountText(demo.account, "mrn");
@@ -66,9 +67,8 @@ export function ChartDemo({ survey }: { survey: DemoSurvey }) {
           <div className="ml-auto flex items-center gap-2">
             <SignedInChip
               account={demo.account}
-              meta={mrn ? `Chart open · MRN ${mrn}` : "Chart open"}
+              meta={mrn ? `Patient · MRN ${mrn}` : "Patient selected"}
             />
-            <ThemeSwitcher />
           </div>
         </div>
       </header>
@@ -88,14 +88,8 @@ export function ChartDemo({ survey }: { survey: DemoSurvey }) {
         </div>
       </main>
 
-      <DemoUserDialog {...demo.userDialogProps} />
-      {/* The workspace has its own light/dark control in the header. */}
-      <DemoDock
-        {...demo.dockProps}
-        showTheme={false}
-        usersLabel="Open chart"
-        editLabel="Edit the chart"
-      />
+      <DemoUserDialog {...demo.userDialogProps} {...ENCOUNTER_NOTE_COPY.dialog} />
+      <DemoDock {...demo.dockProps} {...ENCOUNTER_NOTE_COPY.dock} />
     </div>
   );
 }

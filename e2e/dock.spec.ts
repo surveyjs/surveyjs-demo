@@ -1,9 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 import { features } from "../src/features";
+import { titleCase } from "../src/lib/title-case";
 import { loadExamples } from "../src/examples/load";
-import { menuExamples, MENU_LIMIT, problemHref, runLink } from "../src/examples/entries";
+import { findExample, menuExamples, MENU_LIMIT, runLink } from "../src/examples/entries";
 import { otherEditionHref } from "../src/lib/routes";
-import { DOCK_LABELS, PAGE_ACTIONS } from "../src/lib/site";
+import { DOCK_LABELS, NEW_TAB_MARK, PAGE_ACTIONS, USE_CASES_URL } from "../src/lib/site";
 import { getNavItem, navPages } from "../src/schemas/navigation";
 import { SHORT_CHECKOUT } from "./short-checkout";
 import { startSession } from "./session";
@@ -26,8 +27,12 @@ function menuOf(page: Page) {
   return page.getByRole("dialog", { name: DOCK_LABELS.moreExamples });
 }
 
+function menuTrigger(page: Page) {
+  return dockOf(page).locator('button[aria-haspopup="dialog"]');
+}
+
 async function openMenu(page: Page) {
-  await dockOf(page).getByRole("button", { name: DOCK_LABELS.moreExamples }).click();
+  await menuTrigger(page).click();
   await expect(menuOf(page)).toBeVisible();
   return menuOf(page);
 }
@@ -45,16 +50,19 @@ test.describe("More examples", () => {
       await expect(rows.nth(index)).toHaveAttribute("data-example", entry.id);
       await expect(rows.nth(index)).toContainText(entry.name);
     }
-    // The heading says whose demo this is, and which edition.
-    await expect(menu).toContainText(features.brand.editionLabel);
+    await expect(menuTrigger(page)).toHaveText(findExample(await loadExamples(), "embeddedFeedback")!.name);
+    // The menu has a heading; its landing-page link appears once, after the examples.
+    await expect(menu.getByText(DOCK_LABELS.examplesTitle, { exact: true })).toBeVisible();
+    await expect(menu.locator('[data-slot="badge"]')).toHaveText(features.brand.editionLabel);
+    const landing = menu.getByRole("link", { name: `${DOCK_LABELS.allUseCases} ${NEW_TAB_MARK}` });
+    await expect(landing).toHaveCount(1);
+    await expect(landing).toHaveAttribute("href", USE_CASES_URL);
+    await expect(landing).toHaveAttribute("target", "_blank");
+    await expect(menu.getByRole("link").last()).toHaveText(`${DOCK_LABELS.allUseCases} ${NEW_TAB_MARK}`);
     // Here, and only here, "Feedback" is the page you are on.
     const current = menu.locator('[aria-current="page"]');
     await expect(current).toHaveCount(1);
     await expect(current).toHaveText(getNavItem("embeddedFeedback").label);
-    await expect(menu.getByRole("link", { name: /All use cases/ })).toHaveAttribute(
-      "href",
-      "https://surveyjs.io/use-cases",
-    );
   });
 
   test("every run link stays on this host and edition, except an example on a host of its own", async ({ page }) => {
@@ -66,7 +74,7 @@ test.describe("More examples", () => {
       const link = menu.locator(`li[data-example="${entry.id}"] a`).first();
       const run = runLink(entry, features.edition);
       await expect(link).toHaveAttribute("href", run.href);
-      if (entry.id === "healthcare") {
+      if (run.external) {
         expect(run.external).toBe(true);
         expect(run.href).toMatch(/^https:\/\//);
         await expect(link).toHaveAttribute("target", "_blank");
@@ -77,28 +85,23 @@ test.describe("More examples", () => {
       }
     }
 
-    // Each problem opens that example's section of the use-cases page, in a new tab.
+    // Descriptions remain visible text; each row has only the demo link.
     for (const entry of expected) {
-      const useCase = problemHref(entry);
-      const problem = menu.locator(`li[data-example="${entry.id}"] a[href^="https://surveyjs.io/use-cases"]`);
-      if (!useCase) {
-        await expect(problem).toHaveCount(0);
-        continue;
-      }
-      await expect(problem).toHaveAttribute("href", useCase);
-      await expect(problem).toHaveAttribute("target", "_blank");
-      await expect(problem).toContainText(entry.problem);
+      const row = menu.locator(`li[data-example="${entry.id}"]`);
+      await expect(row.getByRole("link")).toHaveCount(1);
+      await expect(row.locator("span")).toHaveText(entry.problem);
     }
 
     // And a row goes there, in this tab.
     await menu.getByRole("link", { name: getNavItem("leads").label, exact: true }).click();
     await expect(page).toHaveURL(/\/leads$/);
     await expect(dockOf(page)).toBeVisible();
+    await expect(menuTrigger(page)).toHaveText(findExample(await loadExamples(), "leads")!.name);
   });
 
   test("closes on Escape and on a click outside, and works from the keyboard", async ({ page }) => {
     await page.goto("/feedback");
-    const trigger = dockOf(page).getByRole("button", { name: DOCK_LABELS.moreExamples });
+    const trigger = menuTrigger(page);
 
     // Escape closes it and gives focus back to the trigger.
     await openMenu(page);
@@ -134,7 +137,7 @@ test.describe("the edition switch", () => {
   for (const path of paths) {
     test(`on ${path} it opens the same pathname on the other host, in this tab`, async ({ page }) => {
       await page.goto(path);
-      const link = dockOf(page).getByRole("link", { name: `${label} →` });
+      const link = dockOf(page).getByRole("link", { name: `Switch to ${titleCase(label)}` });
       await expect(link).toHaveAttribute("href", otherEditionHref(baseUrl, path));
       await expect(link).not.toHaveAttribute("target", /.*/);
     });
@@ -217,17 +220,21 @@ test.describe("at 390×844", () => {
         expect(rect.x + rect.width).toBeLessThanOrEqual(390);
       }
       // What never collapses is still on the bar.
-      await expect(dock.getByRole("button", { name: DOCK_LABELS.moreExamples })).toBeVisible();
+      const currentName = findExample(await loadExamples(), item.id)?.name ?? item.label;
+      await expect(menuTrigger(page)).toHaveAccessibleName(currentName);
+      await expect(menuTrigger(page).locator("span")).toBeVisible();
+      await expect(menuTrigger(page)).toHaveText(currentName);
     });
   }
 
   test("⋯ holds what the bar has no room for", async ({ page }) => {
     await page.goto("/feedback");
     const dock = dockOf(page);
-    // On the bar: the menu, the editor link, Login as and ⋯.
-    await expect(dock.getByRole("button", { name: DOCK_LABELS.moreExamples })).toBeVisible();
-    await expect(dock.getByRole("link", { name: features.designer.label })).toBeVisible();
+    // On mobile the bar keeps the demo menu, Login as and ⋯.
+    await expect(menuTrigger(page)).toBeVisible();
+    await expect(dock.getByRole("link", { name: features.designer.label })).toBeHidden();
     await expect(dock.getByRole("button", { name: /^Login as:/ })).toBeVisible();
+    await expect(dock.getByRole("button", { name: DOCK_LABELS.highlightSurvey })).toBeHidden();
     for (const name of [PAGE_ACTIONS.source, PAGE_ACTIONS.howBuilt, DOCK_LABELS.prefill, DOCK_LABELS.reset, DOCK_LABELS.editUser]) {
       await expect(dock.getByRole(name === PAGE_ACTIONS.source || name === PAGE_ACTIONS.howBuilt ? "link" : "button", { name, exact: true })).toBeHidden();
     }
@@ -235,25 +242,30 @@ test.describe("at 390×844", () => {
     await dock.getByRole("button", { name: DOCK_LABELS.overflow }).click();
     const menu = page.getByRole("menu");
     const expected = [
-      PAGE_ACTIONS.source,
-      /^Switch to (light|dark) mode$/,
-      `${features.brand.otherEdition.label} →`,
+      `Switch to ${titleCase(features.brand.otherEdition.label)}`,
       PAGE_ACTIONS.howBuilt,
+      PAGE_ACTIONS.source,
+      DOCK_LABELS.highlightSurvey,
+      /^Switch to (Dark|Light)$/,
+      DOCK_LABELS.prefill,
+      DOCK_LABELS.reset,
       ...(features.analyticsHref ? [DOCK_LABELS.analytics] : []),
       ...(features.exportPdf ? [DOCK_LABELS.savePdf] : []),
-      DOCK_LABELS.reset,
-      DOCK_LABELS.prefill,
-      DOCK_LABELS.editUser,
+      features.designer.label,
     ];
-    const items = menu.getByRole("menuitem");
+    const items = menu.locator('[role="menuitem"], [role="menuitemcheckbox"]');
     await expect(items).toHaveCount(expected.length);
     for (const [index, name] of expected.entries()) {
       await expect(items.nth(index)).toHaveText(typeof name === "string" ? new RegExp(`^${escapeRegExp(name)}`) : name);
     }
 
-    // And an item does what its button does.
-    await items.filter({ hasText: DOCK_LABELS.editUser }).click();
-    await expect(page.getByRole("dialog")).toBeVisible();
+    await menu.press("Escape");
+    await expect(menu).toBeHidden();
+    await dock.getByRole("button", { name: /^Login as:/ }).click();
+    await page.getByRole("menuitem", { name: `${DOCK_LABELS.editUser}: Priya Shah`, exact: true }).click();
+    const editor = page.getByRole("dialog", { name: "The signed-in user" });
+    await expect(editor.locator('[data-name="user_firstName"] input')).toHaveValue("Priya");
+    await expect(dock.getByRole("button", { name: "Login as: Priya Shah" })).toBeVisible();
   });
 });
 

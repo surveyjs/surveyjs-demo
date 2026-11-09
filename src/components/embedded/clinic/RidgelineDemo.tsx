@@ -13,6 +13,7 @@ import {
   VisitSummaryPanel,
 } from "./RidgelineSite";
 import { useDemo } from "../shared/useDemo";
+import { APPOINTMENT_COPY } from "../shared/patient-demo-copy";
 import { HOST_BRANDS, type DemoSurvey } from "../shared/demo-controls";
 
 const ANCHOR = "request";
@@ -51,6 +52,7 @@ export function RidgelineDemo({ survey }: { survey: DemoSurvey }) {
     survey,
     anchorId: ANCHOR,
     brandId: RIDGELINE_BRAND,
+    userDescriptions: APPOINTMENT_COPY.descriptions,
     // The form's three variable presets are the patients the toolbar can sign in
     // as — the same definition, a different chart.
   });
@@ -114,12 +116,11 @@ export function RidgelineDemo({ survey }: { survey: DemoSurvey }) {
 
   return (
     <div lang={locale} className="bg-background text-foreground flex min-h-svh flex-col">
-      <ClinicUtilityBar locale={locale} />
+      <ClinicUtilityBar locale={locale} onLocaleChange={changeLocale} />
       <ClinicHeader
         onRequest={demo.requestSurvey}
         account={demo.account}
         locale={locale}
-        onLocaleChange={changeLocale}
       />
 
       <main className="flex-1">
@@ -176,6 +177,7 @@ export function RidgelineDemo({ survey }: { survey: DemoSurvey }) {
           Spanish phonetics. */}
       <DemoUserDialog
         {...demo.userDialogProps}
+        {...APPOINTMENT_COPY.dialog}
         contextNote={
           <>
             <code className="text-foreground text-[11px]">user_preferredLanguage</code> picks the
@@ -184,8 +186,7 @@ export function RidgelineDemo({ survey }: { survey: DemoSurvey }) {
           </>
         }
       />
-      {/* The clinic site has its own light/dark control in its utility bar. */}
-      <DemoDock {...demo.dockProps} showTheme={false} />
+      <DemoDock {...demo.dockProps} {...APPOINTMENT_COPY.dock} />
     </div>
   );
 }

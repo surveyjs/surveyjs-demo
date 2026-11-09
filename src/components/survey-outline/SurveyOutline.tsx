@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { mergeTailwindClasses } from "@/lib/utils";
 
 /**
@@ -19,43 +19,64 @@ import { mergeTailwindClasses } from "@/lib/utils";
  * Turns the outline on while the calling component is mounted. The embedded
  * demos call it through `useDemo`; the records pages call it directly.
  */
-export function useSurveyOutline(): void {
+export function useSurveyOutline(enabled = true): void {
   // One attribute on <html> for as long as the caller is on screen; the outline
   // itself is in `globals.css`, keyed off the `data-survey-root` marker that
   // `SurveyCard` and `SurveyOutline` carry.
   useEffect(() => {
+    if (!enabled) return;
     const root = document.documentElement;
+    root.setAttribute("data-demo-outline", "");
     root.setAttribute("data-demo-highlight", "");
-    return () => root.removeAttribute("data-demo-highlight");
-  }, []);
+    return () => {
+      root.removeAttribute("data-demo-outline");
+      root.removeAttribute("data-demo-highlight");
+    };
+  }, [enabled]);
 }
 
-/**
- * Drops the outline until the page remounts. One-way on purpose: nothing brings
- * the ring back, and switching records does not either.
- */
-export function hideSurveyOutline(): void {
-  document.documentElement.removeAttribute("data-demo-highlight");
+function subscribeToOutline(onChange: () => void) {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-demo-outline", "data-demo-highlight"],
+  });
+  return () => observer.disconnect();
 }
 
-/**
- * The corner label. It is a button rather than a pseudo-element because it is
- * also the way out: whoever has seen where the form is drawn dismisses the ring
- * from the ring itself, which is where they are already looking. Hidden by CSS
- * unless the outline is on.
- */
+function getOutlineState() {
+  const root = document.documentElement;
+  if (!root.hasAttribute("data-demo-outline")) return "unavailable";
+  return root.hasAttribute("data-demo-highlight") ? "visible" : "hidden";
+}
+
+/** The dock controls the same attributes that the page's outline hook owns. */
+export function useSurveyOutlineControl() {
+  const state = useSyncExternalStore(subscribeToOutline, getOutlineState, () => "unavailable");
+  return {
+    available: state !== "unavailable",
+    visible: state === "visible",
+    toggle: () => document.documentElement.toggleAttribute("data-demo-highlight"),
+  };
+}
+
+/** The label and outer edge dismiss the highlight without covering the form. */
 export function SurveyOutlineLabel() {
   return (
     <button
       type="button"
-      data-survey-outline-label=""
+      data-survey-outline-dismiss=""
+      aria-label="SurveyJS renders this. Hide SurveyJS Outlines"
+      onClick={() => document.documentElement.removeAttribute("data-demo-highlight")}
       // The demo talking about the page, like the dock — English in every
       // locale, including inside a host site rendered in Spanish.
       lang="en"
-      title="Hide the outline and look at the page as a visitor would"
-      onClick={hideSurveyOutline}
     >
-      SurveyJS renders this (hide selection)
+      <span data-survey-outline-edge="top" aria-hidden="true" />
+      <span data-survey-outline-edge="right" aria-hidden="true" />
+      <span data-survey-outline-edge="bottom" aria-hidden="true" />
+      <span data-survey-outline-edge="left" aria-hidden="true" />
+      <span data-survey-outline-label="">SurveyJS renders this</span>
     </button>
   );
 }
@@ -68,10 +89,15 @@ export function SurveyOutlineLabel() {
 export function SurveyOutline({
   className,
   children,
+  activate = false,
 }: {
   className?: string;
   children: ReactNode;
+  /** Activate the outline and its dock control when this boundary owns them. */
+  activate?: boolean;
 }) {
+  useSurveyOutline(activate);
+
   return (
     <div data-survey-root="" className={mergeTailwindClasses("relative", className)}>
       <SurveyOutlineLabel />

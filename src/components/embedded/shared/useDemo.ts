@@ -75,7 +75,7 @@ export interface Demo {
   readonly dockProps: {
     onPrefill: () => void;
     onReset: () => void;
-    onEditUser: () => void;
+    onEditUser: (id?: string) => void;
     /**
      * Downloads the form, with whatever has been answered, as a PDF. Undefined
      * when the edition provides no PDF export.
@@ -123,11 +123,14 @@ export function useDemo({
   /** Element the form lives in, so the demo can scroll back to it. */
   anchorId,
   brandId = DEFAULT_BRAND_ID,
+  userDescriptions,
 }: {
   survey: DemoSurvey;
   anchorId: string;
   /** Palette the demo runs in, so no two host sites look alike. */
   brandId?: string;
+  /** Contextual descriptions keyed by the original preset name. */
+  userDescriptions?: Readonly<Record<string, string>>;
 }): Demo {
   // The form's variable presets, found by its id like its definition. The
   // presets are the people the toolbar lets a reviewer sign in as, and the
@@ -169,10 +172,10 @@ export function useDemo({
     () =>
       (presets.presets ?? []).map((preset) => ({
         id: preset.name,
-        description: preset.description,
+        description: userDescriptions?.[preset.name] ?? preset.description,
         data: preset.variables,
       })),
-    [presets],
+    [presets, userDescriptions],
   );
   const [users, setUsers] = useState(defaults);
   const [activeUserId, setActiveUserId] = useState(defaults[0].id);
@@ -325,7 +328,14 @@ export function useDemo({
     dockProps: {
       onPrefill: prefill,
       onReset: restart,
-      onEditUser: () => setUserOpen((open) => !open),
+      onEditUser: (id) => {
+        if (id === undefined) {
+          setUserOpen((open) => !open);
+          return;
+        }
+        if (id !== activeRecord.id) selectUser(id);
+        setUserOpen(true);
+      },
       onExportPdf: exportPdf,
       configureHref: href,
       exampleId,

@@ -59,7 +59,7 @@ export const navPages: readonly NavPage[] = [
   },
   {
     id: "workOrders",
-    label: "Work orders",
+    label: "Work Orders",
     path: "/work-orders",
     description: "Job sheets: a PDF, scan or photo into a record with AI.",
     schemaId: "work-order",
@@ -75,7 +75,7 @@ export const navPages: readonly NavPage[] = [
   },
   {
     id: "embeddedChart",
-    label: "Encounter note",
+    label: "Encounter Note",
     path: "/chart",
     description: "A clinician's workspace that is nothing but the form.",
     schemaId: "encounter-note",
@@ -99,7 +99,7 @@ export const navPages: readonly NavPage[] = [
   },
   {
     id: "definition",
-    label: "Definition & checks",
+    label: "Definition & Checks",
     path: "/definition",
     description: "Any form as JSON, with the linter.",
   },

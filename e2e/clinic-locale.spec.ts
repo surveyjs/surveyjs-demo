@@ -1,5 +1,6 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { DOCK_LABELS } from "../src/lib/site";
+import { APPOINTMENT_COPY } from "../src/components/embedded/shared/patient-demo-copy";
 import {
   chartLocale,
   formatDollars,
@@ -55,7 +56,8 @@ async function loginAs(page: Page, current: RegExp, next: RegExp) {
 }
 
 async function openUserDialog(page: Page) {
-  await dockOf(page).getByRole("button", { name: "Edit the user" }).click();
+  await dockOf(page).getByRole("button", { name: `${APPOINTMENT_COPY.dock.usersLabel}: Maria Delgado`, exact: true }).click();
+  await page.getByRole("menuitem", { name: `${APPOINTMENT_COPY.dock.editLabel}: Maria Delgado`, exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.locator(".sd-root-modern")).toBeVisible();
   return dialog;
@@ -153,7 +155,7 @@ test("the chart wins again whenever the patient or the chart's language changes"
   const card = page.locator("#request");
 
   // A patient whose chart says English: English, and nothing to explain.
-  await loginAs(page, /Login as: Maria Delgado/, /Daniel Okafor/);
+  await loginAs(page, new RegExp(`^${APPOINTMENT_COPY.dock.usersLabel}: Maria Delgado$`), /Daniel Okafor/);
   await expect(card).toContainText("Welcome back, Danny");
   await expect(banner).toHaveCount(0);
   // The switch is there for him all the same.
@@ -163,7 +165,7 @@ test("the chart wins again whenever the patient or the chart's language changes"
 
   // Round trip one: an override belongs to the patient it was made for, so
   // coming back to Maria opens her page in her language, not in his.
-  await loginAs(page, /Login as: Daniel Okafor/, /Maria Delgado/);
+  await loginAs(page, new RegExp(`^${APPOINTMENT_COPY.dock.usersLabel}: Daniel Okafor$`), /Maria Delgado/);
   await expect(card).toContainText("Qué gusto verle de nuevo");
   await expect(banner).toContainText("por eso este formulario se abrió en español");
   await expect(banner).not.toContainText("usted cambió");

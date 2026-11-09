@@ -1,6 +1,7 @@
 import type { RecordCollection } from "../records";
 import type { SurveyData } from "../types";
 import { LEAD_OWNERS } from "../leads";
+import { leadsSample } from "../data/leads-sample";
 import { leadsSeed } from "../data/leads-seed";
 
 /** survey-core's `round(x, 2)`, so the list and the form agree to the cent. */
@@ -106,5 +107,6 @@ export const leadsCollection: RecordCollection = {
     return String(a.accountName ?? "").localeCompare(String(b.accountName ?? ""));
   },
   seed: leadsSeed,
+  prefill: leadsSample,
   rowIdContainers: ["contacts", "lineItems", "competitors", "securityReview", "activities"],
 };

@@ -7,6 +7,7 @@ import type { Model } from "survey-core";
 import {
   getFormNavItem,
   getRecordCollection,
+  getVariablePresets,
   isActiveRoute,
   recordTitle,
   sortRows,
@@ -264,6 +265,15 @@ export function RecordsView({
   // A session user is a plain account: it becomes `user_…` variables here, once.
   const variables = useMemo(() => (activeUser ? toVariables(activeUser) : undefined), [activeUser]);
 
+  const userOptions = useMemo(() => {
+    const presets = getVariablePresets(schemaId)?.presets;
+    return users.map((user) => ({
+      id: user.id,
+      name: user.name,
+      description: presets?.find((preset) => preset.variables.user_id === user.id)?.description,
+    }));
+  }, [schemaId, users]);
+
   /* ── the URL ─────────────────────────────────────────────────────────────── */
 
   const pathname = usePathname();
@@ -466,6 +476,14 @@ export function RecordsView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [collectionId, guard, leaveImport, writeRoute, activeUser],
   );
+
+  const prefillNewRecord = useCallback(() => {
+    const current = openRef.current;
+    const form = modelRef.current;
+    if (current?.mode !== "new" || !form || !collection.prefill || importingRef.current) return;
+    // Merge only sample fields: preserve the record's ID, defaults and current profile values.
+    form.mergeData(structuredClone(collection.prefill));
+  }, [collection]);
 
   const cancel = useCallback(
     () =>
@@ -964,16 +982,18 @@ export function RecordsView({
       <DemoDock
         exampleId={exampleId}
         configureHref={configureHref(schemaId)}
+        onPrefill={open?.mode === "new" && !importing && collection.prefill ? prefillNewRecord : undefined}
+        prefillDisabled={!model || readOnly || loading || saving || importBusy}
         onReset={() => setConfirmReset(true)}
         // Enabled with no record open too: an emptied list is exactly when it
         // is wanted.
         resetDisabled={readOnly || importBusy}
         resetLabel={DOCK_LABELS.resetData}
-        resetTitle="Delete everything you changed in this demo and start from the data that ships"
+        resetTitle="Reset All Demo Data"
         onExportPdf={canExportPdf ? saveAsPdf : undefined}
         exportPdfDisabled={!model || !open}
         analyticsHref={features.analyticsHref?.(schemaId)}
-        users={users}
+        users={userOptions}
         activeUserId={activeUser?.id}
         onSelectUser={selectUser}
       />

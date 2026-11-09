@@ -2,9 +2,22 @@
   "version": 1,
   "entries": [
     {
+      "id": "starter",
+      "name": "Starter",
+      "problem": "Build your first form with a minimal integration",
+      "runUrl": {
+        "mit": "https://app-mit.demos.surveyjs.io/starter",
+        "full": "https://app.demos.surveyjs.io/starter"
+      },
+      "useCaseAnchor": "starter",
+      "ready": true,
+      "related": ["definition", "leads"],
+      "inMenu": false
+    },
+    {
       "id": "leads",
       "name": "Leads",
-      "problem": "Edit records in your app",
+      "problem": "Manage sales opportunities in your app",
       "runUrl": {
         "mit": "https://app-mit.demos.surveyjs.io/leads",
         "full": "https://app.demos.surveyjs.io/leads"
@@ -15,8 +28,8 @@
     },
     {
       "id": "workOrders",
-      "name": "Work orders",
-      "problem": "Turn paper forms into records",
+      "name": "Work Orders",
+      "problem": "Digitize field service reports",
       "runUrl": {
         "mit": "https://app-mit.demos.surveyjs.io/work-orders",
         "full": "https://app.demos.surveyjs.io/work-orders"
@@ -38,21 +51,9 @@
       "related": ["embeddedClinic", "leads"]
     },
     {
-      "id": "embeddedChart",
-      "name": "Encounter note",
-      "problem": "Run long clinical forms",
-      "runUrl": {
-        "mit": "https://app-mit.demos.surveyjs.io/chart",
-        "full": "https://app.demos.surveyjs.io/chart"
-      },
-      "useCaseAnchor": "chart",
-      "ready": true,
-      "related": ["embeddedClinic", "healthcare"]
-    },
-    {
       "id": "embeddedClinic",
       "name": "Appointment",
-      "problem": "Let a form drive the page around it",
+      "problem": "Build a personalized appointment flow",
       "runUrl": {
         "mit": "https://app-mit.demos.surveyjs.io/clinic",
         "full": "https://app.demos.surveyjs.io/clinic"
@@ -62,22 +63,38 @@
       "related": ["embeddedChart", "healthcare"]
     },
     {
-      "id": "starter",
-      "name": "Starter",
-      "problem": "Start from the smallest page",
+      "id": "embeddedChart",
+      "name": "Encounter Note",
+      "problem": "Capture detailed clinical notes",
       "runUrl": {
-        "mit": "https://app-mit.demos.surveyjs.io/starter",
-        "full": "https://app.demos.surveyjs.io/starter"
+        "mit": "https://app-mit.demos.surveyjs.io/chart",
+        "full": "https://app.demos.surveyjs.io/chart"
       },
-      "useCaseAnchor": "starter",
+      "useCaseAnchor": "chart",
       "ready": true,
-      "related": ["definition", "leads"],
-      "inMenu": false
+      "related": ["embeddedClinic", "healthcare"]
+    },
+    {
+      "id": "healthcare",
+      "name": "Healthcare",
+      "problem": "Healthcare forms end to end",
+      "url": "https://healthcare.demos.surveyjs.io/login",
+      "useCaseAnchor": "healthcare",
+      "ready": true,
+      "related": ["embeddedChart", "embeddedClinic"]
+    },
+    {
+      "id": "humanResources",
+      "name": "Human Resources",
+      "problem": "Manage employee records",
+      "url": "https://hr.demos.surveyjs.io/login",
+      "ready": true,
+      "related": []
     },
     {
       "id": "definition",
-      "name": "Definition & checks",
-      "problem": "Check a definition before it ships",
+      "name": "Definition & Checks",
+      "problem": "Edit and check form JSON",
       "runUrl": {
         "mit": "https://app-mit.demos.surveyjs.io/definition",
         "full": "https://app.demos.surveyjs.io/definition"
@@ -86,15 +103,6 @@
       "ready": true,
       "related": ["starter", "leads"],
       "inMenu": false
-    },
-    {
-      "id": "healthcare",
-      "name": "Healthcare",
-      "problem": "Healthcare forms end to end",
-      "url": "https://healthcare.demos.surveyjs.io/",
-      "useCaseAnchor": "healthcare",
-      "ready": true,
-      "related": ["embeddedChart", "embeddedClinic"]
     }
   ]
 }

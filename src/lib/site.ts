@@ -11,7 +11,7 @@ export const DEMO_NAME = "SurveyJS in your app";
 
 /**
  * The site's use-cases page: where visitors arrive from, and where the dock's
- * "More examples" menu sends them back. A manifest entry's `useCaseAnchor` is a
+ * "More Examples" menu sends them back. A manifest entry's `useCaseAnchor` is a
  * section of it.
  */
 export const USE_CASES_URL = "https://surveyjs.io/use-cases";
@@ -28,25 +28,28 @@ export const NEW_TAB_MARK = "↗︎";
  */
 export const DOCK_LABELS = {
   /** The toolbar's accessible name. */
-  toolbar: "Demo tools",
-  moreExamples: "More examples",
-  allUseCases: "All use cases",
+  toolbar: "Demo Tools",
+  moreExamples: "More Examples",
+  switchDemo: "Switch Demo",
+  examplesTitle: DEMO_NAME,
+  allUseCases: "More Use Cases",
+  highlightSurvey: "Highlight SurveyJS",
   /** The "⋯" menu that holds what the bar has no room for. */
-  overflow: "More demo tools",
+  overflow: "More Demo Tools",
   prefill: "Prefill",
   /** An embedded demo's: start the form again. */
   reset: "Reset",
   /** A records page's: this visitor's stored data, after a confirm dialog. */
-  resetData: "Reset demo data",
+  resetData: "Reset Demo Data",
   savePdf: "Save as PDF",
   analytics: "Analytics",
   loginAs: "Login as",
-  editUser: "Edit the user",
-  seeNext: "See next",
+  editUser: "Edit the User",
+  seeNext: "See Next",
 } as const;
 
 /** Worded once, for the dock and the specs. */
 export const PAGE_ACTIONS = {
-  source: "Source of this page",
-  howBuilt: "How this page is built",
+  source: "Source of This Page",
+  howBuilt: "How This Page Is Built",
 } as const;

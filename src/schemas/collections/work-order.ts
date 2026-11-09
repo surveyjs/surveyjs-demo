@@ -1,6 +1,7 @@
 import { isReservedRecordId, type RecordCollection } from "../records";
 import type { SurveyData } from "../types";
 import { EQUIPMENT_TYPES, WORK_ORDER_STATUSES } from "../work-order";
+import { workOrderSample } from "../data/work-order-sample";
 import { workOrderSeed } from "../data/work-order-seed";
 
 /** survey-core's `round(x, 2)`, so the list and the form agree to the cent. */
@@ -118,4 +119,5 @@ export const workOrdersCollection: RecordCollection = {
     }),
   },
   seed: workOrderSeed,
+  prefill: workOrderSample,
 };

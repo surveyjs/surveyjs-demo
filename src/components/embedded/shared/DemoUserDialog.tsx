@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { RotateCcwIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,6 +8,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
+  DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { SurveyData, SurveyJSON } from "@/schemas";
@@ -57,6 +59,10 @@ export function DemoUserDialog({
   onRevert,
   configureHref,
   contextNote,
+  title = "The signed-in user",
+  description,
+  showEditorTitle = true,
+  editorNote,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -79,30 +85,50 @@ export function DemoUserDialog({
    * pass nothing and render as before.
    */
   contextNote?: React.ReactNode;
+  title?: string;
+  description?: string;
+  showEditorTitle?: boolean;
+  editorNote?: string;
 }) {
+  const editorJson = useMemo(
+    () => (showEditorTitle ? json : { ...json, showTitle: false }),
+    [json, showEditorTitle],
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      {/* Radix omits its overlay in non-modal mode. This visual backdrop keeps
+          SurveyJS popups and the live page interactive. */}
+      <DialogPortal>
+        <div aria-hidden="true" data-slot="dialog-overlay" className="pointer-events-none fixed inset-0 z-[75] bg-black/50" />
+      </DialogPortal>
       <DialogContent
+        data-lock-background-scroll=""
         // The reviewer’s popup, not the host site: English in every locale.
         lang="en"
-        className="flex max-h-[88vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl"
+        className="z-[80] flex max-h-[88vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl"
         onInteractOutside={stayOpen}
       >
         <DialogHeader className="border-b p-4 text-left">
-          <DialogTitle className="text-sm">The signed-in user</DialogTitle>
+          <DialogTitle className="text-sm">{title}</DialogTitle>
           <DialogDescription className="text-xs leading-relaxed">
-            What the host application knows about this visitor. This editor is itself a
-            SurveyJS form, the definition of this form&apos;s variable presets — the same
-            JSON Survey Creator renders in its preset editor. Change a field and the
-            survey on the page behind re-renders.
+            {description ?? (
+              <>
+                What the host application knows about this visitor. This editor is itself a
+                SurveyJS form, the definition of this form&apos;s variable presets — the same
+                JSON Survey Creator renders in its preset editor. Change a field and the
+                survey on the page behind re-renders.
+              </>
+            )}
           </DialogDescription>
+          {editorNote && <p className="text-muted-foreground text-xs">{editorNote}</p>}
         </DialogHeader>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
           <div className="min-h-0 overflow-y-auto">
             <EmbeddedSurvey
               key={formKey}
-              json={json}
+              json={editorJson}
               data={defaults}
               onDataChange={onDataChange}
             />

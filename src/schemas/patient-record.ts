@@ -62,7 +62,7 @@ export const PATIENT_LANGUAGES = LANGUAGES;
 export const patientRecordJson: SurveyJSON = {
   title: "Patient record",
   description:
-    "What the practice already knows. The appointment form on the website reads this as {user_…}, so what is filled in here is what a patient never has to type.",
+    "Patient details the practice already knows. These values personalize the appointment form and encounter note.",
   showQuestionNumbers: "off",
   widthMode: "responsive",
   questionErrorLocation: "bottom",
@@ -77,7 +77,7 @@ export const patientRecordJson: SurveyJSON = {
           name: "isNewPatient",
           title: "First visit to Ridgeline?",
           description:
-            "What the website reads to decide whether this patient is asked the long version of the form.",
+            "Adds first-visit questions to the appointment form and encounter note.",
           labelTrue: "Yes, new patient",
           labelFalse: "No, established patient",
         },
@@ -285,13 +285,13 @@ export const patientRecordJson: SurveyJSON = {
           name: "history",
           title: "Medical history",
           description:
-            "The part the appointment form is built from: it offers this patient's own diagnoses and this patient's own medications, choice by choice.",
+            "Existing diagnoses and medications used to personalize the appointment form and encounter note.",
           elements: [
             {
               type: "checkbox",
               name: "conditions",
               title: "Problem list",
-              description: "The website's follow-up question offers exactly these.",
+              description: "The patient's existing diagnoses, used by the appointment form and encounter note.",
               colCount: 3,
               choices: CHART_CONDITIONS.map((condition) => ({
                 value: condition.id,
@@ -308,7 +308,7 @@ export const patientRecordJson: SurveyJSON = {
               type: "checkbox",
               name: "medications",
               title: "Current medications",
-              description: "And these are what the refill question can offer.",
+              description: "The patient's current medications, used by the refill questions in both forms.",
               colCount: 2,
               choices: CHART_MEDICATIONS.map((medication) => ({
                 value: medication.id,

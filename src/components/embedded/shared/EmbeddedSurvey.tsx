@@ -143,12 +143,12 @@ export function SurveyCard({
     <div
       data-survey-root=""
       className={mergeTailwindClasses(
-        "bg-card relative overflow-hidden rounded-xl border shadow-sm",
+        "bg-card relative rounded-xl border shadow-sm",
         className,
       )}
     >
       <SurveyOutlineLabel />
-      {children}
+      <div className="overflow-hidden rounded-[inherit]">{children}</div>
     </div>
   );
 }

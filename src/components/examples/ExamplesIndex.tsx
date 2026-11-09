@@ -17,8 +17,7 @@ const LINK = "flex items-center gap-1 underline-offset-4 hover:underline";
  * with the dock, so this page is not indexed and not designed as a landing page.
  *
  * The same visibility rule as the dock's menu — `ready`, or every entry with
- * `NEXT_PUBLIC_SHOW_UNREADY` — but no cap and no `inMenu` filter: Starter and
- * Definition & checks are listed here and only here.
+ * `NEXT_PUBLIC_SHOW_UNREADY` — but no cap and no `inMenu` filter.
  */
 export function ExamplesIndex({ manifest }: { manifest: ExamplesManifest }) {
   const entries = visibleExamples(manifest.entries);

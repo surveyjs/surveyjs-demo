@@ -54,16 +54,16 @@ export function SeeNextCard({ currentId }: { currentId: string }) {
       role="region"
       aria-label={DOCK_LABELS.seeNext}
       lang="en"
-      className="bg-background/95 pointer-events-auto w-[min(24rem,100%)] rounded-xl border p-3 shadow-lg backdrop-blur"
+      className="bg-background/95 pointer-events-auto cursor-default w-[min(24rem,100%)] rounded-xl border p-3 shadow-lg backdrop-blur"
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
+        <p className="text-muted-foreground text-[11px] font-medium">
           {DOCK_LABELS.seeNext}
         </p>
         <Button
           variant="ghost"
           size="sm"
-          className="-my-1 h-7 gap-1 px-2 text-xs"
+          className="-my-1 h-7 cursor-default gap-1 px-2 text-xs"
           onClick={() => setOpen(false)}
         >
           <XIcon className="size-3.5" />
@@ -79,7 +79,7 @@ export function SeeNextCard({ currentId }: { currentId: string }) {
               <a
                 href={run.href}
                 {...(run.external ? { target: "_blank", rel: "noreferrer" } : {})}
-                className="hover:text-primary font-medium underline-offset-4 hover:underline"
+                className="hover:text-primary cursor-default font-medium underline-offset-4 hover:underline"
               >
                 {entry.name}
                 {run.external && ` ${NEW_TAB_MARK}`}
@@ -89,7 +89,7 @@ export function SeeNextCard({ currentId }: { currentId: string }) {
                   href={useCase}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
+                  className="text-muted-foreground hover:text-foreground cursor-default text-xs underline-offset-4 hover:underline"
                 >
                   {entry.problem} {NEW_TAB_MARK}
                 </a>

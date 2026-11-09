@@ -74,6 +74,8 @@ export interface RecordCollection {
   /** List order. Stable: ties keep insertion order. */
   readonly compare?: (a: RecordColumns, b: RecordColumns) => number;
   readonly seed: readonly SurveyResult[];
+  /** Sample answers for a new, unsaved form; omit fields assigned by `newRecord`. */
+  readonly prefill?: SurveyData;
   /**
    * Top-level arrays of the document whose items carry a stable `id`: the
    * dynamic panels and matrices. Storage fills a missing one on save, so a later

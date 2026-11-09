@@ -464,7 +464,7 @@ test.describe("the rail", () => {
 test.describe("the outline around the form", () => {
   for (const id of ["leads", "workOrders"] as const) {
     const nav = getFormNavItem(id);
-    test(`on ${nav.path} it outlines only the form, and its label hides it for good`, async ({ page }) => {
+    test(`on ${nav.path} the dock toggles the outline around only the form`, async ({ page }) => {
       await page.goto(nav.path);
       const html = page.locator("html");
       const root = page.locator("[data-survey-root]");
@@ -475,9 +475,12 @@ test.describe("the outline around the form", () => {
       // The heading and the actions are the application's, outside the ring.
       await expect(root.getByRole("heading", { level: 2 }).filter({ hasText: /^(View|Edit|New) / })).toHaveCount(0);
 
-      await root.getByRole("button", { name: "SurveyJS renders this (hide selection)" }).click();
+      const highlight = dockOf(page).getByRole("button", { name: DOCK_LABELS.highlightSurvey, exact: true });
+      await expect(highlight).toHaveAttribute("aria-pressed", "true");
+      await highlight.click();
       await expect(html).not.toHaveAttribute("data-demo-highlight");
       await expect(root).toHaveCSS("outline-style", "none");
+      await expect(highlight).toHaveAttribute("aria-pressed", "false");
 
       // Another record does not bring it back.
       const second = rail(page, nav.label).getByRole("link").nth(1);
@@ -486,6 +489,11 @@ test.describe("the outline around the form", () => {
       await expect(page).toHaveURL(new RegExp(`${href}$`));
       await expect(root).toHaveCount(1);
       await expect(html).not.toHaveAttribute("data-demo-highlight");
+
+      await highlight.click();
+      await expect(html).toHaveAttribute("data-demo-highlight", "");
+      await expect(root).toHaveCSS("outline-style", "dashed");
+      await expect(highlight).toHaveAttribute("aria-pressed", "true");
     });
   }
 });
