@@ -110,6 +110,9 @@ export function createSurveyModel(
     }
   }
 
+  // Locked questions — a record opened for viewing, or a question the
+  // definition marks read-only — show their answers as text on every demo.
+  model.readOnlyMode = "view";
   model.mode = mode;
 
   // Allocate navigation IDs before browser-only animation work can consume
