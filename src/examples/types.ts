@@ -25,6 +25,13 @@ export interface ExampleEntry {
   readonly related: readonly string[];
   /** False keeps it off the dock's menu; it is still on the root index. Defaults to true. */
   readonly inMenu?: boolean;
+  /**
+   * A second link on this entry's card on the root index, beside Open.
+   * Unset: the card shows only Open. The manifest writes `null` for that,
+   * because JSON has no `undefined`. An `https://` href opens in a new tab;
+   * a path stays on this host, in this tab.
+   */
+  readonly link?: { readonly label: string; readonly href: string };
 }
 
 export interface ExamplesManifest {

@@ -2,7 +2,6 @@ import { test, expect } from "@playwright/test";
 import { features } from "../src/features";
 import { checkoutJson } from "../src/schemas/checkout";
 import { navPages } from "../src/schemas/navigation";
-import { howHref } from "../src/lib/routes";
 import { DOCK_LABELS } from "../src/lib/site";
 import { APPOINTMENT_COPY, ENCOUNTER_NOTE_COPY } from "../src/components/embedded/shared/patient-demo-copy";
 import { SHORT_CHECKOUT } from "./short-checkout";
@@ -27,8 +26,6 @@ const allRoutes = [
   // The one editor, on a plain form and on a personalized one.
   "/configure",
   "/configure?form=clinic-visit",
-  // The explainers, one per example.
-  ...navPages.map((item) => howHref(item.path)),
 ];
 
 /** The dock, on every example page. */

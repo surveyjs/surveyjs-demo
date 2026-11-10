@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import path from "node:path";
 import { test, expect } from "@playwright/test";
 import bundledJson from "../src/examples/manifest.json";
-import { BUNDLED_EXAMPLES, problemHref } from "../src/examples/entries";
+import { BUNDLED_EXAMPLES, cardLink, problemHref } from "../src/examples/entries";
 import { loadExamples } from "../src/examples/load";
 import { parseManifest } from "../src/examples/parse";
 import { USE_CASES_URL } from "../src/lib/site";
@@ -69,6 +69,8 @@ test.describe("parseManifest refuses", () => {
     ["neither runUrl nor url", (m) => delete m.entries[0].runUrl, /exactly one/],
     ["a URL that is not https", (m) => ((m.entries[0].runUrl as Record<string, string>).mit = "http://example.com/leads"), /https/],
     ["an entry that is not ready or not", (m) => delete m.entries[0].ready, /ready/],
+    ["a card link that is not https or a path", (m) => (m.entries[0].link = { label: "Docs", href: "http://example.com" }), /https|path/],
+    ["a card link without a label", (m) => (m.entries[0].link = { href: "https://example.com/leads" }), /label/],
   ];
 
   for (const [name, spoil, message] of cases) {
@@ -78,6 +80,24 @@ test.describe("parseManifest refuses", () => {
       expect(() => parseManifest(manifest)).toThrow(message);
     });
   }
+});
+
+test("a card link is an https URL or a path on this host", () => {
+  const manifest = structuredClone(bundledJson) as { entries: Record<string, unknown>[] };
+  // The bundled copy writes null: JSON has no undefined, and null means no link.
+  expect(cardLink(parseManifest(manifest).entries[0])).toBeUndefined();
+  manifest.entries[0].link = { label: "Write-up", href: "https://example.com/leads" };
+  expect(cardLink(parseManifest(manifest).entries[0])).toEqual({
+    label: "Write-up",
+    href: "https://example.com/leads",
+    external: true,
+  });
+  manifest.entries[0].link = { label: "Notes", href: "/leads" };
+  expect(cardLink(parseManifest(manifest).entries[0])).toEqual({
+    label: "Notes",
+    href: "/leads",
+    external: false,
+  });
 });
 
 test.describe("loadExamples", () => {

@@ -52,6 +52,16 @@ export function runLink(entry: ExampleEntry, edition: Edition): ExampleLink {
   return { href: entry.url ?? "/", external: true };
 }
 
+/**
+ * The index card's second link, beside Open. `undefined` while the entry sets
+ * none. An https URL is another host; a path stays on this one.
+ */
+export function cardLink(entry: ExampleEntry): (ExampleLink & { readonly label: string }) | undefined {
+  const link = entry.link;
+  if (!link) return undefined;
+  return { label: link.label, href: link.href, external: link.href.startsWith("https://") };
+}
+
 /** The entry's section on the use-cases page, or `undefined` while it has none. */
 export function problemHref(entry: ExampleEntry): string | undefined {
   const anchor = entry.useCaseAnchor?.trim();

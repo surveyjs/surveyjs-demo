@@ -12,7 +12,8 @@
       "useCaseAnchor": "starter",
       "ready": true,
       "related": ["definition", "leads"],
-      "inMenu": false
+      "inMenu": false,
+      "link": null
     },
     {
       "id": "leads",
@@ -24,7 +25,8 @@
       },
       "useCaseAnchor": "leads",
       "ready": true,
-      "related": ["workOrders", "embeddedFeedback"]
+      "related": ["workOrders", "embeddedFeedback"],
+      "link": null
     },
     {
       "id": "workOrders",
@@ -36,7 +38,8 @@
       },
       "useCaseAnchor": "work-orders",
       "ready": true,
-      "related": ["leads", "embeddedChart"]
+      "related": ["leads", "embeddedChart"],
+      "link": null
     },
     {
       "id": "embeddedFeedback",
@@ -48,7 +51,8 @@
       },
       "useCaseAnchor": "feedback",
       "ready": true,
-      "related": ["embeddedClinic", "leads"]
+      "related": ["embeddedClinic", "leads"],
+      "link": null
     },
     {
       "id": "embeddedClinic",
@@ -60,7 +64,8 @@
       },
       "useCaseAnchor": "clinic",
       "ready": true,
-      "related": ["embeddedChart", "healthcare"]
+      "related": ["embeddedChart", "healthcare"],
+      "link": null
     },
     {
       "id": "embeddedChart",
@@ -72,7 +77,8 @@
       },
       "useCaseAnchor": "chart",
       "ready": true,
-      "related": ["embeddedClinic", "healthcare"]
+      "related": ["embeddedClinic", "healthcare"],
+      "link": null
     },
     {
       "id": "healthcare",
@@ -81,7 +87,8 @@
       "url": "https://healthcare.demos.surveyjs.io/login",
       "useCaseAnchor": "healthcare",
       "ready": true,
-      "related": ["embeddedChart", "embeddedClinic"]
+      "related": ["embeddedChart", "embeddedClinic"],
+      "link": null
     },
     {
       "id": "humanResources",
@@ -89,7 +96,8 @@
       "problem": "Manage employee records",
       "url": "https://hr.demos.surveyjs.io/login",
       "ready": true,
-      "related": []
+      "related": [],
+      "link": null
     },
     {
       "id": "definition",
@@ -102,7 +110,8 @@
       "useCaseAnchor": "definition",
       "ready": true,
       "related": ["starter", "leads"],
-      "inMenu": false
+      "inMenu": false,
+      "link": null
     }
   ]
 }

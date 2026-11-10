@@ -85,11 +85,11 @@ test.describe("seed and samples", () => {
 });
 
 /**
- * A record's id is a path segment, and two static routes already live under the
- * page: `/work-orders/how` is the explainer and `/work-orders/from-document` the
- * import panel. `newId` cannot produce either, and a document must not be able
- * to either — a sheet with `how` written in its JOB NO. box would otherwise make
- * a record that shadows a page and can never be opened at its own URL.
+ * A record's id is a path segment, and a static route already lives under the
+ * page: `/work-orders/from-document` is the import panel. `newId` cannot produce
+ * that segment, and a document must not be able to either — a sheet with
+ * `from-document` written in its JOB NO. box would otherwise make a record that
+ * shadows the panel and can never be opened at its own URL.
  */
 test.describe("a record can never be named after a route", () => {
   test("newId never produces a reserved segment", () => {

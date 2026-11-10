@@ -7,7 +7,6 @@ import {
   ArrowLeftRightIcon,
   ChartColumnIcon,
   ChevronDownIcon,
-  CircleHelpIcon,
   Code2Icon,
   GithubIcon,
   FileDownIcon,
@@ -35,9 +34,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { StorageReadOnlyBanner } from "@/components/StorageAccess";
 import { useSurveyOutlineControl } from "@/components/survey-outline/SurveyOutline";
-import { getNavItem, type NavId } from "@/schemas/navigation";
-import { howHref, otherEditionHref, pageSourcePath, sourceHref } from "@/lib/routes";
-import { DOCK_LABELS, NEW_TAB_MARK, PAGE_ACTIONS } from "@/lib/site";
+import { type NavId } from "@/schemas/navigation";
+import { otherEditionHref, pageSourcePath, sourceHref } from "@/lib/routes";
+import { DOCK_LABELS, PAGE_ACTIONS } from "@/lib/site";
 import { mergeTailwindClasses } from "@/lib/utils";
 import { titleCase } from "@/lib/title-case";
 import { features, type Features } from "@/features";
@@ -63,7 +62,7 @@ function divider(key: string, className?: string) {
 }
 
 export interface DemoDockProps {
-  /** The page's `NavId`: the current entry of the menu, and its "How this page is built". */
+  /** The page's `NavId`: the current entry of the menu. */
   exampleId: NavId;
   /** The one page this form's JSON is edited on. No link renders without it. */
   configureHref?: string;
@@ -109,8 +108,7 @@ export interface DemoDockProps {
  *
  *  - **the current example** — opens the manifest, one line per example, and
  *    the way back to the site's use-cases page. Never collapses;
- *  - **How this page is built** and **Source** — the explainer, in this tab, and
- *    the route file on GitHub;
+ *  - **Source** — the route file on GitHub;
  *  - **the editor link** (`features.designer`) — the form is a JSON document,
  *    edited in one place that covers every form in the template;
  *  - **Prefill / Reset**, **PDF / Analytics** in editions that ship them;
@@ -166,7 +164,6 @@ export function DemoDock({
   const themeActionLabel = mounted ? `Switch to ${isDark ? "Light" : "Dark"}` : "Switch Theme";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
-  const how = howHref(getNavItem(exampleId).path);
   const sourcePath = pageSourcePath(pathname);
   const source = sourcePath ? sourceHref(sourcePath) : undefined;
   const { label: otherLabel, baseUrl } = features.brand.otherEdition;
@@ -186,7 +183,6 @@ export function DemoDock({
   // The bar shows these controls from their respective breakpoints up.
   const overflow: OverflowItem[] = [
     { key: "edition", label: switchLabel, icon: ArrowLeftRightIcon, below: "xl", href: switchHref, separatorAfter: true },
-    { key: "how", label: `${PAGE_ACTIONS.howBuilt} ${NEW_TAB_MARK}`, icon: CircleHelpIcon, below: "xl", href: how, separatorAfter: !source },
     ...(source
       ? [{ key: "source", label: PAGE_ACTIONS.source, icon: GithubIcon, below: "xl", href: source, newTab: true, separatorAfter: true } as const]
       : []),
@@ -408,14 +404,6 @@ export function DemoDock({
               </a>
             </DockButton>
 
-            {/* The explainer, in this tab: everything this template says about
-                the page is written there, in `how/<route>.md`. */}
-            <DockButton tooltip={PAGE_ACTIONS.howBuilt} variant="ghost" size="sm" className={mergeTailwindClasses(QUIET, SHOWN_FROM.xl)} asChild>
-              <a href={how} aria-label={PAGE_ACTIONS.howBuilt}>
-                <CircleHelpIcon />
-                <span className={LABEL}>{PAGE_ACTIONS.howBuilt}</span>
-              </a>
-            </DockButton>
             {source && (
               <DockButton tooltip={PAGE_ACTIONS.source} variant="ghost" size="sm" className={mergeTailwindClasses(QUIET, SHOWN_FROM.xl)} asChild>
                 <a
@@ -448,13 +436,14 @@ export function DemoDock({
 
             <DockButton
               variant="ghost"
-              size="icon-sm"
-              className={mergeTailwindClasses("shrink-0 rounded-full", SHOWN_FROM.xl)}
-              aria-label={themeLabel}
+              size="sm"
+              className={mergeTailwindClasses(QUIET, "w-8 px-0 has-[>svg]:px-0 2xl:w-auto 2xl:has-[>svg]:px-2.5", SHOWN_FROM.xl)}
+              aria-label={`Switch Theme. ${themeLabel}`}
               tooltip="Switch Theme"
               onClick={toggleTheme}
             >
               {isDark ? <MoonIcon /> : <SunIcon />}
+              <span className={LABEL}>Switch Theme</span>
             </DockButton>
 
             {formTools.length > 0 && divider("form", onPrefill || onReset ? "hidden lg:block" : "hidden xl:block")}

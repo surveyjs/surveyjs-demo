@@ -65,6 +65,7 @@ function parseEntry(value: unknown, where: string): ExampleEntry {
     };
   }
   const url = hasUrl ? https(value.url, `${where}.url`) : undefined;
+  const link = parseLink(value.link, `${where}.link`);
 
   if (!Array.isArray(value.related) || !value.related.every((item) => typeof item === "string")) {
     fail(`${where}.related`, "must be an array of ids");
@@ -80,13 +81,34 @@ function parseEntry(value: unknown, where: string): ExampleEntry {
     ready: value.ready,
     related: value.related as string[],
     ...(value.inMenu !== undefined ? { inMenu: value.inMenu as boolean } : {}),
+    ...(link ? { link } : {}),
   };
+}
+
+/**
+ * The index card's extra link: an https URL, or a path on this host.
+ * `null` is how the JSON manifest writes "no link" — JSON has no `undefined`.
+ */
+function parseLink(value: unknown, where: string): ExampleEntry["link"] {
+  if (value === undefined || value === null) return undefined;
+  if (!isObject(value)) fail(where, "must be { label, href }");
+  const label = text(value, "label", where);
+  const href = text(value, "href", where);
+  if (href.startsWith("https://")) {
+    https(href, `${where}.href`);
+    return { label, href };
+  }
+  if (href.startsWith("/") && !href.startsWith("//") && !href.includes("\\") && !/\s/.test(href)) {
+    return { label, href };
+  }
+  fail(`${where}.href`, `must be an https URL or a path on this host: ${href}`);
 }
 
 /**
  * A manifest, or an error naming the first thing wrong: unique ids, `related`
  * naming at most two other entries and never itself, exactly one of `runUrl`
- * and `url`, and every URL `https://`.
+ * and `url`, every URL `https://`, and a card `link` that is either unset or
+ * an https URL or a path on this host.
  */
 export function parseManifest(value: unknown): ExamplesManifest {
   if (!isObject(value)) fail("the root", "must be an object");

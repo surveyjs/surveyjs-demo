@@ -235,15 +235,14 @@ test.describe("at 390×844", () => {
     await expect(dock.getByRole("link", { name: features.designer.label })).toBeHidden();
     await expect(dock.getByRole("button", { name: /^Login as:/ })).toBeVisible();
     await expect(dock.getByRole("button", { name: DOCK_LABELS.highlightSurvey })).toBeHidden();
-    for (const name of [PAGE_ACTIONS.source, PAGE_ACTIONS.howBuilt, DOCK_LABELS.prefill, DOCK_LABELS.reset, DOCK_LABELS.editUser]) {
-      await expect(dock.getByRole(name === PAGE_ACTIONS.source || name === PAGE_ACTIONS.howBuilt ? "link" : "button", { name, exact: true })).toBeHidden();
+    for (const name of [PAGE_ACTIONS.source, DOCK_LABELS.prefill, DOCK_LABELS.reset, DOCK_LABELS.editUser]) {
+      await expect(dock.getByRole(name === PAGE_ACTIONS.source ? "link" : "button", { name, exact: true })).toBeHidden();
     }
 
     await dock.getByRole("button", { name: DOCK_LABELS.overflow }).click();
     const menu = page.getByRole("menu");
     const expected = [
       `Switch to ${titleCase(features.brand.otherEdition.label)}`,
-      PAGE_ACTIONS.howBuilt,
       PAGE_ACTIONS.source,
       DOCK_LABELS.highlightSurvey,
       /^Switch to (Dark|Light)$/,

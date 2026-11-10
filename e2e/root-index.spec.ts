@@ -1,11 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { features } from "../src/features";
 import { loadExamples } from "../src/examples/load";
-import { MENU_LIMIT, menuExamples, problemHref, runLink, visibleExamples } from "../src/examples/entries";
+import { cardLink, MENU_LIMIT, menuExamples, problemHref, runLink, visibleExamples } from "../src/examples/entries";
 import type { ExampleEntry } from "../src/examples/types";
-import { HOW_BUILT_TEXT } from "../src/lib/how-built";
-import { howHref } from "../src/lib/routes";
-import { navPages } from "../src/schemas/navigation";
 
 /**
  * `/`, the team's index of every example: a card per visible manifest entry,
@@ -31,11 +28,13 @@ test("a card per visible example, with its links", async ({ page }) => {
     if (run.external) await expect(open).toHaveAttribute("target", "_blank");
     else await expect(open).not.toHaveAttribute("target", /.*/);
 
-    // The explainer only for a page this app has.
-    const page_ = navPages.find((item) => item.id === entry.id);
-    const how = card.getByRole("link", { name: HOW_BUILT_TEXT.howBuilt });
-    if (page_) await expect(how).toHaveAttribute("href", howHref(page_.path));
-    else await expect(how).toHaveCount(0);
+    const extra = cardLink(entry);
+    if (extra) {
+      const more = card.getByRole("link", { name: extra.label, exact: true });
+      await expect(more).toHaveAttribute("href", extra.href);
+      if (extra.external) await expect(more).toHaveAttribute("target", "_blank");
+      else await expect(more).not.toHaveAttribute("target", /.*/);
+    }
 
     // The problem links the use-cases page only once it has a section for it.
     const useCase = problemHref(entry);

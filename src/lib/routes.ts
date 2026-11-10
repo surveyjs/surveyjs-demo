@@ -15,28 +15,10 @@ export function recordHref(basePath: string, id: string): string {
  * A file in this edition's repository.
  *
  * The one place `blob/main` is written: `brand.sourceUrl` is per edition, so a
- * link always opens the repository the reader is looking at. A path in a how
- * file's other-edition block is not linked at all — it is not in this
- * repository — which the loader in `src/lib/how-content.ts` decides.
+ * link always opens the repository the reader is looking at.
  */
 export function sourceHref(path: string): string {
   return `${features.brand.sourceUrl}/blob/main/${path}`;
-}
-
-/** The explainer for one example: `/leads` → `/leads/how`. */
-export function howHref(navPath: string): string {
-  return `${navPath}/how`;
-}
-
-/**
- * Whether this pathname is an explainer.
- *
- * The explainer is where everything this template says about an example is
- * written, and it carries no dock, so it has no "Source of this page" either.
- * A registered page's `/how`, and never a record whose id happens to be `how`.
- */
-export function isHowRoute(pathname: string): boolean {
-  return navPages.some((item) => howHref(item.path) === pathname);
 }
 
 /**
@@ -44,13 +26,8 @@ export function isHowRoute(pathname: string): boolean {
  * `undefined` for a path that is not a demo, and the link does not render.
  * A nested path maps to its page's file: `/leads/LEAD-0001` is served by the
  * `[id]` route, which renders what `leads/page.tsx` does for one record.
- *
- * An explainer has no source link at all: its route file is three lines around
- * `HowPage`, and what a reader of that page wants is `how/<route>.md` — which
- * every repository link on the page already reaches.
  */
 export function pageSourcePath(pathname: string): string | undefined {
-  if (isHowRoute(pathname)) return undefined;
   const item = navPages.find((entry) => isActiveRoute(pathname, entry.path));
   if (!item) return undefined;
   return `src/app${item.path}/page.tsx`;

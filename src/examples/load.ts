@@ -8,7 +8,7 @@
  * A menu must never be empty because another host is down, so any failure —
  * network, timeout, status, JSON, shape — logs one line and falls back.
  *
- * React-free and never imported from a `"use client"` file, like `how-content.ts`:
+ * React-free and never imported from a `"use client"` file:
  * the root layout awaits it on the server and hands the result to
  * `ExamplesProvider`. `e2e/` imports it too.
  */

@@ -1,6 +1,4 @@
 import { features } from "../src/features";
-import { navPages } from "../src/schemas/navigation";
-import { howHref } from "../src/lib/routes";
 
 /**
  * Compile every route before the suite starts.
@@ -27,8 +25,6 @@ const ROUTES = [
   "/feedback",
   "/clinic",
   "/chart",
-  // One explainer per example.
-  ...navPages.map((item) => howHref(item.path)),
 ];
 
 async function waitForServer(baseUrl: string): Promise<void> {

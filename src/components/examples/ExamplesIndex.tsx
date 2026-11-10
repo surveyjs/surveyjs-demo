@@ -1,13 +1,10 @@
 import { ArrowRightIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { NeutralHeader } from "@/components/hosts/NeutralHeader";
-import { runLink, problemHref, visibleExamples } from "@/examples/entries";
+import { cardLink, runLink, problemHref, visibleExamples } from "@/examples/entries";
 import type { ExamplesManifest } from "@/examples/types";
 import { features } from "@/features";
-import { HOW_BUILT_TEXT } from "@/lib/how-built";
-import { howHref } from "@/lib/routes";
 import { DOCK_LABELS, NEW_TAB_MARK, USE_CASES_URL } from "@/lib/site";
-import { navPages } from "@/schemas/navigation";
 
 const LINK = "flex items-center gap-1 underline-offset-4 hover:underline";
 
@@ -17,7 +14,8 @@ const LINK = "flex items-center gap-1 underline-offset-4 hover:underline";
  * with the dock, so this page is not indexed and not designed as a landing page.
  *
  * The same visibility rule as the dock's menu — `ready`, or every entry with
- * `NEXT_PUBLIC_SHOW_UNREADY` — but no cap and no `inMenu` filter.
+ * `NEXT_PUBLIC_SHOW_UNREADY` — but no cap and no `inMenu` filter. A card's
+ * second link is the entry's `link`, rendered only when one is set.
  */
 export function ExamplesIndex({ manifest }: { manifest: ExamplesManifest }) {
   const entries = visibleExamples(manifest.entries);
@@ -26,14 +24,14 @@ export function ExamplesIndex({ manifest }: { manifest: ExamplesManifest }) {
     <div className="min-h-svh">
       <NeutralHeader
         title={`Every example · ${features.brand.editionLabel}`}
-        description="What each example shows, how it is built, and where it runs. Visitors reach them from the use-cases page."
+        description="What each example shows, and where it runs. Visitors reach them from the use-cases page."
         width="max-w-5xl"
       />
       <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
         <ul className="grid gap-4 sm:grid-cols-2">
           {entries.map((entry) => {
             const run = runLink(entry, features.edition);
-            const page = navPages.find((item) => item.id === entry.id);
+            const extra = cardLink(entry);
             const useCase = problemHref(entry);
             return (
               <li key={entry.id}>
@@ -57,9 +55,14 @@ export function ExamplesIndex({ manifest }: { manifest: ExamplesManifest }) {
                       Open
                       {run.external ? ` ${NEW_TAB_MARK}` : <ArrowRightIcon className="size-3.5" />}
                     </a>
-                    {page && (
-                      <a href={howHref(page.path)} className={`text-muted-foreground ${LINK}`}>
-                        {HOW_BUILT_TEXT.howBuilt}
+                    {extra && (
+                      <a
+                        href={extra.href}
+                        {...(extra.external ? { target: "_blank", rel: "noreferrer" } : {})}
+                        className={`text-muted-foreground ${LINK}`}
+                      >
+                        {extra.label}
+                        {extra.external ? ` ${NEW_TAB_MARK}` : null}
                       </a>
                     )}
                   </div>
