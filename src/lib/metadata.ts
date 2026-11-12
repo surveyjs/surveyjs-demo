@@ -169,8 +169,8 @@ export const siteMetadata: Metadata = {
  * the root is the layout's own segment, which its title template does not reach.
  */
 const INDEX_COPY: PageCopy = {
-  title: `Every example${TITLE_SUFFIX}`,
-  description: "An index of every example in this demo: what each one shows, and where it runs.",
+  title: `Examples${TITLE_SUFFIX}`,
+  description: "From your first form to complete applications.",
 };
 
 /**

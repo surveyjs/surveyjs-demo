@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { features } from "../src/features";
 import { loadExamples } from "../src/examples/load";
-import { cardLink, MENU_LIMIT, menuExamples, problemHref, runLink, visibleExamples } from "../src/examples/entries";
+import { cardLink, MENU_LIMIT, menuExamples, runLink, visibleExamples } from "../src/examples/entries";
 import type { ExampleEntry } from "../src/examples/types";
 
 /**
@@ -12,14 +12,15 @@ import type { ExampleEntry } from "../src/examples/types";
  */
 
 test("a card per visible example, with its links", async ({ page }) => {
-  const entries = visibleExamples((await loadExamples()).entries);
+  const entries = visibleExamples((await loadExamples()).entries)
+    .filter((entry) => entry.id !== "starter" && entry.id !== "definition");
   await page.goto("/");
   const cards = page.locator("[data-example]");
   await expect(cards).toHaveCount(entries.length);
 
   for (const entry of entries) {
     const card = page.locator(`[data-example="${entry.id}"]`);
-    await expect(card.getByRole("heading", { level: 2 })).toHaveText(entry.name);
+    await expect(card.getByRole("heading", { level: 3 })).toHaveText(entry.name);
     await expect(card).toContainText(entry.problem);
 
     const run = runLink(entry, features.edition);
@@ -36,16 +37,13 @@ test("a card per visible example, with its links", async ({ page }) => {
       else await expect(more).not.toHaveAttribute("target", /.*/);
     }
 
-    // The problem links the use-cases page only once it has a section for it.
-    const useCase = problemHref(entry);
-    const problemLink = card.locator('a[href^="https://surveyjs.io/use-cases"]');
-    if (useCase) await expect(problemLink).toHaveAttribute("href", useCase);
-    else await expect(problemLink).toHaveCount(0);
+    // Card descriptions are plain text; navigation is in the action buttons.
+    await expect(card.locator("p a")).toHaveCount(0);
   }
 
-  // Starter and Definition are listed here though the dock's menu leaves them out.
-  await expect(page.locator('[data-example="starter"]')).toBeVisible();
-  await expect(page.locator('[data-example="definition"]')).toBeVisible();
+  // The catalog excludes Starter and Definition & checks.
+  await expect(page.locator('[data-example="starter"]')).toHaveCount(0);
+  await expect(page.locator('[data-example="definition"]')).toHaveCount(0);
 });
 
 test("is not indexed, and is canonical where every page is", async ({ page }) => {
