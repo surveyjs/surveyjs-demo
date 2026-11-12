@@ -36,6 +36,7 @@ The files the full edition implements still live at their historical paths, not 
 - Creator edits `aiHint`, the per-question note for the document extractor, as "AI extraction hint" in the property grid, under Description, for the survey and every question (not for matrix columns). It is registered in the shared `src/schemas/custom-properties.ts`; `src/components/configure/CreatorPane.tsx` imports that module for its side effect before building the Creator, so a saved definition keeps every hint. CreatorPane also moves the row under Description itself, because Survey Creator 3.0.4 ignores `nextToProperty` when the anchor is in the same tab.
 - `/api/lint` (`src/app/api/lint/route.ts`, `src/lib/lint/lint-survey.ts`) is the shared server route. It is not edited here, and `e2e/lint-api.spec.ts` runs in both editions.
 - The Monaco front end (`JsonWorkbench`, `StaticAnalysisBar`, `monaco-adapter.ts`) is copied here and used on one route: `/definition`, the shared page that shows any form as JSON with the linter. `/configure` is still Survey Creator.
+- Creator's JSON tab is Monaco too (Survey Creator 3.2.5 and later, hence `^3.2.5` on the four commercial packages). `CreatorPane.tsx` bundles `monaco-editor` and sets `window.MonacoEnvironment` and `window.monaco` at module load, because Creator chooses Monaco over Ace or a textarea only when `window.monaco` exists as it is constructed. Monaco's theme is global, so the same effect that sets `preferredColorPalette` calls `monaco.editor.setTheme("vs" | "vs-dark")`.
 
 ## Variable presets in Survey Creator
 

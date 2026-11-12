@@ -9,6 +9,7 @@ import {
   RotateCcwIcon,
   SquareArrowOutUpRightIcon,
 } from "lucide-react";
+import * as monaco from "monaco-editor";
 import { SurveyCreator, SurveyCreatorComponent } from "survey-creator-react";
 import type { ICreatorOptions, TabTestPlugin, VariablePresetsChangedEvent } from "survey-creator-core";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,16 @@ import "survey-creator-core/survey-creator-core.css";
 import "survey-core/themes/adapters/shadcn-base-nova.css";
 import "@/styles/survey-overrides-shadcn.css";
 import "@/styles/survey-overrides-base-nova.css";
+
+// Creator picks its Monaco JSON tab only if `window.monaco` exists when it is constructed.
+window.MonacoEnvironment = {
+  getWorker(_workerId: string, label: string) {
+    return label === "json"
+      ? new Worker(new URL("monaco-editor/esm/vs/language/json/json.worker.js", import.meta.url))
+      : new Worker(new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url));
+  },
+};
+(window as unknown as { monaco: typeof monaco }).monaco = monaco;
 
 /**
  * The tabs a form designer actually needs, and nothing that would need a server:
@@ -206,7 +217,9 @@ export default function CreatorPane({ form }: { form: FormEntry }) {
   // consumes live on <html>, and this page renders inside it, so the chrome and
   // the form follow the header toggle together.
   useEffect(() => {
-    creator.preferredColorPalette = resolvedTheme === "dark" ? "dark" : "light";
+    const dark = resolvedTheme === "dark";
+    creator.preferredColorPalette = dark ? "dark" : "light";
+    monaco.editor.setTheme(dark ? "vs-dark" : "vs");
   }, [creator, resolvedTheme]);
 
   // No cookie, no sandbox: the designer shows the form but edits nothing. Only

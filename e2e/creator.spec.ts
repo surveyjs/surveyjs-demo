@@ -29,6 +29,40 @@ test("the designer opens on one form, with no chrome around it", async ({ page }
   await expect(page.getByText("Checkout — form designer")).toBeVisible();
 });
 
+test("the JSON tab is one Monaco editor that follows the app theme", async ({ page }) => {
+  test.slow();
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.setViewportSize({ width: 1600, height: 1100 });
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/configure?form=checkout");
+  await waitForCreator(page);
+
+  await page.locator("#tab-json").click();
+  const editor = page.locator(".svc-json-editor-tab__monaco-editor .monaco-editor");
+  await expect(editor).toHaveCount(1, { timeout: 30_000 });
+  await expect(page.locator(".monaco-editor")).toHaveCount(1);
+  await expect(editor).toHaveClass(/\bvs\b/);
+
+  const text = await page.evaluate(() =>
+    (window as unknown as { monaco: typeof import("monaco-editor") }).monaco.editor
+      .getModels()[0]
+      .getValue(),
+  );
+  expect(text).toContain('"Full name"');
+
+  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  await expect(editor).toHaveClass(/\bvs-dark\b/);
+  await page.getByRole("button", { name: "Switch to light mode" }).click();
+  await expect(editor).toHaveClass(/\bvs\b/);
+  await expect(editor).not.toHaveClass(/vs-dark/);
+
+  expect(errors).toEqual([]);
+});
+
 test("Preview opens on the form's first variable preset, and the selector lists them all", async ({
   page,
 }) => {
@@ -163,9 +197,8 @@ test("Creator edits the AI extraction hint under Description, and a save keeps e
  * that does not claim the work was saved.
  *
  * The request is rewritten on the way out rather than typed into the JSON tab:
- * that tab is a React-controlled textarea which does not react to synthetic
- * input, and what is under test here is how a refusal is announced, not how a
- * definition is typed. The refusal itself is the real route's — the real
+ * what is under test here is how a refusal is announced, not how a definition
+ * is typed. The refusal itself is the real route's — the real
  * linter, the real suite, the real sentence from `messages.ts`.
  */
 test.describe("a save the server refuses", () => {
